@@ -25,6 +25,13 @@ namespace EduNexus.UI
             bundles.Add(new StyleBundle("~/Content/css").Include(
                       "~/Content/bootstrap.css",
                       "~/Content/site.css"));
+            // Scripts de Tabler
+            bundles.Add(new StyleBundle("~/Content/tabler").Include(
+                  "~/Content/tabler.min.css"));
+
+        
+            bundles.Add(new ScriptBundle("~/bundles/tabler").Include(
+                  "~/Scripts/tabler.min.js"));
         }
     }
 }
