@@ -1,0 +1,51 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionesDto>
+
+@{
+    ViewBag.Title = "Listado de secciones";
+}
+
+<h2>Listado de secciones</h2>
+
+<p>
+    @Html.ActionLink("Crear nuevo", "CrearSeccion")
+</p>
+<table class="table" id="myTable">
+    <thead>
+
+        <tr>            
+            <th>
+                @Html.DisplayNameFor(model => model.nombre)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.grado)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.cupo)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>                
+                <td>
+                    @Html.DisplayFor(modelItem => item.nombre)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.grado)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.cupo)
+                </td>
+                <td>
+                    @Html.ActionLink("Editar", "EditarSeccion", new { id = item.id_seccion }) |
+                    @Html.ActionLink("Detalles", "DetalleDeSeccion", new { id = item.id_seccion })
+            </tr>
+        }
+    </tbody>
+</table>
+@section scripts
+{
+    <script src="~/Scripts/General/General.js"></script>
+}

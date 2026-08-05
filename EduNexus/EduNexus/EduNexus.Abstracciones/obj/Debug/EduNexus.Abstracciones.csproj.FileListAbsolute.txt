@@ -1,0 +1,6 @@
+C:\Git\EduNexus\EduNexus\EduNexus\EduNexus.Abstracciones\bin\Debug\EduNexus.Abstracciones.dll
+C:\Git\EduNexus\EduNexus\EduNexus\EduNexus.Abstracciones\bin\Debug\EduNexus.Abstracciones.pdb
+C:\Git\EduNexus\EduNexus\EduNexus\EduNexus.Abstracciones\obj\Debug\EduNexus.Abstracciones.csproj.AssemblyReference.cache
+C:\Git\EduNexus\EduNexus\EduNexus\EduNexus.Abstracciones\obj\Debug\EduNexus.Abstracciones.csproj.CoreCompileInputs.cache
+C:\Git\EduNexus\EduNexus\EduNexus\EduNexus.Abstracciones\obj\Debug\EduNexus.Abstracciones.dll
+C:\Git\EduNexus\EduNexus\EduNexus\EduNexus.Abstracciones\obj\Debug\EduNexus.Abstracciones.pdb
