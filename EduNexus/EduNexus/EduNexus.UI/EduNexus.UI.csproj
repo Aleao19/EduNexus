@@ -120,6 +120,7 @@
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
+    <Compile Include="Controllers\AulaVirtualController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\SeccionesController.cs" />
     <Compile Include="Global.asax.cs">
@@ -168,6 +169,7 @@
     <Content Include="Scripts\jquery.validate.min.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
+    <Content Include="Scripts\Login\Login.js" />
     <Content Include="Scripts\modernizr-2.8.3.js" />
     <Content Include="Scripts\tabler.min.js" />
     <Content Include="Web.config" />
@@ -188,6 +190,11 @@
     <Content Include="Views\Secciones\DetalleDeSeccion.cshtml" />
     <Content Include="Views\Secciones\CrearSeccion.cshtml" />
     <Content Include="Views\Secciones\EditarSeccion.cshtml" />
+    <Content Include="Views\Home\Bitacora.cshtml" />
+    <Content Include="Views\AulaVirtual\Horario.cshtml" />
+    <Content Include="Views\AulaVirtual\AulaVirtual.cshtml" />
+    <Content Include="Views\AulaVirtual\Materia.cshtml" />
+    <Content Include="Views\Home\Login.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

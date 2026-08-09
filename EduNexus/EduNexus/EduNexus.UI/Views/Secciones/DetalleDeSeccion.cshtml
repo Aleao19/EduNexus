@@ -1,50 +1,57 @@
 ﻿@model EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionesDto
 
 @{
-    ViewBag.Title = "DetalleDeSeccion";
+    ViewBag.Title = "Detalle de la sección";
 }
 
-<h2>DetalleDeSeccion</h2>
+<h2>Detalle de la sección</h2>
 
 <div>
-    <h4>SeccionesDto</h4>
     <hr />
-    <dl class="dl-horizontal">
-        <dt>
-            @Html.DisplayNameFor(model => model.id_seccion)
-        </dt>
+    <div class="container my-2">
+        <div class="row">
+            <div class="col-md-8 offset-md-1">
+                <div class="form-group">
+                    <dl class="dl-horizontal">
 
-        <dd>
-            @Html.DisplayFor(model => model.id_seccion)
-        </dd>
+                        <dt>
+                            @Html.DisplayNameFor(model => model.nombre)
+                        </dt>
 
-        <dt>
-            @Html.DisplayNameFor(model => model.nombre)
-        </dt>
+                        <dd>
+                            @Html.DisplayFor(model => model.nombre)
+                        </dd>
+                        <dt>
+                            Año
+                        </dt>
 
-        <dd>
-            @Html.DisplayFor(model => model.nombre)
-        </dd>
+                        <dd>
+                            2026
+                        </dd>
 
-        <dt>
-            @Html.DisplayNameFor(model => model.grado)
-        </dt>
+                        <dt>
+                            @Html.DisplayNameFor(model => model.grado)
+                        </dt>
 
-        <dd>
-            @Html.DisplayFor(model => model.grado)
-        </dd>
+                        <dd>
+                            @Html.DisplayFor(model => model.grado)
+                        </dd>
 
-        <dt>
-            @Html.DisplayNameFor(model => model.cupo)
-        </dt>
+                        <dt>
+                            @Html.DisplayNameFor(model => model.cupo)
+                        </dt>
 
-        <dd>
-            @Html.DisplayFor(model => model.cupo)
-        </dd>
+                        <dd>
+                            @Html.DisplayFor(model => model.cupo)
+                        </dd>
 
-    </dl>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 <p>
-    @Html.ActionLink("Edit", "Edit", new { /* id = Model.PrimaryKey */ }) |
-    @Html.ActionLink("Back to List", "Index")
+    @Html.ActionLink("Editar", "EditarSeccion", new { id = Model.id_seccion }) |
+    @Html.ActionLink("Regresar", "ListadoDeSecciones")
 </p>

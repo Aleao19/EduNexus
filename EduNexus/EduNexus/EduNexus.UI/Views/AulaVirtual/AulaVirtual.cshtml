@@ -1,0 +1,68 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Materias.MateriasDto>
+
+@{
+    ViewBag.Title = "Aula Virtual";
+}
+
+<h2>Aula Virtual</h2>
+
+<hr />
+
+<h3>Materias</h3>
+
+<div class="container-xl">
+    <!-- Grid responsive para organizar las tarjetas -->
+    <div class="row row-cards">
+        @if (Model != null && Model.Any())
+        {
+            foreach (var materia in Model)
+            {
+                <div class="col-sm-6 col-lg-4 col-xl-3">
+                    <div class="card d-flex flex-column h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h3 class="card-title">
+                                <a href="@Url.Action("Materia", "AulaVirtual", new { id = materia.id_materia })">
+                                    @materia.nombre
+                                </a>
+                            </h3>
+
+                            <div class="text-secondary">
+                                <span>Seccion: 3-B</span>
+                            </div>
+
+                            <div class="d-flex align-items-center pt-4 mt-auto">
+                                <!-- Avatar con la inicial del profesor -->
+                                <span class="avatar avatar-sm rounded-circle bg-blue-lt fw-bold">
+                                    @(string.IsNullOrEmpty(materia.profesor) ? "P" : materia.profesor.Substring(0, 1).ToUpper())
+                                </span>
+
+                                <div class="ms-3">
+                                    <a href="javascript:void(0)" class="text-body fw-medium">
+                                        @(string.IsNullOrEmpty(materia.profesor) ? "Sin Profesor Asignado" : materia.profesor)
+                                    </a>
+                                    <div class="text-secondary small">Profesor Titular</div>
+                                </div>
+
+                                <div class="ms-auto">
+                                    <!-- SVG de Tabler Icons (Pencil) -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                        <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4"></path>
+                                        <path d="M13.5 6.5l4 4"></path>
+                                    </svg>                                    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="alert alert-info" role="alert">
+                    No hay materias registradas para mostrar.
+                </div>
+            </div>
+        }
+    </div>
+</div>
