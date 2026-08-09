@@ -1,0 +1,65 @@
+﻿
+
+
+<div class="row justify-content-center w-100">
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="container container-tight py-4">
+            <div class="text-center mb-4">
+                <h2 class="h2 text-center mb-4">EduNexus</h2>
+            </div>
+            <div class="card card-md">
+                <div class="card-body">
+                    <h2 class="h2 text-center mb-4">Bienvenido</h2>
+                    <p class="text-center text-muted">Ingrese sus datos para acceder</p>
+                    <form novalidate="">
+                        <!-- Campo de Correo -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Correo electrónico</label>
+                            <input type="email" id="email" name="email" class="form-control" placeholder="edu@email.com" autocomplete="username">
+                        </div>
+
+                        <!-- Campo de Contraseña -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                Contraseña
+                                <span class="form-label-description float-end">
+                                    <a href="#">Olvidé mi contraseña</a>
+                                </span>
+                            </label>
+                            <div class="input-group input-group-flat">
+                                <input type="password" id="password" name="password" class="form-control" placeholder="Contraseña" autocomplete="current-password">
+                                <span class="input-group-text">
+                                    <a href="#" id="togglePassword" class="link-secondary" data-bs-toggle="tooltip" title="Mostrar contraseña">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                            <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+                                            <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"></path>
+                                        </svg>
+                                    </a>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Checkbox -->
+                        <div class="mb-3">
+                            <label class="form-check" for="rememberMe">
+                                <input type="checkbox" id="rememberMe" name="rememberMe" class="form-check-input">
+                                <span class="form-check-label">Recordar mi contraseña</span>
+                            </label>
+                        </div>
+
+                        <!-- Botón -->
+                        <div class="form-footer">
+                            <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts
+{
+    <script src="~/Scripts/Login/Login.js"></script>
+}
+

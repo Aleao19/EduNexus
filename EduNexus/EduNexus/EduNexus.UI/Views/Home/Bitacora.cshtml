@@ -1,0 +1,66 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Bitacora.BitacoraDto>
+
+@{
+    ViewBag.Title = "Bitacora";
+}
+
+<h2>Bitacora de auditoría</h2>
+
+<hr />
+
+<table class="table table-responsive my-xxl-4" id="myTable">
+    <thead>
+        <tr>
+            
+            <th class="text-capitalize">
+                @Html.DisplayNameFor(model => model.tipoDeEvento)
+            </th>
+            <th class="text-capitalize">
+                @Html.DisplayNameFor(model => model.descripcionEvento)
+            </th>
+            <th class="text-capitalize">
+                @Html.DisplayNameFor(model => model.fecha)
+            </th>
+            <th class="text-capitalize">
+                @Html.DisplayNameFor(model => model.datosAnteriores)
+            </th>
+            <th class="text-capitalize">
+                @Html.DisplayNameFor(model => model.datosPosteriores)
+            </th>
+            <th class="text-capitalize">
+                @Html.DisplayNameFor(model => model.Usuario)
+            </th>
+            
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.tipoDeEvento)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.descripcionEvento)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.fecha)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.datosAnteriores)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.datosPosteriores)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Usuario)
+                </td>
+
+            </tr>
+        }
+    </tbody>
+</table>
+@section scripts
+{
+    <script src="~/Scripts/General/General.js"></script>
+}
