@@ -1,0 +1,45 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Materias.MateriasDto>
+
+@{
+    ViewBag.Title = "Listado de materias";
+}
+
+<h2>Listado de materias</h2>
+
+<p>
+    @Html.ActionLink("Crear nueva", "CrearMateria")
+</p>
+<table class="table table-responsive" id="myTable">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.nombre)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.profesor)
+            </th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.nombre)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.profesor)
+                </td>
+                <td>
+                    @Html.ActionLink("Editar", "EditarMateria", new { id = item.id_materia })
+                    @Html.ActionLink("Detalles", "DetalleDeMateria", new { id = item.id_materia })
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+@section scripts
+{
+    <script src="~/Scripts/General/General.js"></script>
+}
