@@ -1,0 +1,45 @@
+﻿@{
+    ViewBag.Title = "Listado de horarios";
+}
+
+<h2>Listado de horarios por sección</h2>
+
+<p>
+    @Html.ActionLink("Crear nuevo", "CrearHorario")
+</p>
+
+<table class="table table-responsive" id="myTable">
+    <thead>
+        <tr>
+            <th>Sección</th>
+            <th>Grado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1-A</td>
+            <td>1</td>
+            <td>
+                @Html.ActionLink("Editar", "EditarHorario", new { id = 1 }) |
+                @Html.ActionLink("Ver horario", "VisualizarHorario", new { id = 1 })
+            </td>
+        </tr>
+        <tr>
+            <td>1-B</td>
+            <td>1</td>
+            <td>
+                @Html.ActionLink("Editar", "EditarHorario", new { id = 2 }) |
+                @Html.ActionLink("Ver horario", "VisualizarHorario", new { id = 2 })
+            </td>
+        </tr>
+        <tr>
+            <td>2-A</td>
+            <td>2</td>
+            <td>
+                @Html.ActionLink("Editar", "EditarHorario", new { id = 3 }) |
+                @Html.ActionLink("Ver horario", "VisualizarHorario", new { id = 3 })
+            </td>
+        </tr>
+    </tbody>
+</table>

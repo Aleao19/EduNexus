@@ -1,0 +1,47 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.AsignacionesDocentes.AsignacionDocenteDto
+
+@{
+    ViewBag.Title = "Asignar docente";
+}
+
+<h2>Asignar materia y sección a @ViewBag.NombreDocente</h2>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(model => model.id_docente)
+
+    <div class="form-horizontal">
+        <hr />
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8 offset-md-1">
+                    <div class="form-group mt-3">
+                        <label class="control-label col-md-2">Materia</label>
+                        <div class="col-md-10">
+                            @Html.DropDownListFor(model => model.id_materia, (SelectList)ViewBag.Materias, "Seleccione una materia", new { @class = "form-control" })
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label class="control-label col-md-2">Sección</label>
+                        <div class="col-md-10">
+                            @Html.DropDownListFor(model => model.id_seccion, (SelectList)ViewBag.Secciones, "Seleccione una sección", new { @class = "form-control" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-md-offset-2 col-md-10 my-3">
+                            <input type="submit" value="Asignar" class="btn btn-cyan" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div>
+    @Html.ActionLink("Regresar", "ListadoDeDocentes")
+</div>

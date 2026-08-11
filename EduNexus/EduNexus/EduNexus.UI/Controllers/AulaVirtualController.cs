@@ -101,9 +101,41 @@ namespace EduNexus.UI.Controllers
                     fechaDeEntrega = DateTime.Now.AddDays(7)
                 }
             };
+            ViewBag.Estudiantes = ObtenerEstudiantes();
+            
             return View(asignaciones);
         }
 
+
+        // POST: AulaVirtual/GuardarAsistencia
+        [HttpPost]
+        public ActionResult GuardarAsistencia(FormCollection collection)
+        {
+            try
+            {
+                // TODO: Add insert/update logic here
+                // collection["fecha"] trae la fecha general
+                // collection["asistencia_1"], collection["asistencia_2"], ... traen el estado de cada estudiante
+
+                return RedirectToAction("Materia");
+            }
+            catch
+            {
+                return RedirectToAction("Materia");
+            }
+        }
+
+        private List<string> ObtenerEstudiantes()
+        {
+            return new List<string>
+            {
+                "Sofía Castro Mora",
+                "Diego Fernández Rojas",
+                "Valeria Gómez Vindas",
+                "Kevin Araya Solano",
+                "Fabiana Chaves Mora"
+            };
+        }
         // GET: AulaVirtual/Create
         public ActionResult Create()
         {

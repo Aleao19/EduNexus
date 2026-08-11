@@ -1,0 +1,45 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Expedientes.ExpedienteDto>
+
+@{
+    ViewBag.Title = "Listado de expedientes";
+}
+
+<h2>Listado de expedientes</h2>
+
+<p>
+    @Html.ActionLink("Crear nuevo", "CrearExpediente")
+</p>
+<table class="table table-responsive" id="myTable">
+    <thead>
+        <tr>
+            <th>Id expediente</th>
+            <th>Id matrícula</th>
+            <th>@Html.DisplayNameFor(model => model.identificacion)</th>
+            <th>@Html.DisplayNameFor(model => model.nombre)</th>
+            <th>@Html.DisplayNameFor(model => model.apellido1)</th>
+            <th>@Html.DisplayNameFor(model => model.apellido2)</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.id_expediente</td>
+                <td>@item.id_matricula</td>
+                <td>@Html.DisplayFor(modelItem => item.identificacion)</td>
+                <td>@Html.DisplayFor(modelItem => item.nombre)</td>
+                <td>@Html.DisplayFor(modelItem => item.apellido1)</td>
+                <td>@Html.DisplayFor(modelItem => item.apellido2)</td>
+                <td>
+                    @Html.ActionLink("Ver detalle", "DetalleDeExpediente", new { id = item.id_expediente }) |
+                    @Html.ActionLink("Editar", "EditarExpediente", new { id = item.id_expediente })
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+@section scripts
+{
+    <script src="~/Scripts/General/General.js"></script>
+}
