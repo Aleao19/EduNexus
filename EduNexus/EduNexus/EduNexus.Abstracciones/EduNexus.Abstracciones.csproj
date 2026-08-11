@@ -42,8 +42,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ModelosParaUI\AsignacionesDocentes\AsignacionDocenteDto.cs" />
     <Compile Include="ModelosParaUI\Asignaciones\AsignacionesDto.cs" />
     <Compile Include="ModelosParaUI\Bitacora\BitacoraDto.cs" />
+    <Compile Include="ModelosParaUI\Docentes\DocentesDto.cs" />
+    <Compile Include="ModelosParaUI\Expedientes\ExpedienteDto.cs" />
     <Compile Include="ModelosParaUI\Horarios\HorariosDto.cs" />
     <Compile Include="ModelosParaUI\Materias\MateriasDto.cs" />
     <Compile Include="ModelosParaUI\Secciones\SeccionesDto.cs" />
