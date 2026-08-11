@@ -1,0 +1,69 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Horarios.HorariosDto
+
+@{
+    ViewBag.Title = "Editar horario";
+}
+
+<h2>Editar horario</h2>
+
+
+
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(model => model.id_horario)
+    @Html.HiddenFor(model => model.seccion)
+
+    <div class="form-horizontal">
+        <hr />
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        <div class="container my-2">
+            <div class="row">
+                <div class="col-md-8 offset-md-1">
+                    <div class="form-group mt-3">
+                        <label class="control-label col-md-2">Día</label>
+                        <div class="col-md-10">
+                            @Html.DropDownListFor(model => model.dia_semana, (SelectList)ViewBag.Dias, new { @class = "form-control" })
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label class="control-label col-md-2">Hora inicio</label>
+                        <div class="col-md-10">
+                            <input type="time" name="hora_inicio" value="@Model.hora_inicio.ToString("HH:mm")" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label class="control-label col-md-2">Hora fin</label>
+                        <div class="col-md-10">
+                            <input type="time" name="hora_fin" value="@Model.hora_fin.ToString("HH:mm")" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label class="control-label col-md-2">Materia</label>
+                        <div class="col-md-10">
+                            @Html.DropDownListFor(model => model.materia, (SelectList)ViewBag.Materias, new { @class = "form-control" })
+                        </div>
+                    </div>
+
+                    <div class="form-group my-3">
+                        <div class="col-md-offset-2 col-md-10 mt-2">
+                            <input type="submit" value="Guardar" class="btn btn-cyan" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div>
+    @Html.ActionLink("Regresar", "ListadoDeHorarios", new { id = Model.seccion })
+</div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

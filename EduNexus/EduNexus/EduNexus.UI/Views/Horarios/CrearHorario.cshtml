@@ -1,0 +1,82 @@
+﻿@{
+    ViewBag.Title = "Crear horario";
+}
+
+<h2>Crear horario</h2>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-horizontal">
+        <hr />
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8 offset-md-1">
+                    <div class="form-group mt-3">
+                        <label class="control-label col-md-2">Sección</label>
+                        <div class="col-md-10">
+                            <select name="seccion" class="form-control">
+                                <option value="">Seleccione una sección</option>
+                                <option value="1">1-A</option>
+                                <option value="2">1-B</option>
+                                <option value="3">2-A</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label class="control-label col-md-2">Día</label>
+                        <div class="col-md-10">
+                            <select name="dia_semana" class="form-control">
+                                <option value="">Seleccione un día</option>
+                                <option value="Lunes">Lunes</option>
+                                <option value="Martes">Martes</option>
+                                <option value="Miércoles">Miércoles</option>
+                                <option value="Jueves">Jueves</option>
+                                <option value="Viernes">Viernes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label class="control-label col-md-2">Hora inicio</label>
+                        <div class="col-md-10">
+                            <input type="time" name="hora_inicio" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label class="control-label col-md-2">Hora fin</label>
+                        <div class="col-md-10">
+                            <input type="time" name="hora_fin" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label class="control-label col-md-2">Materia</label>
+                        <div class="col-md-10">
+                            <select name="materia" class="form-control">
+                                <option value="">Seleccione una materia</option>
+                                <option value="1">Matemáticas</option>
+                                <option value="2">Español</option>
+                                <option value="3">Ciencias</option>
+                                <option value="4">Estudios Sociales</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-md-offset-2 col-md-10 my-3">
+                            <input type="submit" value="Crear" class="btn btn-cyan" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div>
+    @Html.ActionLink("Regresar", "ListadoDeHorarios")
+</div>
