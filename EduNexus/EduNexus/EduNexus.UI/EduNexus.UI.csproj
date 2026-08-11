@@ -121,7 +121,11 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AulaVirtualController.cs" />
+    <Compile Include="Controllers\DocentesController.cs" />
+    <Compile Include="Controllers\ExpedientesController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\HorariosController.cs" />
+    <Compile Include="Controllers\MateriasController.cs" />
     <Compile Include="Controllers\SeccionesController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -195,6 +199,20 @@
     <Content Include="Views\AulaVirtual\AulaVirtual.cshtml" />
     <Content Include="Views\AulaVirtual\Materia.cshtml" />
     <Content Include="Views\Home\Login.cshtml" />
+    <Content Include="Views\Docentes\AsignarDocente.cshtml" />
+    <Content Include="Views\Docentes\CargaAcademicaDocente.cshtml" />
+    <Content Include="Views\Docentes\ListadoDeDocentes.cshtml" />
+    <Content Include="Views\Expedientes\CrearExpediente.cshtml" />
+    <Content Include="Views\Expedientes\DetalleDeExpediente.cshtml" />
+    <Content Include="Views\Expedientes\EditarExpediente.cshtml" />
+    <Content Include="Views\Expedientes\ListadoDeExpedientes.cshtml" />
+    <Content Include="Views\Horarios\CrearHorario.cshtml" />
+    <Content Include="Views\Horarios\EditarHorario.cshtml" />
+    <Content Include="Views\Horarios\ListadoDeHorarios.cshtml" />
+    <Content Include="Views\Horarios\VisualizarHorario.cshtml" />
+    <Content Include="Views\Materias\CrearMateria.cshtml" />
+    <Content Include="Views\Materias\EditarMateria.cshtml" />
+    <Content Include="Views\Materias\ListadoDeMaterias.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
