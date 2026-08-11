@@ -1,0 +1,60 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Expedientes.ExpedienteDto
+
+@{
+    ViewBag.Title = "Detalle del expediente";
+}
+
+<h2>Detalle del expediente</h2>
+
+<div>
+    <hr />
+    <div class="container my-2">
+        <div class="row">
+            <div class="col-md-8 offset-md-1">
+                <div class="form-group">
+                    <dl class="dl-horizontal">
+                        <dt>@Html.DisplayNameFor(model => model.identificacion)</dt>
+                        <dd>@Html.DisplayFor(model => model.identificacion)</dd>
+
+                        <dt>@Html.DisplayNameFor(model => model.nombre)</dt>
+                        <dd>@Html.DisplayFor(model => model.nombre)</dd>
+
+                        <dt>@Html.DisplayNameFor(model => model.apellido1)</dt>
+                        <dd>@Html.DisplayFor(model => model.apellido1)</dd>
+
+                        <dt>@Html.DisplayNameFor(model => model.apellido2)</dt>
+                        <dd>@Html.DisplayFor(model => model.apellido2)</dd>
+
+                        <dt>@Html.DisplayNameFor(model => model.genero)</dt>
+                        <dd>@Html.DisplayFor(model => model.genero)</dd>
+
+                        <dt>@Html.DisplayNameFor(model => model.grado)</dt>
+                        <dd>@Html.DisplayFor(model => model.grado)</dd>
+
+                        <dt>@Html.DisplayNameFor(model => model.telefono)</dt>
+                        <dd>@Html.DisplayFor(model => model.telefono)</dd>
+
+                        <dt>@Html.DisplayNameFor(model => model.fecha_nacimiento)</dt>
+                        <dd>@Model.fecha_nacimiento.ToString("dd/MM/yyyy")</dd>
+
+                        <dt>@Html.DisplayNameFor(model => model.tiene_adecuacion)</dt>
+                        <dd>@(Model.tiene_adecuacion ? "Sí" : "No")</dd>
+
+                        <dt>@Html.DisplayNameFor(model => model.tiene_discapacidad)</dt>
+                        <dd>@(Model.tiene_discapacidad ? "Sí" : "No")</dd>
+
+                        <dt>@Html.DisplayNameFor(model => model.contactoEmergencia)</dt>
+                        <dd>@Html.DisplayFor(model => model.contactoEmergencia)</dd>
+
+                        <dt>@Html.DisplayNameFor(model => model.direccion)</dt>
+                        <dd>@Html.DisplayFor(model => model.direccion)</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<p>
+    @Html.ActionLink("Editar", "EditarExpediente", new { id = Model.id_expediente }) |
+    @Html.ActionLink("Regresar", "ListadoDeExpedientes")
+</p>
