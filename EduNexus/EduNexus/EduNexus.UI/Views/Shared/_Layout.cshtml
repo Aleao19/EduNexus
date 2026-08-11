@@ -7,9 +7,9 @@
     <title>@ViewBag.Title - EduNexus</title>
     @Styles.Render("~/Content/css")
     @Scripts.Render("~/bundles/modernizr")
-    @*@Styles.Render("~/Content/tabler")*@
-    <link href="~/Content/tabler.min.css" rel="stylesheet" />
     <link href="~/Content/DataTable/dataTables.dataTables.min.css" rel="stylesheet" />
+    <link href="~/Content/tabler.min.css" rel="stylesheet" />
+
 </head>
 <body>
     <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark d-print-none">
@@ -39,9 +39,9 @@
 
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/bootstrap")
-    @*@Scripts.Render("~/bundles/tabler")*@
-    <script src="~/Scripts/tabler.min.js"></script>
     <script src="~/Scripts/DataTable/dataTables.min.js"></script>
+    <script src="~/Scripts/tabler.min.js"></script>
+    
     @RenderSection("scripts", required: false)
 </body>
 </html>
