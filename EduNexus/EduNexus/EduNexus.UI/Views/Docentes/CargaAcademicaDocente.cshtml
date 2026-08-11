@@ -1,0 +1,33 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.AsignacionesDocentes.AsignacionDocenteDto>
+
+@{
+    ViewBag.Title = "Materias y secciones a cargo";
+}
+
+<h2>Materias y secciones a cargo de @ViewBag.NombreDocente</h2>
+
+<p>
+    @Html.ActionLink("Asignar nueva", "AsignarDocente", new { id = ViewBag.IdDocente })
+</p>
+
+<table class="table table-responsive" id="myTable">
+    <thead>
+        <tr>
+            <th>Materia</th>
+            <th>Sección</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>Matemáticas</td>
+                <td>1-A</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div>
+    @Html.ActionLink("Regresar", "ListadoDeDocentes")
+</div>
