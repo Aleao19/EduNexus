@@ -13,7 +13,7 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Dashboard
         public int TotalSecciones { get; set; }
         public int TotalMaterias { get; set; }
 
-        // Variación porcentual respecto al periodo anterior (solo visual, mock)
+        // Variación porcentual respecto al periodo anterior (solo visual)
         public double VariacionEstudiantes { get; set; }
         public double VariacionDocentes { get; set; }
         public double VariacionSecciones { get; set; }
