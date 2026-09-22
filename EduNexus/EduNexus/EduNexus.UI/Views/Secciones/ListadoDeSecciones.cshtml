@@ -2,55 +2,105 @@
 
 @{
     ViewBag.Title = "Listado de secciones";
+    int total = Model.Count();
+    int cupoTotal = Model.Sum(x => x.cupo);
 }
 
-<h2>Listado de secciones</h2>
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Secciones</h1>
+        <p class="text-secondary mb-0">Gestión de secciones académicas por grado.</p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("+ Nueva sección", "CrearSeccion", null, new { @class = "btn btn-primary" })
+    </div>
+</div>
 
-<p>
-    @Html.ActionLink("Crear nuevo", "CrearSeccion")
-</p>
-<table class="table table-responsive" id="myTable">
-    <thead>
+<div class="row row-cards g-3 mb-3">
+    <div class="col-sm-4">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Secciones activas</div>
+                <div class="h2 mb-0">@total</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Cupo total</div>
+                <div class="h2 mb-0">@cupoTotal</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Año lectivo</div>
+                <div class="h2 mb-0">2026</div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.nombre)
-            </th>
-            <th>
-                Año
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.grado)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.cupo)
-            </th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.nombre)
-                </td>
-                <td>
-                    2026
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.grado)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.cupo)
-                </td>
-                <td>
-                    @Html.ActionLink("Editar", "EditarSeccion", new { id = item.id_seccion }) |
-                    @Html.ActionLink("Detalles", "DetalleDeSeccion", new { id = item.id_seccion })
-            </tr>
-        }
-    </tbody>
-</table>
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Listado</h3>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card-body">
+            <div class="empty">
+                <p class="empty-title">No hay secciones registradas</p>
+                <div class="empty-action">
+                    @Html.ActionLink("+ Nueva sección", "CrearSeccion", null, new { @class = "btn btn-primary" })
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table" id="myTable">
+                <thead>
+                    <tr>
+                        <th>@Html.DisplayNameFor(model => model.nombre)</th>
+                        <th>Año</th>
+                        <th>@Html.DisplayNameFor(model => model.grado)</th>
+                        <th>@Html.DisplayNameFor(model => model.cupo)</th>
+                        <th class="w-1">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <span class="badge bg-blue-lt">@item.nombre</span>
+                            </td>
+                            <td>2026</td>
+                            <td>@Html.DisplayFor(modelItem => item.grado)</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="me-2">@item.cupo</span>
+                                    <div class="progress progress-sm flex-fill" style="max-width:80px">
+                                        <div class="progress-bar" style="width: @(item.cupo * 100 / 35)%" role="progressbar"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-nowrap">
+                                @Html.ActionLink("Editar", "EditarSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
+                                @Html.ActionLink("Detalles", "DetalleDeSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-primary" })
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
 @section scripts
 {
     <script src="~/Scripts/General/General.js"></script>
