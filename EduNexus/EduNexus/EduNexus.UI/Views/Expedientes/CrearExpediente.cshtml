@@ -14,8 +14,8 @@
         <hr />
         @Html.ValidationSummary(true, "", new { @class = "text-danger" })
         <div class="container">
-            <div class="row">
-                <div class="col-md-8 offset-md-1">
+            <div class="row row-cols-3">
+                <div class="col">
                     <div class="form-group mt-3">
                         @Html.LabelFor(model => model.identificacion, htmlAttributes: new { @class = "control-label col-md-2" })
                         <div class="col-md-10">
@@ -47,7 +47,8 @@
                             @Html.ValidationMessageFor(model => model.apellido2, "", new { @class = "text-danger" })
                         </div>
                     </div>
-
+                </div>
+                <div class="col">
                     <div class="form-group mt-3">
                         @Html.LabelFor(model => model.genero, htmlAttributes: new { @class = "control-label col-md-2" })
                         <div class="col-md-10">
@@ -78,7 +79,8 @@
                             @Html.ValidationMessageFor(model => model.fecha_nacimiento, "", new { @class = "text-danger" })
                         </div>
                     </div>
-
+                </div>
+                <div class="col">
                     <div class="form-group mt-3">
                         @Html.LabelFor(model => model.tiene_adecuacion, htmlAttributes: new { @class = "control-label col-md-2" })
                         <div class="col-md-10">
@@ -108,16 +110,16 @@
                             @Html.ValidationMessageFor(model => model.direccion, "", new { @class = "text-danger" })
                         </div>
                     </div>
-
-                    <div class="form-group">
-                        <div class="col-md-offset-2 col-md-10 my-3">
-                            <input type="submit" value="Crear" class="btn btn-cyan" />
-                        </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-offset-2 col-md-10 my-3">
+                        <input type="submit" value="Crear" class="btn btn-cyan" />
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 }
 
 <div>

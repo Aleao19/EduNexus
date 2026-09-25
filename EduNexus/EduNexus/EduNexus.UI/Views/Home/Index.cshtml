@@ -1,19 +1,221 @@
-﻿@{
-    ViewBag.Title = "Home Page";
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Dashboard.DashboardViewModel
+@{
+    ViewBag.Title = "Dashboard";
 }
 
 <main>
-    <section class="row" aria-labelledby="appTitle">
-        <h1 id="title">Administración</h1>        
+    <section class="row align-items-center mb-2" aria-labelledby="appTitle">
+        <div class="col">
+            <h1 id="title" class="mb-0">Dashboard</h1>
+            <p class="text-secondary mb-0">Resumen general del sistema — @DateTime.Now.ToString("dddd d 'de' MMMM, yyyy", new System.Globalization.CultureInfo("es-ES"))</p>
+        </div>
     </section>
 
-    <div class="row row-deck p-3 g-4">
+    @* ===================== KPI CARDS ===================== *@
+    <div class="row row-deck row-cards g-4 mt-1">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-teal text-white avatar">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="text-secondary small">Estudiantes</div>
+                            <div class="d-flex align-items-baseline gap-2">
+                                <div class="h2 mb-0">@Model.TotalEstudiantes</div>
+                                <span class="badge bg-@(Model.VariacionEstudiantes >= 0 ? "green" : "red")-lt">
+                                    @(Model.VariacionEstudiantes >= 0 ? "+" : "")@Model.VariacionEstudiantes.ToString("0.0")%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-orange text-white avatar">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /><path d="M15 19l2 2l4 -4" /></svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="text-secondary small">Docentes</div>
+                            <div class="d-flex align-items-baseline gap-2">
+                                <div class="h2 mb-0">@Model.TotalDocentes</div>
+                                <span class="badge bg-@(Model.VariacionDocentes >= 0 ? "green" : "red")-lt">
+                                    @(Model.VariacionDocentes >= 0 ? "+" : "")@Model.VariacionDocentes.ToString("0.0")%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-blue text-white avatar">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2" /></svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="text-secondary small">Secciones</div>
+                            <div class="d-flex align-items-baseline gap-2">
+                                <div class="h2 mb-0">@Model.TotalSecciones</div>
+                                <span class="badge bg-secondary-lt">sin cambios</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-purple text-white avatar">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6v13" /><path d="M12 6v13" /><path d="M21 6v13" /></svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="text-secondary small">Materias</div>
+                            <div class="d-flex align-items-baseline gap-2">
+                                <div class="h2 mb-0">@Model.TotalMaterias</div>
+                                <span class="badge bg-@(Model.VariacionMaterias >= 0 ? "green" : "red")-lt">
+                                    @(Model.VariacionMaterias >= 0 ? "+" : "")@Model.VariacionMaterias.ToString("0.0")%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ===================== GRÁFICAS ===================== *@
+    <div class="row row-deck row-cards g-4 mt-1">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h3 class="card-title">Matrícula histórica por año</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartMatricula" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h3 class="card-title">Estudiantes por sección</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartSecciones" height="160"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h3 class="card-title">Docentes por materia</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartMaterias" height="160"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h3 class="card-title">Actividad reciente</h3>
+                    <div class="card-actions">
+                        @Html.ActionLink("Ver bitácora completa", "Bitacora", "Home", null, new { @class = "btn btn-sm btn-outline-secondary" })
+                    </div>
+                </div>
+                <div class="list-group list-group-flush">
+                    @foreach (var evento in Model.ActividadReciente)
+                    {
+                        string badgeColor = evento.tipoDeEvento == "Creación" ? "green"
+                                            : evento.tipoDeEvento == "Actualización" ? "blue"
+                                            : evento.tipoDeEvento == "Asignación" ? "purple"
+                                            : "red";
+                        <div class="list-group-item">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="badge bg-@(badgeColor)-lt">@evento.tipoDeEvento</span>
+                                </div>
+                                <div class="col text-truncate">
+                                    <div>@evento.descripcionEvento</div>
+                                    <div class="text-secondary small">Por @evento.Usuario</div>
+                                </div>
+                                <div class="col-auto text-secondary small">
+                                    @evento.fecha.ToString("dd/MM HH:mm")
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ===================== PRÓXIMAS CLASES ===================== *@
+    <div class="row row-cards g-4 mt-1 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h3 class="card-title">Próximas clases de hoy</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Materia</th>
+                                <th>Docente</th>
+                                <th>Sección</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var clase in Model.ProximasClases)
+                            {
+                                <tr>
+                                    <td class="text-nowrap"><span class="badge bg-azure-lt">@clase.Hora</span></td>
+                                    <td>@clase.Materia</td>
+                                    <td>@clase.Docente</td>
+                                    <td>@clase.Seccion</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ===================== ACCESOS RÁPIDOS ===================== *@
+    <h2 class="h3 mb-3">Accesos rápidos</h2>
+    <div class="row row-deck p-0 g-4 mb-4">
         <!-- Secciones -->
         <div class="col-md-4">
             <div class="card card-md card-link position-relative shadow-sm">
                 <div class="card-stamp">
                     <div class="card-stamp-icon bg-blue">
-                        <!-- Icono: Folder/Secciones -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                             <path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2" />
@@ -34,7 +236,6 @@
             <div class="card card-md card-link position-relative shadow-sm">
                 <div class="card-stamp">
                     <div class="card-stamp-icon bg-green">
-                        <!-- Icono: Clock/Horarios -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                             <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
@@ -46,7 +247,7 @@
                     <h3 class="card-title">
                         @Html.ActionLink("Horarios", "ListadoDeHorarios", "Horarios", null, new { @class = "stretched-link text-decoration-none color-inherit" })
                     </h3>
-                    <p class="text-secondary mb-0">Gestión panificación de haraios.</p>
+                    <p class="text-secondary mb-0">Gestión y planificación de horarios.</p>
                 </div>
             </div>
         </div>
@@ -56,7 +257,6 @@
             <div class="card card-md card-link position-relative shadow-sm">
                 <div class="card-stamp">
                     <div class="card-stamp-icon bg-purple">
-                        <!-- Icono: Book/Materias -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                             <path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" />
@@ -71,7 +271,7 @@
                     <h3 class="card-title">
                         @Html.ActionLink("Materias", "ListadoDeMaterias", "Materias", null, new { @class = "stretched-link text-decoration-none color-inherit" })
                     </h3>
-                    <p class="text-secondary mb-0">Gestión de ssignaturas y Docente encargado.</p>
+                    <p class="text-secondary mb-0">Gestión de asignaturas y docente encargado.</p>
                 </div>
             </div>
         </div>
@@ -81,7 +281,6 @@
             <div class="card card-md card-link position-relative shadow-sm">
                 <div class="card-stamp">
                     <div class="card-stamp-icon bg-orange">
-                        <!-- Icono: User-Check/Docentes -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                             <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
@@ -104,7 +303,6 @@
             <div class="card card-md card-link position-relative shadow-sm">
                 <div class="card-stamp">
                     <div class="card-stamp-icon bg-teal">
-                        <!-- Icono: Users/Estudiantes -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                             <path d="M9 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
@@ -116,7 +314,7 @@
                 </div>
                 <div class="card-body">
                     <h3 class="card-title">
-                        @Html.ActionLink("Estudiantes", "ListadoDeExpedientes", "Estudiantes", null, new { @class = "stretched-link text-decoration-none color-inherit" })
+                        @Html.ActionLink("Estudiantes", "ListadoDeExpedientes", "Expedientes", null, new { @class = "stretched-link text-decoration-none color-inherit" })
                     </h3>
                     <p class="text-secondary mb-0">Registro y expedientes de alumnos.</p>
                 </div>
@@ -128,7 +326,6 @@
             <div class="card card-md card-link position-relative shadow-sm">
                 <div class="card-stamp">
                     <div class="card-stamp-icon bg-yellow">
-                        <!-- Icono: Shield-Check/Auditoría -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                             <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" />
@@ -146,3 +343,74 @@
         </div>
     </div>
 </main>
+
+@section scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var aniosMatricula = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.AniosMatricula));
+            var matriculaPorAnio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MatriculaPorAnio));
+            var nombresSecciones = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.NombresSecciones));
+            var estudiantesPorSeccion = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.EstudiantesPorSeccion));
+            var nombresMaterias = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.NombresMaterias));
+            var docentesPorMateria = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DocentesPorMateria));
+
+            // Gráfica de barras: Matrícula histórica por año
+            // (la matrícula es un proceso anual en el sistema educativo público de Costa Rica,
+            // por eso se compara año contra año y no mes a mes)
+            new Chart(document.getElementById('chartMatricula'), {
+                type: 'bar',
+                data: {
+                    labels: aniosMatricula,
+                    datasets: [{
+                        label: 'Estudiantes matriculados',
+                        data: matriculaPorAnio,
+                        backgroundColor: '#206bc4',
+                        borderRadius: 6,
+                        maxBarThickness: 60
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: false } }
+                }
+            });
+
+            // Gráfica de dona: Estudiantes por sección
+            new Chart(document.getElementById('chartSecciones'), {
+                type: 'doughnut',
+                data: {
+                    labels: nombresSecciones,
+                    datasets: [{
+                        data: estudiantesPorSeccion,
+                        backgroundColor: ['#206bc4', '#2fb344', '#ae3ec9', '#f76707', '#0ca678']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // Gráfica de barras: Docentes por materia
+            new Chart(document.getElementById('chartMaterias'), {
+                type: 'bar',
+                data: {
+                    labels: nombresMaterias,
+                    datasets: [{
+                        label: 'Docentes asignados',
+                        data: docentesPorMateria,
+                        backgroundColor: '#f59f00',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        });
+    </script>
+}
