@@ -2,72 +2,110 @@
 
 @{
     ViewBag.Title = "Listado de docentes";
+    int total = Model.Count();
+    int activos = Model.Count(x => x.estado == "Activo");
+    int inactivos = total - activos;
 }
 
-<h2>Listado de docentes</h2>
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Docentes</h1>
+        <p class="text-secondary mb-0">Administra el personal docente y su carga académica.</p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("+ Nuevo docente", "CrearDocente", null, new { @class = "btn btn-primary" })
+    </div>
+</div>
 
+<div class="row row-cards g-3 mb-3">
+    <div class="col-sm-4">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Total de docentes</div>
+                <div class="h2 mb-0">@total</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Activos</div>
+                <div class="h2 mb-0 text-success">@activos</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Inactivos</div>
+                <div class="h2 mb-0 text-danger">@inactivos</div>
+            </div>
+        </div>
+    </div>
+</div>
 
+<div class="card shadow-sm">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-title mb-0">Listado</h3>
+        <div class="text-secondary small">@total docente(s)</div>
+    </div>
 
-<table class="table table-responsive" id="myTable">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.identificacion)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.nombre)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.apellido1)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.apellido2)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.email)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.telefono)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.estado)
-            </th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.identificacion)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.nombre)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.apellido1)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.apellido2)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.email)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.telefono)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.estado)
-                </td>
-                <td>
-                    @Html.ActionLink("Materias/Secciones", "CargaAcademicaDocente", new { id = item.id_docente }) |
-                    @Html.ActionLink("Asignar", "AsignarDocente", new { id = item.id_docente })
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+    @if (!Model.Any())
+    {
+        <div class="card-body">
+            <div class="empty">
+                <p class="empty-title">No hay docentes registrados</p>
+                <p class="empty-subtitle text-secondary">Cuando agregues un docente aparecerá en este listado.</p>
+                <div class="empty-action">
+                    @Html.ActionLink("+ Nuevo docente", "CrearDocente", null, new { @class = "btn btn-primary" })
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table" id="myTable">
+                <thead>
+                    <tr>
+                        <th>Docente</th>
+                        <th>@Html.DisplayNameFor(model => model.identificacion)</th>
+                        <th>@Html.DisplayNameFor(model => model.email)</th>
+                        <th>@Html.DisplayNameFor(model => model.telefono)</th>
+                        <th>@Html.DisplayNameFor(model => model.estado)</th>
+                        <th class="w-1">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        string inicial = (item.nombre ?? "?").Substring(0, 1).ToUpper();
+                        string estadoBadge = item.estado == "Activo" ? "green" : "red";
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="avatar avatar-sm rounded-circle bg-blue-lt fw-bold me-2">@inicial</span>
+                                    <div>
+                                        <div class="fw-medium">@item.nombre @item.apellido1 @item.apellido2</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@Html.DisplayFor(modelItem => item.identificacion)</td>
+                            <td><a href="mailto:@item.email">@item.email</a></td>
+                            <td>@Html.DisplayFor(modelItem => item.telefono)</td>
+                            <td><span class="badge bg-@(estadoBadge)-lt">@item.estado</span></td>
+                            <td class="text-nowrap">
+                                @Html.ActionLink("Materias/Secciones", "CargaAcademicaDocente", new { id = item.id_docente }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
+                                @Html.ActionLink("Asignar", "AsignarDocente", new { id = item.id_docente }, new { @class = "btn btn-sm btn-primary" })
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
 @section scripts
 {
     <script src="~/Scripts/General/General.js"></script>

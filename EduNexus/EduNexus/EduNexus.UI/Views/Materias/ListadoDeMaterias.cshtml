@@ -2,43 +2,84 @@
 
 @{
     ViewBag.Title = "Listado de materias";
+    int total = Model.Count();
+    int sinProfesor = Model.Count(x => string.IsNullOrEmpty(x.profesor));
 }
 
-<h2>Listado de materias</h2>
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Materias</h1>
+        <p class="text-secondary mb-0">Asignaturas y docente encargado de cada una.</p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("+ Nueva materia", "CrearMateria", null, new { @class = "btn btn-primary" })
+    </div>
+</div>
 
-<p>
-    @Html.ActionLink("Crear nueva", "CrearMateria")
-</p>
-<table class="table table-responsive" id="myTable">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.nombre)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.profesor)
-            </th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
+<div class="row row-cards g-3 mb-3">
+    <div class="col-sm-6">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Total de materias</div>
+                <div class="h2 mb-0">@total</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Sin profesor asignado</div>
+                <div class="h2 mb-0 @(sinProfesor > 0 ? "text-danger" : "")">@sinProfesor</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row row-cards g-3">
+    @if (!Model.Any())
+    {
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="empty">
+                        <p class="empty-title">No hay materias registradas</p>
+                        <div class="empty-action">
+                            @Html.ActionLink("+ Nueva materia", "CrearMateria", null, new { @class = "btn btn-primary" })
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        foreach (var item in Model)
         {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.nombre)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.profesor)
-                </td>
-                <td>
-                    @Html.ActionLink("Editar", "EditarMateria", new { id = item.id_materia })
-                    @Html.ActionLink("Detalles", "DetalleDeMateria", new { id = item.id_materia })
-                </td>
-            </tr>
+            bool sinProf = string.IsNullOrEmpty(item.profesor);
+            <div class="col-sm-6 col-lg-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title mb-1">@Html.DisplayFor(modelItem => item.nombre)</h3>
+                        <div class="d-flex align-items-center mt-2">
+                            <span class="avatar avatar-sm rounded-circle @(sinProf ? "bg-red-lt" : "bg-purple-lt") fw-bold me-2">
+                                @(sinProf ? "?" : item.profesor.Substring(0, 1).ToUpper())
+                            </span>
+                            <div>
+                                <div class="fw-medium">@(sinProf ? "Sin profesor asignado" : item.profesor)</div>
+                                <div class="text-secondary small">Profesor encargado</div>
+                            </div>
+                        </div>
+                        <div class="mt-auto pt-3 d-flex gap-2">
+                            @Html.ActionLink("Editar", "EditarMateria", new { id = item.id_materia }, new { @class = "btn btn-sm btn-outline-secondary" })
+                            @Html.ActionLink("Detalles", "DetalleDeMateria", new { id = item.id_materia }, new { @class = "btn btn-sm btn-primary" })
+                        </div>
+                    </div>
+                </div>
+            </div>
         }
-    </tbody>
-</table>
+    }
+</div>
+
 @section scripts
 {
     <script src="~/Scripts/General/General.js"></script>

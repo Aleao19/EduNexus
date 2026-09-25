@@ -2,47 +2,59 @@
     ViewBag.Title = "Listado de horarios";
 }
 
-<h2>Listado de horarios por sección</h2>
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Horarios</h1>
+        <p class="text-secondary mb-0">Planificación de horarios por sección.</p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("+ Nuevo horario", "CrearHorario", null, new { @class = "btn btn-primary" })
+    </div>
+</div>
 
-<p>
-    @Html.ActionLink("Crear nuevo", "CrearHorario")
-</p>
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Horarios por sección</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table" id="myTable">
+            <thead>
+                <tr>
+                    <th>Sección</th>
+                    <th>Grado</th>
+                    <th class="w-1">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="badge bg-blue-lt">1-A</span></td>
+                    <td>1</td>
+                    <td class="text-nowrap">
+                        @Html.ActionLink("Editar", "EditarHorario", new { id = 1 }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
+                        @Html.ActionLink("Ver horario", "VisualizarHorario", new { id = 1 }, new { @class = "btn btn-sm btn-primary" })
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-blue-lt">1-B</span></td>
+                    <td>1</td>
+                    <td class="text-nowrap">
+                        @Html.ActionLink("Editar", "EditarHorario", new { id = 2 }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
+                        @Html.ActionLink("Ver horario", "VisualizarHorario", new { id = 2 }, new { @class = "btn btn-sm btn-primary" })
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-blue-lt">2-A</span></td>
+                    <td>2</td>
+                    <td class="text-nowrap">
+                        @Html.ActionLink("Editar", "EditarHorario", new { id = 3 }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
+                        @Html.ActionLink("Ver horario", "VisualizarHorario", new { id = 3 }, new { @class = "btn btn-sm btn-primary" })
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-<table class="table table-responsive" id="myTable">
-    <thead>
-        <tr>
-            <th>Sección</th>
-            <th>Grado</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>1-A</td>
-            <td>1</td>
-            <td>
-                @Html.ActionLink("Editar", "EditarHorario", new { id = 1 }) |
-                @Html.ActionLink("Ver horario", "VisualizarHorario", new { id = 1 })
-            </td>
-        </tr>
-        <tr>
-            <td>1-B</td>
-            <td>1</td>
-            <td>
-                @Html.ActionLink("Editar", "EditarHorario", new { id = 2 }) |
-                @Html.ActionLink("Ver horario", "VisualizarHorario", new { id = 2 })
-            </td>
-        </tr>
-        <tr>
-            <td>2-A</td>
-            <td>2</td>
-            <td>
-                @Html.ActionLink("Editar", "EditarHorario", new { id = 3 }) |
-                @Html.ActionLink("Ver horario", "VisualizarHorario", new { id = 3 })
-            </td>
-        </tr>
-    </tbody>
-</table>
 @section scripts
 {
     <script src="~/Scripts/General/General.js"></script>
