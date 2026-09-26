@@ -21,12 +21,13 @@
                         <dd>
                             @Html.DisplayFor(model => model.nombre)
                         </dd>
+
                         <dt>
-                            Año
+                            @Html.DisplayNameFor(model => model.anio)
                         </dt>
 
                         <dd>
-                            2026
+                            @Html.DisplayFor(model => model.anio)
                         </dd>
 
                         <dt>
@@ -34,7 +35,7 @@
                         </dt>
 
                         <dd>
-                            @Html.DisplayFor(model => model.grado)
+                            @Html.DisplayFor(model => model.nombre_grado)
                         </dd>
 
                         <dt>
@@ -44,6 +45,41 @@
                         <dd>
                             @Html.DisplayFor(model => model.cupo)
                         </dd>
+
+                        <dt>
+                            Estudiantes asignados
+                        </dt>
+
+                        <dd>
+                            @Html.DisplayFor(model => model.estudiantes_matriculados)
+                        </dd>
+
+                        <dt>
+                            @Html.DisplayNameFor(model => model.cupos_disponibles)
+                        </dt>
+
+                        <dd>
+                            @Html.DisplayFor(model => model.cupos_disponibles)
+                        </dd>
+
+                        @if (Model.fecha_modificacion != null)
+                        {
+                            <dt>
+                                @Html.DisplayNameFor(model => model.fecha_modificacion)
+                            </dt>
+
+                            <dd>
+                                @Model.fecha_modificacion.Value.ToString("dd/MM/yyyy hh:mm tt")
+                            </dd>
+
+                            <dt>
+                                @Html.DisplayNameFor(model => model.usuario_modificacion)
+                            </dt>
+
+                            <dd>
+                                @Html.DisplayFor(model => model.usuario_modificacion)
+                            </dd>
+                        }
 
                     </dl>
                 </div>

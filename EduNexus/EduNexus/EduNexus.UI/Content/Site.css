@@ -18,3 +18,8 @@ select,
 textarea {
     max-width: 280px;
 }
+
+/* Resaltar los campos pendientes por completar o con errores */
+.input-validation-error {
+    border-color: #d63939 !important;
+}

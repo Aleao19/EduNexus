@@ -1,0 +1,109 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionesDto>
+
+@{
+    ViewBag.Title = "Cupos por grupo";
+    var grados = ViewBag.Grados as List<EduNexus.Abstracciones.ModelosParaUI.Grados.GradosDto>;
+    var anios = ViewBag.Anios as List<int>;
+    int? gradoSeleccionado = ViewBag.GradoSeleccionado as int?;
+    int? anioSeleccionado = ViewBag.AnioSeleccionado as int?;
+}
+
+<h2>Cantidad de estudiantes por grupo</h2>
+
+<p>
+    @Html.ActionLink("Regresar al listado de secciones", "ListadoDeSecciones")
+</p>
+
+@using (Html.BeginForm("CuposPorGrupo", "Secciones", FormMethod.Get))
+{
+    <div class="row g-2 align-items-end mb-3">
+        <div class="col-md-3">
+            <label class="form-label" for="grado">Nivel educativo</label>
+            <select class="form-select" id="grado" name="grado">
+                <option value="">Todos</option>
+                @if (grados != null)
+                {
+                    foreach (var g in grados)
+                    {
+                        <option value="@g.id_grado" @(gradoSeleccionado == g.id_grado ? "selected" : "")>@g.nombre</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="anio">Periodo lectivo</label>
+            <select class="form-select" id="anio" name="anio">
+                <option value="">Todos</option>
+                @if (anios != null)
+                {
+                    foreach (var a in anios)
+                    {
+                        <option value="@a" @(anioSeleccionado == a ? "selected" : "")>@a</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <input type="submit" value="Filtrar" class="btn btn-cyan" />
+            @Html.ActionLink("Limpiar", "CuposPorGrupo", null, new { @class = "btn btn-outline-secondary" })
+        </div>
+    </div>
+}
+
+<table class="table table-responsive" id="myTable" data-order="[]">
+    <thead>
+        <tr>
+            <th>
+                Grupo
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.grado)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.anio)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.cupo)
+            </th>
+            <th>
+                Estudiantes asignados
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.cupos_disponibles)
+            </th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.nombre)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.nombre_grado)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.anio)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.cupo)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.estudiantes_matriculados)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.cupos_disponibles)
+                </td>
+                <td>
+                    @Html.ActionLink("Consultar", "DetalleDeSeccion", new { id = item.id_seccion })
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+@section scripts
+{
+    <script src="~/Scripts/General/General.js"></script>
+}

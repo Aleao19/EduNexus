@@ -2,6 +2,7 @@
 
 @{
     ViewBag.Title = "Crear sección";
+    var grados = ViewBag.Grados as List<EduNexus.Abstracciones.ModelosParaUI.Grados.GradosDto>;
 }
 
 <h2>Crear nueva sección</h2>
@@ -18,18 +19,35 @@
             <div class="row">
                 <div class="col-md-8 offset-md-1">
                     <div class="form-group mt-3">
+                        @Html.LabelFor(model => model.nombre_grado, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div class="col-md-10">
+                            @Html.EditorFor(model => model.nombre_grado, new { htmlAttributes = new { @class = "form-control", list = "listaGrados", placeholder = "Ej: Primer grado", autocomplete = "off" } })
+                            <datalist id="listaGrados">
+                                @if (grados != null)
+                                {
+                                    foreach (var g in grados)
+                                    {
+                                        <option value="@g.nombre"></option>
+                                    }
+                                }
+                            </datalist>
+                            @Html.ValidationMessageFor(model => model.nombre_grado, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
                         @Html.LabelFor(model => model.nombre, htmlAttributes: new { @class = "control-label col-md-2" })
                         <div class="col-md-10">
-                            @Html.EditorFor(model => model.nombre, new { htmlAttributes = new { @class = "form-control" } })
+                            @Html.EditorFor(model => model.nombre, new { htmlAttributes = new { @class = "form-control", placeholder = "Ej: 1-A" } })
                             @Html.ValidationMessageFor(model => model.nombre, "", new { @class = "text-danger" })
                         </div>
                     </div>
 
                     <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.grado, htmlAttributes: new { @class = "control-label col-md-2" })
+                        @Html.LabelFor(model => model.anio, htmlAttributes: new { @class = "control-label col-md-2" })
                         <div class="col-md-10">
-                            @Html.EditorFor(model => model.grado, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.grado, "", new { @class = "text-danger" })
+                            @Html.EditorFor(model => model.anio, new { htmlAttributes = new { @class = "form-control", placeholder = "Ej: 2026" } })
+                            @Html.ValidationMessageFor(model => model.anio, "", new { @class = "text-danger" })
                         </div>
                     </div>
 
