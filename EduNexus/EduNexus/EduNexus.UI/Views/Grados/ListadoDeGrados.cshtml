@@ -1,0 +1,168 @@
+@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Grados.GradosDto>
+
+@{
+    ViewBag.Title = "Listado de grados";
+    int total = Model.Count();
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Grados</h1>
+        <p class="text-secondary mb-0">
+            Gestión de grados académicos.
+        </p>
+    </div>
+
+    <div class="col-auto">
+        @Html.ActionLink(
+            "+ Nuevo grado",
+            "CrearGrado",
+            null,
+            new { @class = "btn btn-primary" }
+        )
+    </div>
+</div>
+
+<div class="row row-cards g-3 mb-3">
+
+    <div class="col-sm-6">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">
+                    Grados registrados
+                </div>
+
+                <div class="h2 mb-0">
+                    @total
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">
+                    Año lectivo
+                </div>
+
+                <div class="h2 mb-0">
+                    2026
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="card shadow-sm">
+
+    <div class="card-header">
+        <h3 class="card-title mb-0">
+            Listado
+        </h3>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card-body">
+
+            <div class="empty">
+
+                <p class="empty-title">
+                    No hay grados registrados
+                </p>
+
+                <div class="empty-action">
+
+                    @Html.ActionLink(
+                        "+ Nuevo grado",
+                        "CrearGrado",
+                        null,
+                        new { @class = "btn btn-primary" }
+                    )
+
+                </div>
+
+            </div>
+
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table table-vcenter card-table" id="myTable">
+
+                <thead>
+                    <tr>
+                        <th>
+                            @Html.DisplayNameFor(model => model.grado)
+                        </th>
+
+                        <th>
+                            @Html.DisplayNameFor(model => model.descripcion)
+                        </th>
+
+                        <th>Año</th>
+
+                        <th class="w-1">
+                            Acciones
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+
+                            <td>
+                                <span class="badge bg-blue-lt">
+                                    @Html.DisplayFor(modelItem => item.grado)
+                                </span>
+                            </td>
+
+                            <td>
+                                @Html.DisplayFor(modelItem => item.descripcion)
+                            </td>
+
+                            <td>
+                                2026
+                            </td>
+
+                            <td class="text-nowrap">
+
+                                @Html.ActionLink(
+                                    "Editar",
+                                    "EditarGrado",
+                                    new { id = item.id_grado },
+                                    new { @class = "btn btn-sm btn-outline-secondary me-1" }
+                                )
+
+                                @Html.ActionLink(
+                                    "Detalles",
+                                    "DetalleDeGrado",
+                                    new { id = item.id_grado },
+                                    new { @class = "btn btn-sm btn-primary" }
+                                )
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+
+</div>
+
+@section scripts
+{
+    <script src="~/Scripts/General/General.js"></script>
+}

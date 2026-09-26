@@ -1,0 +1,66 @@
+@model EduNexus.Abstracciones.ModelosParaUI.Grados.GradosDto
+
+@{
+    ViewBag.Title = "Detalle del grado";
+}
+
+<h2>Detalle del grado</h2>
+
+<div>
+
+    <hr />
+
+    <div class="container my-2">
+
+        <div class="row">
+            <div class="col-md-8 offset-md-1">
+                <div class="form-group">
+                    <dl class="dl-horizontal">
+                        <dt>
+                            @Html.DisplayNameFor(model => model.grado)
+                        </dt>
+                        <dd>
+                            @Html.DisplayFor(model => model.grado)
+                        </dd>
+                        <dt>
+                            @Html.DisplayNameFor(model => model.descripcion)
+                        </dt>
+                        <dd>
+                            @Html.DisplayFor(model => model.descripcion)
+                        </dd>
+                        <dt>
+                            Año
+                        </dt>
+
+                        <dd>
+                            2026
+                        </dd>
+
+                    </dl>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<p>
+
+    @Html.ActionLink(
+        "Editar",
+        "EditarGrado",
+        new { id = Model.id_grado }
+    )
+
+    |
+
+    @Html.ActionLink(
+        "Regresar",
+        "ListadoDeGrados"
+    )
+
+</p>

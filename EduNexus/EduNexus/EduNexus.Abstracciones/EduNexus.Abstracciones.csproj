@@ -51,6 +51,7 @@
     <Compile Include="ModelosParaUI\Materias\MateriasDto.cs" />
     <Compile Include="ModelosParaUI\Secciones\SeccionesDto.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Controllers\GradosController.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
