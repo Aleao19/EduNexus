@@ -1,0 +1,82 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Usuarios.UsuarioDto
+
+@{
+    ViewBag.Title = "Registrar usuario";
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8">
+        <h1 class="mb-4">Registrar nuevo usuario</h1>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                @using (Html.BeginForm())
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            @Html.LabelFor(model => model.cedula, new { @class = "form-label" })
+                            @Html.TextBoxFor(model => model.cedula, new { @class = "form-control", placeholder = "1-2345-6789" })
+                            @Html.ValidationMessageFor(model => model.cedula, "", new { @class = "text-danger" })
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            @Html.LabelFor(model => model.correo, new { @class = "form-label" })
+                            @Html.TextBoxFor(model => model.correo, new { @class = "form-control", placeholder = "usuario@mep.go.cr" })
+                            @Html.ValidationMessageFor(model => model.correo, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            @Html.LabelFor(model => model.nombre, new { @class = "form-label" })
+                            @Html.TextBoxFor(model => model.nombre, new { @class = "form-control" })
+                            @Html.ValidationMessageFor(model => model.nombre, "", new { @class = "text-danger" })
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            @Html.LabelFor(model => model.apellido1, new { @class = "form-label" })
+                            @Html.TextBoxFor(model => model.apellido1, new { @class = "form-control" })
+                            @Html.ValidationMessageFor(model => model.apellido1, "", new { @class = "text-danger" })
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            @Html.LabelFor(model => model.apellido2, new { @class = "form-label" })
+                            @Html.TextBoxFor(model => model.apellido2, new { @class = "form-control" })
+                            @Html.ValidationMessageFor(model => model.apellido2, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            @Html.LabelFor(model => model.id_rol, new { @class = "form-label" })
+                            @Html.DropDownList("id_rol", (SelectList)ViewBag.Roles, "-- Seleccione un rol --", new { @class = "form-select" })
+                            @Html.ValidationMessageFor(model => model.id_rol, "", new { @class = "text-danger" })
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            @Html.LabelFor(model => model.estado, new { @class = "form-label" })
+                            @Html.DropDownListFor(model => model.estado, new List<SelectListItem>
+                            {
+                                new SelectListItem { Text = "Activo", Value = "Activo" },
+                                new SelectListItem { Text = "Inactivo", Value = "Inactivo" }
+                            }, new { @class = "form-select" })
+                            @Html.ValidationMessageFor(model => model.estado, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            @Html.LabelFor(model => model.contrasenna, new { @class = "form-label" })
+                            @Html.PasswordFor(model => model.contrasenna, new { @class = "form-control" })
+                            @Html.ValidationMessageFor(model => model.contrasenna, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-footer d-flex justify-content-between">
+                        @Html.ActionLink("Cancelar", "ListadoDeUsuarios", null, new { @class = "btn btn-outline-secondary" })
+                        <button type="submit" class="btn btn-primary">Registrar usuario</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

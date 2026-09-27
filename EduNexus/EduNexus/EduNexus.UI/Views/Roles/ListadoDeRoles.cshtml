@@ -1,0 +1,65 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Roles.RolDto>
+
+@{
+    ViewBag.Title = "Listado de roles";
+    int total = Model.Count();
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Roles</h1>
+        <p class="text-secondary mb-0">Administra los roles y sus niveles de acceso al sistema.</p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("+ Nuevo rol", "CrearRol", null, new { @class = "btn btn-primary" })
+    </div>
+</div>
+
+@if (TempData["MensajeExito"] != null)
+{
+    <div class="alert alert-success" role="alert">
+        @TempData["MensajeExito"]
+    </div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-title mb-0">Listado</h3>
+        <div class="text-secondary small">@total rol(es)</div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card-body">
+            <div class="empty">
+                <p class="empty-title">No hay roles registrados</p>
+                <p class="empty-subtitle text-secondary">Cuando agregues un rol aparecerá en este listado.</p>
+                <div class="empty-action">
+                    @Html.ActionLink("+ Nuevo rol", "CrearRol", null, new { @class = "btn btn-primary" })
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table" id="myTable">
+                <thead>
+                    <tr>
+                        <th>@Html.DisplayNameFor(model => model.nombre)</th>
+                        <th>@Html.DisplayNameFor(model => model.cantidadUsuarios)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="fw-medium">@item.nombre</td>
+                            <td><span class="badge bg-blue-lt">@item.cantidadUsuarios</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
