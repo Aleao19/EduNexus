@@ -12,12 +12,12 @@ namespace EduNexus.UI.Models
 
         public static List<GradosDto> Grados = new List<GradosDto>
         {
-            new GradosDto { id_grado = 1, nombre = "Primer grado" },
-            new GradosDto { id_grado = 2, nombre = "Segundo grado" },
-            new GradosDto { id_grado = 3, nombre = "Tercer grado" },
-            new GradosDto { id_grado = 4, nombre = "Cuarto grado" },
-            new GradosDto { id_grado = 5, nombre = "Quinto grado" },
-            new GradosDto { id_grado = 6, nombre = "Sexto grado" },
+            new GradosDto { id_grado = 1, grado = 1, descripcion = "Primer Grado" },
+            new GradosDto { id_grado = 2, grado = 2, descripcion = "Segundo Grado" },
+            new GradosDto { id_grado = 3, grado = 3, descripcion = "Tercer Grado" },
+            new GradosDto { id_grado = 4, grado = 4, descripcion = "Cuarto Grado" },
+            new GradosDto { id_grado = 5, grado = 5, descripcion = "Quinto Grado" },
+            new GradosDto { id_grado = 6, grado = 6, descripcion = "Sexto Grado" },
         };
 
         public static List<SeccionesDto> Secciones = new List<SeccionesDto>
@@ -29,7 +29,6 @@ namespace EduNexus.UI.Models
             new SeccionesDto { id_seccion = 5, nombre = "3-A", grado = 3, anio = 2026, cupo = 30, estudiantes_matriculados = 27 },
             new SeccionesDto { id_seccion = 6, nombre = "4-A", grado = 4, anio = 2026, cupo = 30, estudiantes_matriculados = 30 },
             new SeccionesDto { id_seccion = 7, nombre = "5-A", grado = 5, anio = 2026, cupo = 30, estudiantes_matriculados = 26 },
-            new SeccionesDto { id_seccion = 8, nombre = "6-A", grado = 6, anio = 2026, cupo = 30, estudiantes_matriculados = 29 },
             new SeccionesDto { id_seccion = 9, nombre = "1-A", grado = 1, anio = 2025, cupo = 30, estudiantes_matriculados = 30 },
             new SeccionesDto { id_seccion = 10, nombre = "2-A", grado = 2, anio = 2025, cupo = 30, estudiantes_matriculados = 24 },
         };

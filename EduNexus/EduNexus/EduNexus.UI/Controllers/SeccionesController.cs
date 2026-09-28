@@ -88,7 +88,7 @@ namespace EduNexus.UI.Controllers
 
                 // Escenario 4: creación de sección para un grado inexistente
                 GradosDto grado = DatosEnMemoria.Grados.FirstOrDefault(x =>
-                    string.Equals(x.nombre.Trim(), nombreGrado, StringComparison.OrdinalIgnoreCase));
+                    string.Equals(x.descripcion.Trim(), nombreGrado, StringComparison.OrdinalIgnoreCase));
                 if (grado == null)
                 {
                     ModelState.AddModelError("nombre_grado", "El grado no existe en el sistema. Primero debe crear el grado.");
@@ -219,7 +219,7 @@ namespace EduNexus.UI.Controllers
         private string NombreDelGrado(int idGrado)
         {
             GradosDto grado = DatosEnMemoria.Grados.FirstOrDefault(x => x.id_grado == idGrado);
-            return grado != null ? grado.nombre : "";
+            return grado != null ? grado.descripcion : "";
         }
 
         private string ObtenerUsuarioActual()
@@ -236,7 +236,8 @@ namespace EduNexus.UI.Controllers
             lock (DatosEnMemoria.Bloqueo)
             {
                 return DatosEnMemoria.Grados
-                    .Select(x => new GradosDto { id_grado = x.id_grado, nombre = x.nombre })
+                    .OrderBy(x => x.grado)
+                    .Select(x => new GradosDto { id_grado = x.id_grado, grado = x.grado, descripcion = x.descripcion })
                     .ToList();
             }
         }

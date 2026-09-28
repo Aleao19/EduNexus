@@ -8,101 +8,105 @@
     int? anioSeleccionado = ViewBag.AnioSeleccionado as int?;
 }
 
-<h2>Cantidad de estudiantes por grupo</h2>
-
-<p>
-    @Html.ActionLink("Regresar al listado de secciones", "ListadoDeSecciones")
-</p>
-
-@using (Html.BeginForm("CuposPorGrupo", "Secciones", FormMethod.Get))
-{
-    <div class="row g-2 align-items-end mb-3">
-        <div class="col-md-3">
-            <label class="form-label" for="grado">Nivel educativo</label>
-            <select class="form-select" id="grado" name="grado">
-                <option value="">Todos</option>
-                @if (grados != null)
-                {
-                    foreach (var g in grados)
-                    {
-                        <option value="@g.id_grado" @(gradoSeleccionado == g.id_grado ? "selected" : "")>@g.nombre</option>
-                    }
-                }
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label" for="anio">Periodo lectivo</label>
-            <select class="form-select" id="anio" name="anio">
-                <option value="">Todos</option>
-                @if (anios != null)
-                {
-                    foreach (var a in anios)
-                    {
-                        <option value="@a" @(anioSeleccionado == a ? "selected" : "")>@a</option>
-                    }
-                }
-            </select>
-        </div>
-        <div class="col-md-4">
-            <input type="submit" value="Filtrar" class="btn btn-cyan" />
-            @Html.ActionLink("Limpiar", "CuposPorGrupo", null, new { @class = "btn btn-outline-secondary" })
-        </div>
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Cupos por grupo</h1>
+        <p class="text-secondary mb-0">Cantidad de estudiantes asignados y cupos disponibles por grupo.</p>
     </div>
-}
+    <div class="col-auto">
+        @Html.ActionLink("Regresar a secciones", "ListadoDeSecciones", null, new { @class = "btn btn-outline-secondary" })
+    </div>
+</div>
 
-<table class="table table-responsive" id="myTable" data-order="[]">
-    <thead>
-        <tr>
-            <th>
-                Grupo
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.grado)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.anio)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.cupo)
-            </th>
-            <th>
-                Estudiantes asignados
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.cupos_disponibles)
-            </th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        @using (Html.BeginForm("CuposPorGrupo", "Secciones", FormMethod.Get))
         {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.nombre)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.nombre_grado)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.anio)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.cupo)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.estudiantes_matriculados)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.cupos_disponibles)
-                </td>
-                <td>
-                    @Html.ActionLink("Consultar", "DetalleDeSeccion", new { id = item.id_seccion })
-                </td>
-            </tr>
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label" for="grado">Nivel educativo</label>
+                    <select class="form-select" id="grado" name="grado">
+                        <option value="">Todos</option>
+                        @if (grados != null)
+                        {
+                            foreach (var g in grados)
+                            {
+                                <option value="@g.id_grado" @(gradoSeleccionado == g.id_grado ? "selected" : "")>@g.descripcion</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="anio">Periodo lectivo</label>
+                    <select class="form-select" id="anio" name="anio">
+                        <option value="">Todos</option>
+                        @if (anios != null)
+                        {
+                            foreach (var a in anios)
+                            {
+                                <option value="@a" @(anioSeleccionado == a ? "selected" : "")>@a</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input type="submit" value="Filtrar" class="btn btn-primary" />
+                    @Html.ActionLink("Limpiar", "CuposPorGrupo", null, new { @class = "btn btn-outline-secondary" })
+                </div>
+            </div>
         }
-    </tbody>
-</table>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Grupos</h3>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card-body">
+            <div class="empty">
+                <p class="empty-title">No hay grupos que coincidan con el filtro</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table" id="myTable" data-order="[]">
+                <thead>
+                    <tr>
+                        <th>Grupo</th>
+                        <th>@Html.DisplayNameFor(model => model.grado)</th>
+                        <th>@Html.DisplayNameFor(model => model.anio)</th>
+                        <th>@Html.DisplayNameFor(model => model.cupo)</th>
+                        <th>Estudiantes asignados</th>
+                        <th>@Html.DisplayNameFor(model => model.cupos_disponibles)</th>
+                        <th class="w-1">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><span class="badge bg-blue-lt">@item.nombre</span></td>
+                            <td>@Html.DisplayFor(modelItem => item.nombre_grado)</td>
+                            <td>@Html.DisplayFor(modelItem => item.anio)</td>
+                            <td>@Html.DisplayFor(modelItem => item.cupo)</td>
+                            <td>@Html.DisplayFor(modelItem => item.estudiantes_matriculados)</td>
+                            <td>@Html.DisplayFor(modelItem => item.cupos_disponibles)</td>
+                            <td class="text-nowrap">
+                                @Html.ActionLink("Consultar", "DetalleDeSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-primary" })
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
 @section scripts
 {
     <script src="~/Scripts/General/General.js"></script>

@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace EduNexus.Abstracciones.ModelosParaUI.Grados
@@ -7,12 +7,12 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Grados
     {
         public int id_grado { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "El número de grado es obligatorio")]
         [Range(1, 6, ErrorMessage = "El grado debe ser entre 1 y 6")]
         [DisplayName("Grado")]
         public int grado { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "El nombre del grado es obligatorio")]
         [DisplayName("Descripción")]
         public string descripcion { get; set; }
     }

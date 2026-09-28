@@ -23,6 +23,21 @@
     </div>
 </div>
 
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success alert-dismissible" role="alert">
+        @TempData["Mensaje"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible" role="alert">
+        @TempData["Error"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
+
 <div class="row row-cards g-3 mb-3">
 
     <div class="col-sm-6">
@@ -145,7 +160,14 @@
                                     "Detalles",
                                     "DetalleDeGrado",
                                     new { id = item.id_grado },
-                                    new { @class = "btn btn-sm btn-primary" }
+                                    new { @class = "btn btn-sm btn-primary me-1" }
+                                )
+
+                                @Html.ActionLink(
+                                    "Eliminar",
+                                    "EliminarGrado",
+                                    new { id = item.id_grado },
+                                    new { @class = "btn btn-sm btn-outline-danger" }
                                 )
 
                             </td>
