@@ -1,5 +1,6 @@
 ﻿using EduNexus.Abstracciones.ModelosParaUI.Bitacora;
 using EduNexus.Abstracciones.ModelosParaUI.Dashboard;
+using EduNexus.UI.Models.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -81,6 +82,21 @@ namespace EduNexus.UI.Controllers
             };
 
             return View(model);
+        }
+
+        public ActionResult ProbarConexion()
+        {
+            try
+            {
+                using (var db = new EduNexusDbContext())
+                {
+                    return Content("Conexión exitosa. Usuarios en la BD: ");
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content("Error: " + ex.ToString());
+            }
         }
 
         public ActionResult About()
