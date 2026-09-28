@@ -9,10 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>EduNexus.Abstracciones</RootNamespace>
     <AssemblyName>EduNexus.Abstracciones</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -46,15 +45,19 @@
     <Compile Include="ModelosParaUI\AsignacionesDocentes\AsignacionDocenteDto.cs" />
     <Compile Include="ModelosParaUI\Asignaciones\AsignacionesDto.cs" />
     <Compile Include="ModelosParaUI\Bitacora\BitacoraDto.cs" />
+    <Compile Include="ModelosParaUI\Dashboard\DashboardViewModel.cs" />
     <Compile Include="ModelosParaUI\Docentes\DocentesDto.cs" />
     <Compile Include="ModelosParaUI\Expedientes\ExpedienteDto.cs" />
-    <Compile Include="ModelosParaUI\Dashboard\DashboardViewModel.cs" />
     <Compile Include="ModelosParaUI\Grados\GradosDto.cs" />
     <Compile Include="ModelosParaUI\Horarios\HorariosDto.cs" />
     <Compile Include="ModelosParaUI\Materias\MateriasDto.cs" />
+    <Compile Include="ModelosParaUI\Roles\RolDto.cs" />
     <Compile Include="ModelosParaUI\Secciones\SeccionesDto.cs" />
+    <Compile Include="ModelosParaUI\Usuarios\UsuarioDto.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

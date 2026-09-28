@@ -1,5 +1,4 @@
-﻿
-
+@model EduNexus.UI.Models.LoginModel
 
 <div class="row justify-content-center w-100">
     <div class="col-12 col-md-6 col-lg-4">
@@ -11,23 +10,30 @@
                 <div class="card-body">
                     <h2 class="h2 text-center mb-4">Bienvenido</h2>
                     <p class="text-center text-muted">Ingrese sus datos para acceder</p>
-                    <form novalidate="">
+
+                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+                    @using (Html.BeginForm("Login", "Home", FormMethod.Post, new { novalidate = "novalidate" }))
+                    {
+                        @Html.AntiForgeryToken()
+
                         <!-- Campo de Correo -->
                         <div class="mb-3">
-                            <label for="email" class="form-label">Correo electrónico</label>
-                            <input type="email" id="email" name="email" class="form-control" placeholder="edu@email.com" autocomplete="username">
+                            @Html.LabelFor(m => m.Correo, "Correo electrónico", new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.Correo, new { @class = "form-control", placeholder = "edu@email.com", autocomplete = "username" })
+                            @Html.ValidationMessageFor(m => m.Correo, "", new { @class = "text-danger" })
                         </div>
 
                         <!-- Campo de Contraseña -->
                         <div class="mb-3">
-                            <label for="password" class="form-label">
+                            <label class="form-label">
                                 Contraseña
                                 <span class="form-label-description float-end">
                                     <a href="#">Olvidé mi contraseña</a>
                                 </span>
                             </label>
                             <div class="input-group input-group-flat">
-                                <input type="password" id="password" name="password" class="form-control" placeholder="Contraseña" autocomplete="current-password">
+                                @Html.PasswordFor(m => m.Contrasenna, new { @class = "form-control", id = "password", placeholder = "Contraseña", autocomplete = "current-password" })
                                 <span class="input-group-text">
                                     <a href="#" id="togglePassword" class="link-secondary" data-bs-toggle="tooltip" title="Mostrar contraseña">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
@@ -37,12 +43,13 @@
                                     </a>
                                 </span>
                             </div>
+                            @Html.ValidationMessageFor(m => m.Contrasenna, "", new { @class = "text-danger" })
                         </div>
 
                         <!-- Checkbox -->
                         <div class="mb-3">
-                            <label class="form-check" for="rememberMe">
-                                <input type="checkbox" id="rememberMe" name="rememberMe" class="form-check-input">
+                            <label class="form-check" for="RememberMe">
+                                @Html.CheckBoxFor(m => m.RememberMe, new { @class = "form-check-input" })
                                 <span class="form-check-label">Recordar mi contraseña</span>
                             </label>
                         </div>
@@ -51,7 +58,12 @@
                         <div class="form-footer">
                             <button type="submit" class="btn btn-primary w-100">Ingresar</button>
                         </div>
-                    </form>
+                    }
+
+                    <div class="login-divider"></div>
+                    <p class="login-footer-text">
+                        No tiene una cuenta? <a href="#" id="link-register">Registrarse</a>
+                    </p>
                 </div>
             </div>
         </div>
@@ -62,4 +74,3 @@
 {
     <script src="~/Scripts/Login/Login.js"></script>
 }
-

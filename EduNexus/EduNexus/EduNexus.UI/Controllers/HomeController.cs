@@ -1,5 +1,6 @@
 ﻿using EduNexus.Abstracciones.ModelosParaUI.Bitacora;
 using EduNexus.Abstracciones.ModelosParaUI.Dashboard;
+using EduNexus.UI.Models.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,6 +84,21 @@ namespace EduNexus.UI.Controllers
             return View(model);
         }
 
+        public ActionResult ProbarConexion()
+        {
+            try
+            {
+                using (var db = new EduNexusDbContext())
+                {
+                    return Content("Conexión exitosa. Usuarios en la BD: ");
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content("Error: " + ex.ToString());
+            }
+        }
+
         public ActionResult About()
         {
             ViewBag.Message = "Your application description page.";
@@ -90,11 +106,41 @@ namespace EduNexus.UI.Controllers
             return View();
         }
 
+        [HttpGet]
         public ActionResult Login()
         {
-            ViewBag.Message = "Your contact page.";
+            return View(new EduNexus.UI.Models.LoginModel());
+        }
 
-            return View();
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Login(EduNexus.UI.Models.LoginModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var usuario = UsuariosController.Usuarios
+                .FirstOrDefault(u => u.correo.Trim().Equals(model.Correo.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            // Criterio: credenciales inválidas (correo no registrado o contraseña incorrecta).
+            if (usuario == null || usuario.contrasenna != model.Contrasenna)
+            {
+                ModelState.AddModelError("", "El correo o la contraseña son incorrectos.");
+                return View(model);
+            }
+
+            // Criterio RSEG-01-003 #2: "Intento de inicio de sesión de un usuario bloqueado".
+            if (!usuario.estado.Equals("Activo", StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError("", "Este usuario se encuentra bloqueado o desactivado. Contacte al administrador del sistema.");
+                return View(model);
+            }
+
+            // Autenticación simplificada mediante sesión (no hay un sistema de Identity implementado aún).
+            Session["UsuarioActual"] = usuario;
+            return RedirectToAction("Index");
         }
 
         public ActionResult Bitacora()
