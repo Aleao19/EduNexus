@@ -189,9 +189,16 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Models\DatosEnMemoria.cs" />
+    <Compile Include="Models\AutorizarAdministradorAttribute.cs" />
+    <Compile Include="Models\BitacoraEntity.cs" />
+    <Compile Include="Models\CalendarioEntity.cs" />
+    <Compile Include="Models\ContrasennaHasher.cs" />
     <Compile Include="Models\EduNexusDbContext.cs" />
+    <Compile Include="Models\GradoEntity.cs" />
+    <Compile Include="Models\SeccionEntity.cs" />
+    <Compile Include="Models\SeccionEstudianteEntity.cs" />
     <Compile Include="Models\LoginModel.cs" />
+    <Compile Include="Models\RequiereSesionAttribute.cs" />
     <Compile Include="Models\RolEntity.cs" />
     <Compile Include="Models\UsuarioEntity.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

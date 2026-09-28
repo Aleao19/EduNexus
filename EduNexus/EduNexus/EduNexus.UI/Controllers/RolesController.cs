@@ -1,36 +1,34 @@
 ﻿using EduNexus.Abstracciones.ModelosParaUI.Roles;
+using EduNexus.UI.Models;
+using EduNexus.UI.Models.Identity;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
 
 namespace EduNexus.UI.Controllers
 {
+    // RSEG-01-001 Como administrador quiero crear roles (Administrador, Director, Docente, Padre, Estudiante)
+    // para controlar los permisos de acceso.
+    [AutorizarAdministrador]
     public class RolesController : Controller
     {
-        // Almacén en memoria compartido mientras no exista una base de datos real.
-        // Se declara static para que los datos persistan entre peticiones durante
-        // la vida de la aplicación, y public para que UsuariosController pueda
-        // consultar y validar contra el mismo catálogo de roles.
-        public static List<RolDto> Roles = new List<RolDto>
-        {
-            new RolDto { id_rol = 1, nombre = "Administrador" },
-            new RolDto { id_rol = 2, nombre = "Director" },
-            new RolDto { id_rol = 3, nombre = "Docente" },
-            new RolDto { id_rol = 4, nombre = "Padre" },
-            new RolDto { id_rol = 5, nombre = "Estudiante" },
-        };
-
         // GET: Roles
         public ActionResult ListadoDeRoles()
         {
-            // Se calcula cuántos usuarios tiene asignado cada rol para mostrarlo en el listado.
-            foreach (var rol in Roles)
+            using (var db = new EduNexusDbContext())
             {
-                rol.cantidadUsuarios = UsuariosController.Usuarios.Count(u => u.id_rol == rol.id_rol);
-            }
+                var roles = db.Roles
+                    .OrderBy(r => r.nombre)
+                    .Select(r => new RolDto
+                    {
+                        id_rol = r.id_rol,
+                        nombre = r.nombre,
+                        cantidadUsuarios = db.Usuarios.Count(u => u.rol == r.id_rol)
+                    })
+                    .ToList();
 
-            return View(Roles);
+                return View(roles);
+            }
         }
 
         // GET: Roles/CrearRol
@@ -45,26 +43,36 @@ namespace EduNexus.UI.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult CrearRol(RolDto rol)
         {
-            // Criterio: "Rol con nombre duplicado" — comparación sin distinguir mayúsculas/minúsculas
-            // ni espacios accidentales al inicio/fin.
-            if (!string.IsNullOrWhiteSpace(rol?.nombre) &&
-                Roles.Any(x => x.nombre.Trim().Equals(rol.nombre.Trim(), StringComparison.OrdinalIgnoreCase)))
+            using (var db = new EduNexusDbContext())
             {
-                ModelState.AddModelError("nombre", "Ya existe un rol registrado con ese nombre.");
+                // Escenario 2: rol con nombre duplicado
+                if (!string.IsNullOrWhiteSpace(rol?.nombre))
+                {
+                    string nombre = rol.nombre.Trim();
+                    bool existe = db.Roles.Select(r => r.nombre).ToList()
+                        .Any(n => n.Trim().Equals(nombre, StringComparison.OrdinalIgnoreCase));
+                    if (existe)
+                    {
+                        ModelState.AddModelError("nombre", "El nombre del rol ya está en uso.");
+                    }
+                }
+
+                // Escenario 3: creación con campos incompletos
+                if (!ModelState.IsValid)
+                {
+                    return View(rol);
+                }
+
+                // Escenario 1: creación exitosa
+                db.Roles.Add(new RolEntity
+                {
+                    id_rol = Guid.NewGuid().ToString(),
+                    nombre = rol.nombre.Trim()
+                });
+                db.SaveChanges();
             }
 
-            // Criterio: "Creación con campos incompletos" — lo cubren las anotaciones [Required] del DTO,
-            // validadas automáticamente por ModelState al hacer binding del formulario.
-            if (!ModelState.IsValid)
-            {
-                return View(rol);
-            }
-
-            rol.nombre = rol.nombre.Trim();
-            rol.id_rol = Roles.Any() ? Roles.Max(x => x.id_rol) + 1 : 1;
-            Roles.Add(rol);
-
-            TempData["MensajeExito"] = $"El rol \"{rol.nombre}\" se creó correctamente.";
+            TempData["MensajeExito"] = "El rol \"" + rol.nombre.Trim() + "\" se creó correctamente.";
             return RedirectToAction("ListadoDeRoles");
         }
     }

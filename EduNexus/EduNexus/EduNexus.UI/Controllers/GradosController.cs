@@ -1,5 +1,6 @@
 ﻿using EduNexus.Abstracciones.ModelosParaUI.Grados;
 using EduNexus.UI.Models;
+using EduNexus.UI.Models.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,18 +9,26 @@ using System.Web.Mvc;
 namespace EduNexus.UI.Controllers
 {
     // RCONF-04-001 Como administrador quiero crear y administrar los grados (nombre) para asignar las secciones
+    // Tabla grados: nombre (Descripción) y nivel (Grado)
+    [AutorizarAdministrador]
     public class GradosController : Controller
     {
         public ActionResult ListadoDeGrados()
         {
-            List<GradosDto> grados = ObtenerGrados();
-            return View(grados);
+            using (var db = new EduNexusDbContext())
+            {
+                List<GradosDto> grados = db.Grados
+                    .OrderBy(g => g.nivel)
+                    .ToList()
+                    .Select(AGradoDto)
+                    .ToList();
+                return View(grados);
+            }
         }
 
         public ActionResult DetalleDeGrado(int? id)
         {
-            List<GradosDto> grados = ObtenerGrados();
-            GradosDto grado = grados.FirstOrDefault(x => x.id_grado == id);
+            GradosDto grado = BuscarGrado(id);
             if (grado == null)
             {
                 return HttpNotFound();
@@ -34,29 +43,28 @@ namespace EduNexus.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult CrearGrado(GradosDto grado)
+        public ActionResult CrearGrado(GradosDto modelo)
         {
             // Escenario 3: creación con dato obligatorio incompleto
             if (!ModelState.IsValid)
             {
-                return View(grado);
+                return View(modelo);
             }
 
-            lock (DatosEnMemoria.Bloqueo)
+            using (var db = new EduNexusDbContext())
             {
-                string descripcion = grado.descripcion.Trim();
+                string nombre = modelo.descripcion.Trim();
 
                 // Escenario 2: creación de grado duplicado
-                if (ExisteGrado(grado.grado, descripcion, 0))
+                if (ExisteGrado(db, modelo.grado, nombre, 0))
                 {
                     ModelState.AddModelError("", "El grado ya está registrado.");
-                    return View(grado);
+                    return View(modelo);
                 }
 
                 // Escenario 1: creación exitosa del grado
-                grado.descripcion = descripcion;
-                grado.id_grado = DatosEnMemoria.Grados.Any() ? DatosEnMemoria.Grados.Max(x => x.id_grado) + 1 : 1;
-                DatosEnMemoria.Grados.Add(grado);
+                db.Grados.Add(new GradoEntity { nivel = modelo.grado, nombre = nombre });
+                db.SaveChanges();
             }
 
             TempData["Mensaje"] = "El grado se registró correctamente.";
@@ -65,8 +73,7 @@ namespace EduNexus.UI.Controllers
 
         public ActionResult EditarGrado(int? id)
         {
-            List<GradosDto> grados = ObtenerGrados();
-            GradosDto grado = grados.FirstOrDefault(x => x.id_grado == id);
+            GradosDto grado = BuscarGrado(id);
             if (grado == null)
             {
                 return HttpNotFound();
@@ -76,32 +83,33 @@ namespace EduNexus.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult EditarGrado(GradosDto grado)
+        public ActionResult EditarGrado(GradosDto modelo)
         {
             if (!ModelState.IsValid)
             {
-                return View(grado);
+                return View(modelo);
             }
 
-            lock (DatosEnMemoria.Bloqueo)
+            using (var db = new EduNexusDbContext())
             {
-                GradosDto existente = DatosEnMemoria.Grados.FirstOrDefault(x => x.id_grado == grado.id_grado);
+                GradoEntity existente = db.Grados.FirstOrDefault(x => x.id_grado == modelo.id_grado);
                 if (existente == null)
                 {
                     return HttpNotFound();
                 }
 
-                string descripcion = grado.descripcion.Trim();
-                if (ExisteGrado(grado.grado, descripcion, grado.id_grado))
+                string nombre = modelo.descripcion.Trim();
+                if (ExisteGrado(db, modelo.grado, nombre, modelo.id_grado))
                 {
                     ModelState.AddModelError("", "El grado ya está registrado.");
-                    return View(grado);
+                    return View(modelo);
                 }
 
-                // Escenario 4: las secciones guardan el id del grado,
+                // Escenario 4: las secciones guardan el id del grado (fk_id_grado),
                 // por lo que el cambio se refleja en todas las secciones asociadas
-                existente.grado = grado.grado;
-                existente.descripcion = descripcion;
+                existente.nivel = modelo.grado;
+                existente.nombre = nombre;
+                db.SaveChanges();
             }
 
             TempData["Mensaje"] = "El grado se actualizó correctamente.";
@@ -110,14 +118,14 @@ namespace EduNexus.UI.Controllers
 
         public ActionResult EliminarGrado(int? id)
         {
-            GradosDto grado = ObtenerGrados().FirstOrDefault(x => x.id_grado == id);
+            GradosDto grado = BuscarGrado(id);
             if (grado == null)
             {
                 return HttpNotFound();
             }
-            lock (DatosEnMemoria.Bloqueo)
+            using (var db = new EduNexusDbContext())
             {
-                ViewBag.CantidadSecciones = DatosEnMemoria.Secciones.Count(x => x.grado == grado.id_grado);
+                ViewBag.CantidadSecciones = db.Secciones.Count(x => x.fk_id_grado == grado.id_grado);
             }
             return View(grado);
         }
@@ -126,45 +134,62 @@ namespace EduNexus.UI.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult ConfirmarEliminarGrado(int id)
         {
-            lock (DatosEnMemoria.Bloqueo)
+            using (var db = new EduNexusDbContext())
             {
-                GradosDto grado = DatosEnMemoria.Grados.FirstOrDefault(x => x.id_grado == id);
+                GradoEntity grado = db.Grados.FirstOrDefault(x => x.id_grado == id);
                 if (grado == null)
                 {
                     return HttpNotFound();
                 }
 
                 // Escenario 6: intento de eliminar grado con secciones asignadas
-                if (DatosEnMemoria.Secciones.Any(x => x.grado == id))
+                if (db.Secciones.Any(x => x.fk_id_grado == id))
                 {
                     TempData["Error"] = "No se puede eliminar el grado porque tiene secciones activas asociadas.";
                     return RedirectToAction("ListadoDeGrados");
                 }
 
+                // Tampoco se puede eliminar si hay estudiantes prematriculados en ese grado
+                int prematriculas = db.Database.SqlQuery<int>(
+                    "SELECT COUNT(*) FROM prematricula WHERE fk_id_grado = @p0", id).First();
+                if (prematriculas > 0)
+                {
+                    TempData["Error"] = "No se puede eliminar el grado porque tiene estudiantes asociados.";
+                    return RedirectToAction("ListadoDeGrados");
+                }
+
                 // Escenario 5: eliminación de grado sin secciones asignadas
-                DatosEnMemoria.Grados.Remove(grado);
+                db.Grados.Remove(grado);
+                db.SaveChanges();
             }
 
             TempData["Mensaje"] = "El grado se eliminó correctamente.";
             return RedirectToAction("ListadoDeGrados");
         }
 
-        private bool ExisteGrado(int numero, string descripcion, int idExcluido)
+        private static bool ExisteGrado(EduNexusDbContext db, int nivel, string nombre, int idExcluido)
         {
-            return DatosEnMemoria.Grados.Any(x => x.id_grado != idExcluido
-                && (x.grado == numero
-                    || string.Equals(x.descripcion.Trim(), descripcion, StringComparison.OrdinalIgnoreCase)));
+            return db.Grados.Where(x => x.id_grado != idExcluido).ToList()
+                .Any(x => x.nivel == nivel
+                    || string.Equals(x.nombre.Trim(), nombre, StringComparison.OrdinalIgnoreCase));
         }
 
-        private List<GradosDto> ObtenerGrados()
+        private static GradosDto BuscarGrado(int? id)
         {
-            lock (DatosEnMemoria.Bloqueo)
+            if (id == null)
             {
-                return DatosEnMemoria.Grados
-                    .OrderBy(x => x.grado)
-                    .Select(x => new GradosDto { id_grado = x.id_grado, grado = x.grado, descripcion = x.descripcion })
-                    .ToList();
+                return null;
             }
+            using (var db = new EduNexusDbContext())
+            {
+                GradoEntity g = db.Grados.FirstOrDefault(x => x.id_grado == id.Value);
+                return g == null ? null : AGradoDto(g);
+            }
+        }
+
+        private static GradosDto AGradoDto(GradoEntity g)
+        {
+            return new GradosDto { id_grado = g.id_grado, grado = g.nivel, descripcion = g.nombre };
         }
     }
 }

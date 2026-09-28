@@ -5,7 +5,7 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Usuarios
 {
     public class UsuarioDto
     {
-        public int id_usuario { get; set; }
+        public string id_usuario { get; set; }
 
         [Required(ErrorMessage = "La cédula es obligatoria.")]
         [StringLength(20, ErrorMessage = "La cédula no puede superar los 20 caracteres.")]
@@ -29,9 +29,8 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Usuarios
         public string correo { get; set; }
 
         [Required(ErrorMessage = "Debe seleccionar un rol.")]
-        [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar un rol.")]
         [DisplayName("Rol")]
-        public int id_rol { get; set; }
+        public string id_rol { get; set; }
 
         [DisplayName("Rol")]
         public string nombreRol { get; set; }

@@ -23,6 +23,8 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Secciones
         [Required(ErrorMessage = "El año lectivo es obligatorio")]
         [DisplayName("Año lectivo")]
         public int? anio { get; set; }
+        // Periodo del calendario al que pertenece la sección (calendario.id_calendario)
+        public int id_calendario { get; set; }
         [Required]
         [Range(1, 35, ErrorMessage= "El cupo debe ser entre 1 y 35")]
         [DisplayName("Cupo")]

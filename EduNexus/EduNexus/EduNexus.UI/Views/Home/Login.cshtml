@@ -1,4 +1,4 @@
-@model EduNexus.UI.Models.LoginModel
+﻿@model EduNexus.UI.Models.LoginModel
 
 <div class="row justify-content-center w-100">
     <div class="col-12 col-md-6 col-lg-4">
@@ -11,6 +11,10 @@
                     <h2 class="h2 text-center mb-4">Bienvenido</h2>
                     <p class="text-center text-muted">Ingrese sus datos para acceder</p>
 
+                    @if (TempData["MensajeLogin"] != null)
+                    {
+                        <div class="alert alert-warning" role="alert">@TempData["MensajeLogin"]</div>
+                    }
                     @Html.ValidationSummary(true, "", new { @class = "text-danger" })
 
                     @using (Html.BeginForm("Login", "Home", FormMethod.Post, new { novalidate = "novalidate" }))

@@ -5,7 +5,7 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Roles
 {
     public class RolDto
     {
-        public int id_rol { get; set; }
+        public string id_rol { get; set; }
 
         [Required(ErrorMessage = "El nombre del rol es obligatorio.")]
         [StringLength(50, ErrorMessage = "El nombre del rol no puede superar los 50 caracteres.")]

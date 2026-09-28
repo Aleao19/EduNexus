@@ -1,5 +1,6 @@
-namespace EduNexus.UI.Models.Identity
+﻿namespace EduNexus.UI.Models.Identity
 {
+    // Tabla: usuarios
     public class UsuarioEntity
     {
         public string id_usuario { get; set; }
