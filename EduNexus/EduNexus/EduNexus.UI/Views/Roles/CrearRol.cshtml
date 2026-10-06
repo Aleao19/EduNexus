@@ -1,0 +1,32 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Roles.RolDto
+
+@{
+    ViewBag.Title = "Crear rol";
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-md-6">
+        <h1 class="mb-4">Crear nuevo rol</h1>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                @using (Html.BeginForm())
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.nombre, new { @class = "form-label" })
+                        @Html.TextBoxFor(model => model.nombre, new { @class = "form-control", placeholder = "Ej: Coordinador" })
+                        @Html.ValidationMessageFor(model => model.nombre, "", new { @class = "text-danger" })
+                    </div>
+
+                    <div class="form-footer d-flex justify-content-between">
+                        @Html.ActionLink("Cancelar", "ListadoDeRoles", null, new { @class = "btn btn-outline-secondary" })
+                        <button type="submit" class="btn btn-primary">Crear rol</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

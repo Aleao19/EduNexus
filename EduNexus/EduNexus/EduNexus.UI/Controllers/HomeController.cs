@@ -1,5 +1,7 @@
 ﻿using EduNexus.Abstracciones.ModelosParaUI.Bitacora;
 using EduNexus.Abstracciones.ModelosParaUI.Dashboard;
+using EduNexus.UI.Models;
+using EduNexus.UI.Models.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,6 +85,23 @@ namespace EduNexus.UI.Controllers
             return View(model);
         }
 
+        [AllowAnonymous]
+        public ActionResult ProbarConexion()
+        {
+            try
+            {
+                using (var db = new EduNexusDbContext())
+                {
+                    db.Database.Connection.Open();
+                    return Content("Conexión exitosa. Usuarios en la BD: " + db.Usuarios.Count());
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content("Error: " + ex.ToString());
+            }
+        }
+
         public ActionResult About()
         {
             ViewBag.Message = "Your application description page.";
@@ -90,11 +109,62 @@ namespace EduNexus.UI.Controllers
             return View();
         }
 
+        [HttpGet]
+        [AllowAnonymous]
         public ActionResult Login()
         {
-            ViewBag.Message = "Your contact page.";
+            // Si ya tiene sesión iniciada, va directo al inicio
+            if (Session[AutorizarAdministradorAttribute.ClaveSesion] != null)
+            {
+                return RedirectToAction("Index");
+            }
+            return View(new EduNexus.UI.Models.LoginModel());
+        }
 
-            return View();
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public ActionResult Login(EduNexus.UI.Models.LoginModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            using (var db = new EduNexusDbContext())
+            {
+                string correo = model.Correo.Trim();
+                UsuarioEntity usuario = db.Usuarios.Where(u => u.email == correo).ToList()
+                    .FirstOrDefault(u => u.email.Trim().Equals(correo, StringComparison.OrdinalIgnoreCase));
+
+                // Criterio: credenciales inválidas (correo no registrado o contraseña incorrecta).
+                if (usuario == null || !ContrasennaHasher.Verificar(model.Contrasenna, usuario.password_hash))
+                {
+                    ModelState.AddModelError("", "El correo o la contraseña son incorrectos.");
+                    return View(model);
+                }
+
+                // Criterio RSEG-01-003 #2: "Intento de inicio de sesión de un usuario bloqueado".
+                if (!usuario.estado)
+                {
+                    ModelState.AddModelError("", "Este usuario se encuentra bloqueado o desactivado. Contacte al administrador del sistema.");
+                    return View(model);
+                }
+
+                RolEntity rol = db.Roles.FirstOrDefault(r => r.id_rol == usuario.rol);
+                Session[AutorizarAdministradorAttribute.ClaveSesion] =
+                    UsuariosController.AUsuarioDto(usuario, rol != null ? rol.nombre : "");
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        [AllowAnonymous]
+        public ActionResult CerrarSesion()
+        {
+            Session.Remove(AutorizarAdministradorAttribute.ClaveSesion);
+            Session.Abandon();
+            return RedirectToAction("Login");
         }
 
         public ActionResult Bitacora()

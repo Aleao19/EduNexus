@@ -1,0 +1,135 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Usuarios.UsuarioDto>
+
+@{
+    ViewBag.Title = "Listado de usuarios";
+    int total = Model.Count();
+    int activos = Model.Count(x => x.estado == "Activo");
+    int bloqueados = total - activos;
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Usuarios</h1>
+        <p class="text-secondary mb-0">Administra las cuentas de acceso al sistema.</p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("+ Nuevo usuario", "CrearUsuario", null, new { @class = "btn btn-primary" })
+    </div>
+</div>
+
+@if (TempData["MensajeExito"] != null)
+{
+    <div class="alert alert-success" role="alert">
+        @TempData["MensajeExito"]
+    </div>
+}
+
+<div class="row row-cards g-3 mb-3">
+    <div class="col-sm-4">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Total de usuarios</div>
+                <div class="h2 mb-0">@total</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Activos</div>
+                <div class="h2 mb-0 text-success">@activos</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Bloqueados/Inactivos</div>
+                <div class="h2 mb-0 text-danger">@bloqueados</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-title mb-0">Listado</h3>
+        <div class="text-secondary small">@total usuario(s)</div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card-body">
+            <div class="empty">
+                <p class="empty-title">No hay usuarios registrados</p>
+                <p class="empty-subtitle text-secondary">Cuando agregues un usuario aparecerá en este listado.</p>
+                <div class="empty-action">
+                    @Html.ActionLink("+ Nuevo usuario", "CrearUsuario", null, new { @class = "btn btn-primary" })
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table" id="myTable">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>@Html.DisplayNameFor(model => model.cedula)</th>
+                        <th>@Html.DisplayNameFor(model => model.correo)</th>
+                        <th>@Html.DisplayNameFor(model => model.nombreRol)</th>
+                        <th>@Html.DisplayNameFor(model => model.estado)</th>
+                        <th class="w-1">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        string inicial = (item.nombre ?? "?").Substring(0, 1).ToUpper();
+                        bool estaActivo = item.estado == "Activo";
+                        string estadoBadge = estaActivo ? "green" : "red";
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="avatar avatar-sm rounded-circle bg-blue-lt fw-bold me-2">@inicial</span>
+                                    <div>
+                                        <div class="fw-medium">@item.nombre @item.apellido1 @item.apellido2</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@Html.DisplayFor(modelItem => item.cedula)</td>
+                            <td><a href="mailto:@item.correo">@item.correo</a></td>
+                            <td>@item.nombreRol</td>
+                            <td><span class="badge bg-@(estadoBadge)-lt">@item.estado</span></td>
+                            <td class="text-nowrap">
+                                @if (estaActivo)
+                                {
+                                    using (Html.BeginForm("BloquearUsuario", "Usuarios", new { id = item.id_usuario }, FormMethod.Post, new { style = "display:inline" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('¿Bloquear/desactivar a @item.nombre @item.apellido1?');">
+                                            Bloquear
+                                        </button>
+                                    }
+                                }
+                                else
+                                {
+                                    using (Html.BeginForm("ActivarUsuario", "Usuarios", new { id = item.id_usuario }, FormMethod.Post, new { style = "display:inline" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-success"
+                                                onclick="return confirm('¿Reactivar a @item.nombre @item.apellido1?');">
+                                            Reactivar
+                                        </button>
+                                    }
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

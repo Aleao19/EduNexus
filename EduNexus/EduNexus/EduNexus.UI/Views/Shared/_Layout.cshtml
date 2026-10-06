@@ -12,6 +12,7 @@
 
 </head>
 <body>
+    @{ var usuarioSesion = Session["UsuarioActual"] as EduNexus.Abstracciones.ModelosParaUI.Usuarios.UsuarioDto; }
     <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark d-print-none">
         <div class="container">
             @Html.ActionLink("EduNexus", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
@@ -21,15 +22,35 @@
             </button>
             <div class="collapse navbar-collapse d-sm-inline-flex justify-content-between">
                 <ul class="navbar-nav flex-grow-1">
+                    @if (usuarioSesion != null)
+                    {
                     <li>@Html.ActionLink("Inicio", "Index", "Home", new { area = "" }, new { @class = "nav-link" })</li>
                     <li>@Html.ActionLink("Aula Virtual", "AulaVirtual", "AulaVirtual", new { area = "" }, new { @class = "nav-link" })</li>
+                    <li>@Html.ActionLink("Usuarios", "ListadoDeUsuarios", "Usuarios", new { area = "" }, new { @class = "nav-link" })</li>
+                    <li>@Html.ActionLink("Roles", "ListadoDeRoles", "Roles", new { area = "" }, new { @class = "nav-link" })</li>
+                    }
                 </ul><div class="navbar-nav flex-row order-md-last ms-auto">
-                    @Html.ActionLink("Iniciar Sesión", "Login", "Home", new { area = "" }, new { @class = "nav-link" })
+                    @if (usuarioSesion != null)
+                    {
+                        <span class="nav-link text-white-50">@usuarioSesion.nombre @usuarioSesion.apellido1 (@usuarioSesion.nombreRol)</span>
+                        @Html.ActionLink("Cerrar sesión", "CerrarSesion", "Home", new { area = "" }, new { @class = "nav-link" })
+                    }
+                    else
+                    {
+                        @Html.ActionLink("Iniciar Sesión", "Login", "Home", new { area = "" }, new { @class = "nav-link" })
+                    }
                 </div>
             </div>
         </div>
     </nav>
     <div class="container body-content">
+        @if (TempData["MensajeError"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible mt-3" role="alert">
+                @TempData["MensajeError"]
+                <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+            </div>
+        }
         @RenderBody()
         <hr />
         <footer>

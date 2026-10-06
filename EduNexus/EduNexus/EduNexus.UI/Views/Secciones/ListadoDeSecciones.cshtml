@@ -12,9 +12,26 @@
         <p class="text-secondary mb-0">Gestión de secciones académicas por grado.</p>
     </div>
     <div class="col-auto">
+        @Html.ActionLink("Grados", "ListadoDeGrados", "Grados", null, new { @class = "btn btn-outline-secondary me-1" })
+        @Html.ActionLink("Cupos por grupo", "CuposPorGrupo", null, new { @class = "btn btn-outline-secondary me-1" })
         @Html.ActionLink("+ Nueva sección", "CrearSeccion", null, new { @class = "btn btn-primary" })
     </div>
 </div>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success alert-dismissible" role="alert">
+        @TempData["Mensaje"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible" role="alert">
+        @TempData["Error"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
 
 <div class="row row-cards g-3 mb-3">
     <div class="col-sm-4">
@@ -79,8 +96,8 @@
                             <td>
                                 <span class="badge bg-blue-lt">@item.nombre</span>
                             </td>
-                            <td>2026</td>
-                            <td>@Html.DisplayFor(modelItem => item.grado)</td>
+                            <td>@Html.DisplayFor(modelItem => item.anio)</td>
+                            <td>@Html.DisplayFor(modelItem => item.nombre_grado)</td>
                             <td>
                                 <div class="d-flex align-items-center">
                                     <span class="me-2">@item.cupo</span>
@@ -91,7 +108,8 @@
                             </td>
                             <td class="text-nowrap">
                                 @Html.ActionLink("Editar", "EditarSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
-                                @Html.ActionLink("Detalles", "DetalleDeSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-primary" })
+                                @Html.ActionLink("Detalles", "DetalleDeSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-primary me-1" })
+                                @Html.ActionLink("Eliminar", "EliminarSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-outline-danger" })
                             </td>
                         </tr>
                     }
