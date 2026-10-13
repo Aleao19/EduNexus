@@ -1,4 +1,5 @@
-﻿using EduNexus.Abstracciones.ModelosParaUI.Expedientes;
+﻿
+using EduNexus.Abstracciones.ModelosParaUI.Expedientes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,44 +13,94 @@ namespace EduNexus.UI.Controllers
         public ActionResult ListadoDeExpedientes()
         {
             List<ExpedienteDto> expedientes = ObtenerExpedientes();
+
             return View(expedientes);
         }
 
         // GET: Expedientes/Details/5
         public ActionResult DetalleDeExpediente(int? id)
         {
+            if (!id.HasValue)
+            {
+                return new HttpStatusCodeResult(400);
+            }
+
             List<ExpedienteDto> expedientes = ObtenerExpedientes();
-            ExpedienteDto expediente = expedientes.FirstOrDefault(x => x.id_expediente == id);
+
+            ExpedienteDto expediente = expedientes
+                .FirstOrDefault(x => x.id_expediente == id.Value);
+
+            if (expediente == null)
+            {
+                return HttpNotFound();
+            }
+
             return View(expediente);
         }
 
-        // GET: Expedientes/Create
+        // =========================================
+        // REXP-03-001
+        // CREAR EXPEDIENTE ESTUDIANTIL
+        // =========================================
+
+        // GET: Expedientes/CrearExpediente
         public ActionResult CrearExpediente()
         {
             return View();
         }
 
-        // POST: Expedientes/Create
+        // POST: Expedientes/CrearExpediente
         [HttpPost]
-        public ActionResult Create(FormCollection collection)
+        [ValidateAntiForgeryToken]
+        public ActionResult CrearExpediente(ExpedienteDto expediente)
         {
-            try
+            // Validar los datos ingresados
+            if (!ModelState.IsValid)
             {
-                // TODO: Add insert logic here
+                return View(expediente);
+            }
 
-                return RedirectToAction("ListadoDeExpedientes");
-            }
-            catch
-            {
-                return View();
-            }
+            // Los datos del formulario se reciben
+            // mediante ExpedienteDto.
+            //
+            // Pendiente:
+            // 1. Validar la matricula del estudiante.
+            // 2. Obtener el usuario relacionado.
+            // 3. Conectar con EduNexusContext.
+            // 4. Guardar los datos en MySQL.
+
+            ModelState.AddModelError(
+                "",
+                "Los datos son validos, pero el expediente " +
+                "aun no se ha guardado. Esta pendiente " +
+                "la conexion con la base de datos."
+            );
+
+            return View(expediente);
         }
+
+        // =========================================
+        // EDITAR EXPEDIENTE
+        // =========================================
 
         // GET: Expedientes/Edit/5
         public ActionResult EditarExpediente(int? id)
         {
+            if (!id.HasValue)
+            {
+                return new HttpStatusCodeResult(400);
+            }
+
             List<ExpedienteDto> expedientes = ObtenerExpedientes();
-            ExpedienteDto expediente = expedientes.FirstOrDefault(x => x.id_expediente == id);
+
+            ExpedienteDto expediente = expedientes
+                .FirstOrDefault(x => x.id_expediente == id.Value);
+
+            if (expediente == null)
+            {
+                return HttpNotFound();
+            }
+
             return View(expediente);
         }
 
@@ -68,6 +119,10 @@ namespace EduNexus.UI.Controllers
                 return View();
             }
         }
+
+        // =========================================
+        // EXPEDIENTES DE EJEMPLO
+        // =========================================
 
         private List<ExpedienteDto> ObtenerExpedientes()
         {
@@ -123,7 +178,7 @@ namespace EduNexus.UI.Controllers
                     tiene_discapacidad = true,
                     contactoEmergencia = "Laura Vindas - 8888-1003",
                     direccion = "Heredia, San Francisco"
-                },
+                }
             };
         }
     }
