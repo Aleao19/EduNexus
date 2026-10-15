@@ -178,29 +178,40 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AulaVirtualController.cs" />
     <Compile Include="Controllers\DocentesController.cs" />
+    <Compile Include="Controllers\DocumentosExpedienteController.cs" />
     <Compile Include="Controllers\ExpedientesController.cs" />
     <Compile Include="Controllers\GradosController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\HorarioDocentesController.cs" />
     <Compile Include="Controllers\HorariosController.cs" />
     <Compile Include="Controllers\MateriasController.cs" />
     <Compile Include="Controllers\RolesController.cs" />
     <Compile Include="Controllers\SeccionesController.cs" />
+    <Compile Include="Controllers\SeccionMateriasController.cs" />
     <Compile Include="Controllers\UsuariosController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\AlmacenamientoDocumentoExpediente.cs" />
     <Compile Include="Models\AutorizarAdministradorAttribute.cs" />
     <Compile Include="Models\BitacoraEntity.cs" />
     <Compile Include="Models\CalendarioEntity.cs" />
     <Compile Include="Models\ContrasennaHasher.cs" />
     <Compile Include="Models\EduNexusDbContext.cs" />
+    <Compile Include="Models\ExpedienteEntity.cs" />
+    <Compile Include="Models\ExpedienteMapper.cs" />
     <Compile Include="Models\GradoEntity.cs" />
+    <Compile Include="Models\HorarioEntity.cs" />
+    <Compile Include="Models\MateriaEntity.cs" />
+    <Compile Include="Models\PrematriculaEntity.cs" />
     <Compile Include="Models\SeccionEntity.cs" />
     <Compile Include="Models\SeccionEstudianteEntity.cs" />
     <Compile Include="Models\LoginModel.cs" />
     <Compile Include="Models\RequiereSesionAttribute.cs" />
     <Compile Include="Models\RolEntity.cs" />
+    <Compile Include="Models\SeccionMateriaEntity.cs" />
     <Compile Include="Models\UsuarioEntity.cs" />
+    <Compile Include="Models\ValidacionExpediente.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -358,6 +369,12 @@
     <Content Include="Views\Roles\ListadoDeRoles.cshtml" />
     <Content Include="Views\Usuarios\CrearUsuario.cshtml" />
     <Content Include="Views\Usuarios\ListadoDeUsuarios.cshtml" />
+    <Content Include="Views\DocumentosExpediente\AdjuntarDocumento.cshtml" />
+    <Content Include="Views\DocumentosExpediente\HistorialDocumentos.cshtml" />
+    <Content Include="Views\SeccionMaterias\ListadoDeAsignaciones.cshtml" />
+    <Content Include="Views\SeccionMaterias\AsignarMateria.cshtml" />
+    <Content Include="Views\HorarioDocentes\BuscarDocente.cshtml" />
+    <Content Include="Views\HorarioDocentes\HorarioDeDocente.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

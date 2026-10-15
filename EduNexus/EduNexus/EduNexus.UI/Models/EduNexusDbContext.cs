@@ -20,6 +20,9 @@ namespace EduNexus.UI.Models.Identity
         public DbSet<CalendarioEntity> Calendarios { get; set; }
         public DbSet<BitacoraEntity> Bitacora { get; set; }
         public DbSet<SeccionEstudianteEntity> SeccionesEstudiantes { get; set; }
+        public DbSet<MateriaEntity> Materias { get; set; }
+        public DbSet<SeccionMateriaEntity> SeccionesMaterias { get; set; }
+        public DbSet<HorarioEntity> Horarios { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
@@ -42,6 +45,18 @@ namespace EduNexus.UI.Models.Identity
 
             modelBuilder.Entity<SeccionEstudianteEntity>().ToTable("secciones_estudiantes").HasKey(se => se.id_seccion_estudiante);
             modelBuilder.Entity<SeccionEstudianteEntity>().Property(se => se.id_seccion_estudiante)
+                .HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
+
+            modelBuilder.Entity<MateriaEntity>().ToTable("materia").HasKey(m => m.id_materia);
+            modelBuilder.Entity<MateriaEntity>().Property(m => m.id_materia)
+                .HasDatabaseGeneratedOption(DatabaseGeneratedOption.None);
+
+            modelBuilder.Entity<SeccionMateriaEntity>().ToTable("secciones_materias").HasKey(sm => sm.id_seccion_materia);
+            modelBuilder.Entity<SeccionMateriaEntity>().Property(sm => sm.id_seccion_materia)
+                .HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
+
+            modelBuilder.Entity<HorarioEntity>().ToTable("horarios").HasKey(h => h.id_horario);
+            modelBuilder.Entity<HorarioEntity>().Property(h => h.id_horario)
                 .HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
         }
     }

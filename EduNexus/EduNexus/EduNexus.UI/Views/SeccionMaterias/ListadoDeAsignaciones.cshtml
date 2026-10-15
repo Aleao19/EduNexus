@@ -1,0 +1,93 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Materias.MateriaSeccionDto>
+
+@{
+    ViewBag.Title = "Materias por sección";
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Materias por sección</h1>
+        <p class="text-secondary mb-0">Materias que se imparten en cada sección.</p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("+ Asignar materia", "AsignarMateria", null, new { @class = "btn btn-primary" })
+    </div>
+</div>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success alert-dismissible" role="alert">
+        @TempData["Mensaje"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible" role="alert">
+        @TempData["Error"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
+
+@using (Html.BeginForm("ListadoDeAsignaciones", "SeccionMaterias", FormMethod.Get, new { @class = "row g-2 align-items-center mb-3" }))
+{
+    <div class="col-auto">
+        <label class="col-form-label" for="seccion">Sección</label>
+    </div>
+    <div class="col-auto">
+        @Html.DropDownList("seccion", (SelectList)ViewBag.Secciones, "Todas las secciones", new { @class = "form-select" })
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-cyan">Filtrar</button>
+    </div>
+}
+
+<div class="card shadow-sm">
+    @if (!Model.Any())
+    {
+        <div class="card-body">
+            <div class="empty">
+                <p class="empty-title">No hay materias asignadas</p>
+                <div class="empty-action">
+                    @Html.ActionLink("+ Asignar materia", "AsignarMateria", null, new { @class = "btn btn-primary" })
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Sección</th>
+                        <th>Código</th>
+                        <th>Materia</th>
+                        <th>Profesor</th>
+                        <th class="w-1">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.seccion</td>
+                            <td><span class="text-secondary">@item.id_materia</span></td>
+                            <td>@item.materia</td>
+                            <td>@item.profesor</td>
+                            <td class="text-nowrap">
+                                @using (Html.BeginForm("RemoverMateria", "SeccionMaterias", FormMethod.Post, new { onsubmit = "return confirm('¿Desea remover esta materia de la sección?');" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@item.id_seccion_materia" />
+                                    <input type="hidden" name="seccion" value="@Request.QueryString["seccion"]" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Remover</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

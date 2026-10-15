@@ -13,8 +13,17 @@
     </div>
     <div class="col-auto">
         @Html.ActionLink("+ Nueva materia", "CrearMateria", null, new { @class = "btn btn-primary" })
+        @Html.ActionLink("Materias por sección", "ListadoDeAsignaciones", "SeccionMaterias", null, new { @class = "btn btn-outline-secondary me-1" })
     </div>
 </div>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success alert-dismissible" role="alert">
+        @TempData["Mensaje"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
 
 <div class="row row-cards g-3 mb-3">
     <div class="col-sm-6">
