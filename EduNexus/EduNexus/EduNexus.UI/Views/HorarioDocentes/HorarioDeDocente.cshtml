@@ -1,0 +1,54 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Docentes.HorarioDocenteDto
+
+@{
+    ViewBag.Title = "Horario del docente";
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Horario del docente</h1>
+        <p class="text-secondary mb-0">@Model.docente - @Model.identificacion - @Model.email</p>
+    </div>
+</div>
+
+@if (!Model.horarios.Any())
+{
+    @* Escenario 2: docente registrado sin horario asignado *@
+    <div class="alert alert-info">
+        El docente no tiene horario asignado.
+        @Html.ActionLink("Asignar horario", "CrearHorario", "Horarios", null, new { @class = "btn btn-primary btn-sm ms-2" })
+    </div>
+}
+else
+{
+    @* Escenario 1: horario completo del docente *@
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Día</th>
+                        <th>Hora</th>
+                        <th>Materia</th>
+                        <th>Sección</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.horarios)
+                    {
+                        <tr>
+                            <td>@item.dia_semana</td>
+                            <td>@item.hora_inicio - @item.hora_fin</td>
+                            <td>@item.materia</td>
+                            <td>@item.seccion</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<p class="mt-3">
+    @Html.ActionLink("Regresar", "BuscarDocente")
+</p>

@@ -1,0 +1,63 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Docentes.DocenteBusquedaDto>
+
+@{
+    ViewBag.Title = "Consultar horario de docente";
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Horario de docentes</h1>
+        <p class="text-secondary mb-0">Busque un docente y seleccione su nombre para ver su horario.</p>
+    </div>
+</div>
+
+@using (Html.BeginForm("BuscarDocente", "HorarioDocentes", FormMethod.Get, new { @class = "row g-2 mb-3" }))
+{
+    <div class="col-md-6">
+        <input type="text" name="q" value="@ViewBag.Busqueda" class="form-control" placeholder="Buscar por nombre, identificación o correo..." />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-cyan">Buscar</button>
+    </div>
+}
+
+<div class="card shadow-sm">
+    @if (!Model.Any())
+    {
+        <div class="card-body">
+            <div class="empty">
+                <p class="empty-title">No se encontraron docentes registrados con esa búsqueda</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Docente</th>
+                        <th>Identificación</th>
+                        <th>Correo</th>
+                        <th>Estado</th>
+                        <th class="w-1">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.nombre</td>
+                            <td>@item.identificacion</td>
+                            <td>@item.email</td>
+                            <td>@item.estado</td>
+                            <td class="text-nowrap">
+                                @Html.ActionLink("Ver horario", "HorarioDeDocente", new { id = item.id_usuario }, new { @class = "btn btn-sm btn-primary" })
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
