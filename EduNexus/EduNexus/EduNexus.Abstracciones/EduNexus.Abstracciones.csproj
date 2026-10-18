@@ -55,6 +55,7 @@
     <Compile Include="ModelosParaUI\Horarios\HorariosDto.cs" />
     <Compile Include="ModelosParaUI\Materias\MateriasDto.cs" />
     <Compile Include="ModelosParaUI\Materias\MateriaSeccionDto.cs" />
+    <Compile Include="ModelosParaUI\Prematriculas\PrematriculaDto.cs" />
     <Compile Include="ModelosParaUI\Roles\RolDto.cs" />
     <Compile Include="ModelosParaUI\Secciones\SeccionesDto.cs" />
     <Compile Include="ModelosParaUI\Usuarios\UsuarioDto.cs" />

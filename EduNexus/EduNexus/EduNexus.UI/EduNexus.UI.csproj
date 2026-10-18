@@ -185,6 +185,7 @@
     <Compile Include="Controllers\HorarioDocentesController.cs" />
     <Compile Include="Controllers\HorariosController.cs" />
     <Compile Include="Controllers\MateriasController.cs" />
+    <Compile Include="Controllers\PrematriculasController.cs" />
     <Compile Include="Controllers\RolesController.cs" />
     <Compile Include="Controllers\SeccionesController.cs" />
     <Compile Include="Controllers\SeccionMateriasController.cs" />
@@ -376,6 +377,7 @@
     <Content Include="Views\HorarioDocentes\BuscarDocente.cshtml" />
     <Content Include="Views\HorarioDocentes\HorarioDeDocente.cshtml" />
     <Content Include="Views\Secciones\AsignarEstudiantes.cshtml" />
+    <Content Include="Views\Prematriculas\Crear.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
