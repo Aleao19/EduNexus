@@ -1,0 +1,148 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionesDto
+
+@{
+    ViewBag.Title = "Asignar estudiantes";
+    var estudiantesAsignados = ViewBag.EstudiantesAsignados;
+    int cantidadAsignada = ViewBag.CantidadAsignada ?? 0;
+    int cupoMaximo = ViewBag.CupoMaximo ?? 0;
+    int cuposDisponibles = cupoMaximo - cantidadAsignada;
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-1">Asignar estudiantes</h1>
+        <p class="text-secondary mb-0">
+            Administra la distribución de estudiantes por sección.
+        </p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("Volver a secciones", "ListadoDeSecciones", null,
+            new { @class = "btn btn-outline-secondary" })
+    </div>
+</div>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["Mensaje"]
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Información de la sección</h3>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="text-secondary small">Sección</div>
+                <div class="fw-bold">@Model.nombre</div>
+            </div>
+            <div class="col-md-6">
+                <div class="text-secondary small">Grado</div>
+                <div class="fw-bold">@Model.nombre_grado</div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-secondary small">Año lectivo</div>
+                <div class="fw-bold">@(Model.anio.HasValue ? Model.anio.Value.ToString() : "No disponible")</div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-secondary small">Estudiantes asignados</div>
+                <div class="h3 mb-0">@cantidadAsignada</div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-secondary small">Cupos disponibles</div>
+                <div class="h3 mb-0">@cuposDisponibles</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Agregar estudiante</h3>
+    </div>
+    <div class="card-body">
+        @if (ViewBag.ErrorRolEstudiante == true)
+        {
+            <div class="alert alert-warning">
+                No se encontró el rol Estudiante. Verifica el nombre del rol registrado.
+            </div>
+        }
+        else if (cuposDisponibles <= 0)
+        {
+            <div class="alert alert-warning">
+                Esta sección ya alcanzó su cupo máximo.
+            </div>
+        }
+        else
+        {
+            using (Html.BeginForm("AsignarEstudiantes", "Secciones", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                @Html.Hidden("id", Model.id_seccion)
+
+                <div class="mb-3">
+                    @Html.Label("idUsuario", "Selecciona un estudiante",
+                        new { @class = "form-label" })
+
+                    @Html.DropDownList(
+                        "idUsuario",
+                        (SelectList)ViewBag.EstudiantesDisponibles,
+                        "-- Seleccione un estudiante --",
+                        new { @class = "form-select", required = "required" })
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Asignar estudiante
+                </button>
+            }
+        }
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Estudiantes de esta sección</h3>
+    </div>
+
+    @if (cantidadAsignada == 0)
+    {
+        <div class="card-body">
+            <p class="text-secondary mb-0">
+                Todavía no hay estudiantes asignados a esta sección.
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Nombre completo</th>
+                        <th>Identificación</th>
+                        <th>Fecha de asignación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var estudiante in estudiantesAsignados)
+                    {
+                        <tr>
+                            <td>@estudiante.nombreCompleto</td>
+                            <td>@estudiante.identificacion</td>
+                            <td>@(((DateTime)estudiante.fecha_asignacion).ToString("dd/MM/yyyy"))</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

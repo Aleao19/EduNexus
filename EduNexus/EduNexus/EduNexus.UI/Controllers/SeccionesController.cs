@@ -52,6 +52,149 @@ namespace EduNexus.UI.Controllers
             }
         }
 
+        // GET: Secciones/AsignarEstudiantes/5
+        public ActionResult AsignarEstudiantes(int? id)
+        {
+            if (!id.HasValue)
+            {
+                return new HttpStatusCodeResult(400);
+            }
+
+            using (var db = new EduNexusDbContext())
+            {
+                var seccion = ObtenerSecciones(db, null, null, id.Value).FirstOrDefault();
+
+                if (seccion == null)
+                {
+                    return HttpNotFound();
+                }
+
+                CargarDatosAsignacion(db, id.Value);
+                return View(seccion);
+            }
+        }
+
+        // POST: Secciones/AsignarEstudiantes
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult AsignarEstudiantes(int id, string idUsuario)
+        {
+            using (var db = new EduNexusDbContext())
+            {
+                var seccion = db.Secciones.FirstOrDefault(s => s.id_seccion == id);
+
+                if (seccion == null)
+                {
+                    return HttpNotFound();
+                }
+
+                var rolEstudiante = db.Roles.ToList().FirstOrDefault(r =>
+                    !string.IsNullOrWhiteSpace(r.nombre) &&
+                    (r.nombre.Trim().Equals("Estudiante", StringComparison.OrdinalIgnoreCase) ||
+                     r.nombre.Trim().Equals("Estudiantes", StringComparison.OrdinalIgnoreCase)));
+
+                if (rolEstudiante == null)
+                {
+                    TempData["Error"] = "No se encontró el rol Estudiante. Verifique el nombre del rol registrado.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                var estudiante = db.Usuarios.FirstOrDefault(u =>
+                    u.id_usuario == idUsuario &&
+                    u.estado &&
+                    u.rol == rolEstudiante.id_rol);
+
+                if (estudiante == null)
+                {
+                    TempData["Error"] = "Seleccione un estudiante válido y activo.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                bool yaAsignado = db.SeccionesEstudiantes.Any(e =>
+                    e.fk_id_seccion == id && e.fk_id_usuario == idUsuario);
+
+                if (yaAsignado)
+                {
+                    TempData["Error"] = "Este estudiante ya está asignado a esta sección.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                int cantidadActual = db.SeccionesEstudiantes.Count(e => e.fk_id_seccion == id);
+
+                if (cantidadActual >= seccion.cupo)
+                {
+                    TempData["Error"] = "No se puede asignar al estudiante porque la sección ya alcanzó su cupo máximo.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                db.SeccionesEstudiantes.Add(new SeccionEstudianteEntity
+                {
+                    fk_id_seccion = id,
+                    fk_id_usuario = idUsuario,
+                    fecha_asignacion = DateTime.Now
+                });
+
+                db.SaveChanges();
+            }
+
+            TempData["Mensaje"] = "El estudiante se asignó correctamente a la sección.";
+            return RedirectToAction("AsignarEstudiantes", new { id = id });
+        }
+
+        private void CargarDatosAsignacion(EduNexusDbContext db, int idSeccion)
+        {
+            var rolEstudiante = db.Roles.ToList().FirstOrDefault(r =>
+                !string.IsNullOrWhiteSpace(r.nombre) &&
+                (r.nombre.Trim().Equals("Estudiante", StringComparison.OrdinalIgnoreCase) ||
+                 r.nombre.Trim().Equals("Estudiantes", StringComparison.OrdinalIgnoreCase)));
+
+            var estudiantes = new List<object>();
+
+            if (rolEstudiante != null)
+            {
+                estudiantes = db.Usuarios
+                    .Where(u => u.estado && u.rol == rolEstudiante.id_rol)
+                    .ToList()
+                    .Select(u => (object)new
+                    {
+                        id_usuario = u.id_usuario,
+                        nombreCompleto = ((u.nombre ?? "") + " " +
+                                          (u.apellido1 ?? "") + " " +
+                                          (u.apellido2 ?? "")).Trim() +
+                                          " - " + (u.identificacion ?? "")
+                    })
+                    .ToList();
+            }
+
+            ViewBag.EstudiantesDisponibles = new SelectList(
+                estudiantes,
+                "id_usuario",
+                "nombreCompleto");
+
+            ViewBag.ErrorRolEstudiante = rolEstudiante == null;
+
+            ViewBag.EstudiantesAsignados = (
+                from e in db.SeccionesEstudiantes
+                join u in db.Usuarios on e.fk_id_usuario equals u.id_usuario
+                where e.fk_id_seccion == idSeccion
+                orderby u.nombre, u.apellido1
+                select new
+                {
+                    nombreCompleto = ((u.nombre ?? "") + " " +
+                                      (u.apellido1 ?? "") + " " +
+                                      (u.apellido2 ?? "")).Trim(),
+                    identificacion = u.identificacion,
+                    fecha_asignacion = e.fecha_asignacion
+                }).ToList();
+
+            var seccion = db.Secciones.FirstOrDefault(s => s.id_seccion == idSeccion);
+
+            ViewBag.CupoMaximo = seccion != null ? seccion.cupo : 0;
+            ViewBag.CantidadAsignada = db.SeccionesEstudiantes.Count(e =>
+                e.fk_id_seccion == idSeccion);
+        }
+
+
         // GET: Secciones/DetalleDeSeccion/5
         public ActionResult DetalleDeSeccion(int? id)
         {
@@ -359,16 +502,16 @@ namespace EduNexus.UI.Controllers
                 {
                     x.nivel,
                     dto = new SeccionesDto
-                {
-                    id_seccion = x.s.id_seccion,
-                    nombre = x.s.nombre,
-                    grado = x.s.fk_id_grado,
-                    nombre_grado = x.nombreGrado,
-                    id_calendario = x.s.fk_id_calendario,
-                    anio = x.inicioPeriodo.HasValue ? x.inicioPeriodo.Value.Year : (int?)null,
-                    cupo = x.s.cupo,
-                    estudiantes_matriculados = x.estudiantes
-                }
+                    {
+                        id_seccion = x.s.id_seccion,
+                        nombre = x.s.nombre,
+                        grado = x.s.fk_id_grado,
+                        nombre_grado = x.nombreGrado,
+                        id_calendario = x.s.fk_id_calendario,
+                        anio = x.inicioPeriodo.HasValue ? x.inicioPeriodo.Value.Year : (int?)null,
+                        cupo = x.s.cupo,
+                        estudiantes_matriculados = x.estudiantes
+                    }
                 })
                 .Where(x => !anio.HasValue || x.dto.anio == anio.Value)
                 .OrderByDescending(x => x.dto.anio)
