@@ -309,7 +309,9 @@
     <Content Include="bin\roslyn\VBCSCompiler.exe.config" />
     <None Include="Scripts\jquery-3.7.0.intellisense.js" />
     <Content Include="Scripts\DataTable\dataTables.min.js" />
+    <Content Include="Scripts\Docentes\AsignarDocente.js" />
     <Content Include="Scripts\General\General.js" />
+    <Content Include="Scripts\Horarios\CrearHorario.js" />
     <Content Include="Scripts\jquery-3.7.0.js" />
     <Content Include="Scripts\jquery-3.7.0.min.js" />
     <Content Include="Scripts\jquery-3.7.0.slim.js" />
@@ -320,6 +322,7 @@
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
     <Content Include="Scripts\Login\Login.js" />
+    <Content Include="Scripts\Materias\EditarMateria.js" />
     <Content Include="Scripts\modernizr-2.8.3.js" />
     <Content Include="Scripts\tabler.min.js" />
     <Content Include="Web.config" />
@@ -356,7 +359,6 @@
     <Content Include="Views\Horarios\EditarHorario.cshtml" />
     <Content Include="Views\Horarios\ListadoDeHorarios.cshtml" />
     <Content Include="Views\Horarios\VisualizarHorario.cshtml" />
-    <Content Include="Views\Materias\CrearMateria.cshtml" />
     <Content Include="Views\Materias\EditarMateria.cshtml" />
     <Content Include="Views\Materias\ListadoDeMaterias.cshtml" />
     <Content Include="Views\Grados\CrearGrado.cshtml" />
@@ -378,6 +380,9 @@
     <Content Include="Views\HorarioDocentes\HorarioDeDocente.cshtml" />
     <Content Include="Views\Secciones\AsignarEstudiantes.cshtml" />
     <Content Include="Views\Prematriculas\Crear.cshtml" />
+    <Content Include="Views\Docentes\CrearDocente.cshtml" />
+    <Content Include="Views\Docentes\EditarDocente.cshtml" />
+    <Content Include="Views\Materias\CrearMateria.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

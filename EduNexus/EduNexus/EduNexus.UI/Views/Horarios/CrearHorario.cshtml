@@ -1,82 +1,228 @@
-﻿@{
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Horarios.HorariosDto
+@{
     ViewBag.Title = "Crear horario";
+    var materias = (System.Collections.Generic.IEnumerable<System.Web.Mvc.SelectListItem>)ViewBag.Materias;
 }
 
-<h2>Crear horario</h2>
+<style>
+    .hz-wrap {
+        max-width: 1000px;
+        margin: 1.5rem auto;
+    }
 
-@using (Html.BeginForm())
-{
-    @Html.AntiForgeryToken()
+    .hz-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: .5rem;
+        margin-bottom: 1rem;
+    }
 
-    <div class="form-horizontal">
-        <hr />
-        <div class="container">
-            <div class="row">
-                <div class="col-md-8 offset-md-1">
-                    <div class="form-group mt-3">
-                        <label class="control-label col-md-2">Sección</label>
-                        <div class="col-md-10">
-                            <select name="seccion" class="form-control">
-                                <option value="">Seleccione una sección</option>
-                                <option value="1">1-A</option>
-                                <option value="2">1-B</option>
-                                <option value="3">2-A</option>
-                            </select>
-                        </div>
-                    </div>
+    .hz-badge {
+        background: #e7f5ff;
+        color: #0b5ed7;
+        padding: .25rem .75rem;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: .9rem;
+    }
 
-                    <div class="form-group mt-3">
-                        <label class="control-label col-md-2">Día</label>
-                        <div class="col-md-10">
-                            <select name="dia_semana" class="form-control">
-                                <option value="">Seleccione un día</option>
-                                <option value="Lunes">Lunes</option>
-                                <option value="Martes">Martes</option>
-                                <option value="Miércoles">Miércoles</option>
-                                <option value="Jueves">Jueves</option>
-                                <option value="Viernes">Viernes</option>
-                            </select>
-                        </div>
-                    </div>
+    .hz-card {
+        background: #fff;
+        border: 1px solid #e3e6ea;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
 
-                    <div class="form-group mt-3">
-                        <label class="control-label col-md-2">Hora inicio</label>
-                        <div class="col-md-10">
-                            <input type="time" name="hora_inicio" class="form-control" />
-                        </div>
-                    </div>
+        .hz-card h5 {
+            margin: 0 0 .75rem;
+            font-size: 1rem;
+            font-weight: 700;
+        }
 
-                    <div class="form-group mt-3">
-                        <label class="control-label col-md-2">Hora fin</label>
-                        <div class="col-md-10">
-                            <input type="time" name="hora_fin" class="form-control" />
-                        </div>
-                    </div>
+    .hz-step {
+        display: inline-flex;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #0b5ed7;
+        color: #fff;
+        align-items: center;
+        justify-content: center;
+        font-size: .8rem;
+        margin-right: .5rem;
+    }
 
-                    <div class="form-group mt-3">
-                        <label class="control-label col-md-2">Materia</label>
-                        <div class="col-md-10">
-                            <select name="materia" class="form-control">
-                                <option value="">Seleccione una materia</option>
-                                <option value="1">Matemáticas</option>
-                                <option value="2">Español</option>
-                                <option value="3">Ciencias</option>
-                                <option value="4">Estudios Sociales</option>
-                            </select>
-                        </div>
-                    </div>
+    .hz-materias {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
 
-                    <div class="form-group">
-                        <div class="col-md-offset-2 col-md-10 my-3">
-                            <input type="submit" value="Crear" class="btn btn-cyan" />
-                        </div>
-                    </div>
-                </div>
+        .hz-materias input {
+            display: none;
+        }
+
+        .hz-materias label {
+            cursor: pointer;
+            padding: .5rem 1rem;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: .15s;
+            margin: 0;
+        }
+
+            .hz-materias label:hover {
+                border-color: #74c0fc;
+            }
+
+        .hz-materias input:checked + label {
+            background: #0b5ed7;
+            border-color: #0b5ed7;
+            color: #fff;
+        }
+
+    .hz-grid {
+        display: grid;
+        grid-template-columns: 70px repeat(5, 1fr);
+        gap: 3px;
+        user-select: none;
+        overflow-x: auto;
+        min-width: 560px;
+    }
+
+    .hz-scroll {
+        overflow-x: auto;
+    }
+
+    .hz-head {
+        text-align: center;
+        font-weight: 700;
+        padding: .4rem 0;
+        background: #f1f3f5;
+        border-radius: 6px;
+    }
+
+    .hz-hora {
+        font-size: .75rem;
+        color: #6c757d;
+        text-align: right;
+        padding-right: .5rem;
+        line-height: 26px;
+    }
+
+    .hz-cell {
+        height: 26px;
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: .1s;
+    }
+
+        .hz-cell:hover {
+            background: #d0ebff;
+        }
+
+        .hz-cell.hz-sel {
+            background: #0b5ed7;
+            border-color: #0b5ed7;
+        }
+
+        .hz-cell.hz-anchor {
+            background: #4dabf7;
+            border-color: #4dabf7;
+        }
+
+    .hz-resumen {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        align-items: center;
+    }
+
+        .hz-resumen div small {
+            display: block;
+            color: #6c757d;
+            font-size: .75rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .hz-resumen div strong {
+            font-size: 1.05rem;
+        }
+
+    .hz-acciones {
+        display: flex;
+        gap: .5rem;
+        margin-left: auto;
+    }
+
+    .hz-error {
+        display: none;
+        margin-top: .75rem;
+    }
+
+    @@media (max-width: 600px) {
+        .hz-acciones {
+            margin-left: 0;
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="hz-wrap">
+    <div class="hz-title">
+        <h2 class="m-0">Crear horario</h2>
+        <span class="hz-badge">Sección @(ViewBag.NombreSeccion ?? "—")</span>
+    </div>
+
+    @using (Html.BeginForm("Create", "Horarios", FormMethod.Post, new { id = "formHorario" }))
+    {
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(m => m.seccion)
+        <input type="hidden" name="dia_semana" id="dia_semana" />
+        <input type="hidden" name="hora_inicio" id="hora_inicio" />
+        <input type="hidden" name="hora_fin" id="hora_fin" />
+
+        <div class="hz-card">
+            <h5><span class="hz-step">1</span>Elija la materia</h5>
+            <div class="hz-materias">
+                @foreach (var m in materias)
+                {
+                    <input type="radio" name="materia" id="mat_@m.Value" value="@m.Value" @(Model.materia.ToString() == m.Value ? "checked" : "") />
+                    <label for="mat_@m.Value">@m.Text</label>
+                }
             </div>
         </div>
-    </div>
-}
 
-<div>
-    @Html.ActionLink("Regresar", "ListadoDeHorarios")
+        <div class="hz-card">
+            <h5><span class="hz-step">2</span>Marque el bloque en la cuadrícula</h5>
+            <p class="text-muted mb-2" style="font-size:.85rem">
+                Primer clic: hora de inicio. Segundo clic en el mismo día: hora de fin. Un tercer clic reinicia la selección.
+            </p>
+            <div class="hz-scroll"><div class="hz-grid" id="grid"></div></div>
+        </div>
+
+        <div class="hz-card">
+            <div class="hz-resumen">
+                <div><small>Materia</small><strong id="resMateria">—</strong></div>
+                <div><small>Día</small><strong id="resDia">—</strong></div>
+                <div><small>Horario</small><strong id="resHora">—</strong></div>
+                <div class="hz-acciones">
+                    @Html.ActionLink("Cancelar", "ListadoDeHorarios", new { id = Model.seccion }, new { @class = "btn btn-outline-secondary" })
+                    <button type="submit" class="btn btn-primary">Guardar horario</button>
+                </div>
+            </div>
+            <div class="alert alert-danger hz-error" id="errorBox"></div>
+        </div>
+    }
 </div>
+@section scripts {
+    <script src="~/Scripts/Horarios/CrearHorario.js"></script>
+}

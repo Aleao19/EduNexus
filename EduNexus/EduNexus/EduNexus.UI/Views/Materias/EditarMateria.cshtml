@@ -2,62 +2,88 @@
 
 @{
     ViewBag.Title = "Editar materia";
+    var profesores = ViewBag.Profesores as SelectList;
 }
 
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7 col-md-9">
 
-<h2>Editar materia</h2>
-
-
-
-@using (Html.BeginForm())
-{
-    @Html.AntiForgeryToken()
-
-    <div class="form-horizontal">
-        <hr />
-        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        <div class="container my-2">
-            <div class="row">
-                <div class="col-md-8 offset-md-1">
-                    <div class="form-group">
-                        @Html.LabelFor(model => model.id_materia, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10 mt-3">
-                            @Html.EditorFor(model => model.id_materia, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.id_materia, "", new { @class = "text-danger" })
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">Editar materia</h4>
+                            <small class="text-muted">Modifica el nombre, el profesor o la descripción</small>
                         </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.nombre, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.EditorFor(model => model.nombre, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.nombre, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.profesor, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.EditorFor(model => model.profesor, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.profesor, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
-
-                    <div class="form-group my-3">
-                        <div class="col-md-offset-2 col-md-10 mt-2">
-                            <input type="submit" value="Guardar" class="btn btn-cyan" />
-                        </div>
+                        <span class="badge bg-secondary fs-6">Código: @Model.id_materia</span>
                     </div>
                 </div>
+
+                @using (Html.BeginForm("EditarMateria", "Materias", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger mx-3 mt-3 mb-0" })
+
+                    @* El id viaja oculto: no se puede modificar *@
+                    @Html.HiddenFor(model => model.id_materia)
+
+                    <div class="card-body p-4">
+
+                        <div class="form-floating mb-4">
+                            @Html.TextBoxFor(model => model.nombre, new
+                            {
+                                @class = "form-control",
+                                placeholder = "Nombre de la materia",
+                                autocomplete = "off",
+                                maxlength = 100
+                            })
+                            <label for="nombre">Nombre de la materia</label>
+                            @Html.ValidationMessageFor(model => model.nombre, "", new { @class = "text-danger small" })
+                        </div>
+
+                        <div class="form-floating mb-4">
+                            @Html.DropDownListFor(model => model.id_profesor, profesores, "-- Seleccione un profesor --", new
+                            {
+                                @class = "form-select"
+                            })
+                            <label for="id_profesor">Profesor asignado</label>
+                            @Html.ValidationMessageFor(model => model.id_profesor, "", new { @class = "text-danger small" })
+                        </div>
+
+                        <div class="form-floating mb-1">
+                            @Html.TextAreaFor(model => model.descripcion, new
+                            {
+                                @class = "form-control",
+                                placeholder = "Descripción breve",
+                                maxlength = 100,
+                                rows = 3,
+                                style = "height: 110px"
+                            })
+                            <label for="descripcion">Descripción breve (opcional)</label>
+                            @Html.ValidationMessageFor(model => model.descripcion, "", new { @class = "text-danger small" })
+                        </div>
+                        <div class="text-end text-muted small">
+                            <span id="contadorDescripcion">0</span>/100
+                        </div>
+
+                        <div id="resumenCambios" class="alert alert-info py-2 mt-3 mb-0 d-none">
+                            <span id="textoResumen"></span>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-white d-flex justify-content-between py-3">
+                        @Html.ActionLink("Regresar", "ListadoDeMaterias", null, new { @class = "btn btn-outline-secondary" })
+                        <button type="submit" class="btn btn-primary px-4">Guardar cambios</button>
+                    </div>
+                }
             </div>
+
         </div>
     </div>
-}
-
-<div>
-    @Html.ActionLink("Regresar", "ListadoDeMaterias")
 </div>
 
 @section Scripts {
     @Scripts.Render("~/bundles/jqueryval")
+    <script src="~/Scripts/Materias/EditarMateria.js"></script>
 }

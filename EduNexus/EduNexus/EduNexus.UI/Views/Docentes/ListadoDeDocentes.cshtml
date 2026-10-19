@@ -97,6 +97,7 @@
                             <td><span class="badge bg-@(estadoBadge)-lt">@item.estado</span></td>
                             <td class="text-nowrap">
                                 @Html.ActionLink("Materias/Secciones", "CargaAcademicaDocente", new { id = item.id_docente }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
+                                @Html.ActionLink("Editar", "EditarDocente", new { id = item.id_docente }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
                                 @Html.ActionLink("Asignar", "AsignarDocente", new { id = item.id_docente }, new { @class = "btn btn-sm btn-primary" })
                             </td>
                         </tr>

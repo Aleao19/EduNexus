@@ -5,7 +5,7 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Docentes
 {
     public class DocentesDto
     {
-        public int id_docente { get; set; }
+        public string id_docente { get; set; }
         [Required]
         [DisplayName("Identificación")]
         public string identificacion { get; set; }

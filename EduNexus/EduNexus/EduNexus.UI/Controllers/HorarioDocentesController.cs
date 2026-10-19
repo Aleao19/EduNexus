@@ -79,7 +79,7 @@ namespace EduNexus.UI.Controllers
                     // Escenario 2: si la lista queda vacía, la vista muestra el aviso y la opción de asignar
                     horarios = horarios
                         .OrderBy(h => OrdenDia(h.dia_semana))
-                        .ThenBy(h => h.hora_inicio.TimeOfDay)
+                        .ThenBy(h => h.hora_inicio)
                         .Select(h =>
                         {
                             string seccion;

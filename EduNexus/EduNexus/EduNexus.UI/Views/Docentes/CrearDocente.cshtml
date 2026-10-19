@@ -1,0 +1,102 @@
+@model EduNexus.Abstracciones.ModelosParaUI.Docentes.DocentesDto
+
+@{
+    ViewBag.Title = "Crear nuevo docente";
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Nuevo docente</h1>
+        <p class="text-secondary mb-0">Registra un nuevo docente en el sistema.</p>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        @using (Html.BeginForm("Create", "Docentes", FormMethod.Post, new { @class = "needs-validation", novalidate = "novalidate" }))
+        {
+            @Html.AntiForgeryToken()
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.identificacion, new { @class = "form-label" })
+                        @Html.TextBoxFor(model => model.identificacion, new { @class = "form-control", placeholder = "Ej: 12345678", required = "required" })
+                        @Html.ValidationMessageFor(model => model.identificacion, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.nombre, new { @class = "form-label" })
+                        @Html.TextBoxFor(model => model.nombre, new { @class = "form-control", placeholder = "Nombre", required = "required" })
+                        @Html.ValidationMessageFor(model => model.nombre, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.apellido1, new { @class = "form-label" })
+                        @Html.TextBoxFor(model => model.apellido1, new { @class = "form-control", placeholder = "Primer apellido", required = "required" })
+                        @Html.ValidationMessageFor(model => model.apellido1, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.apellido2, new { @class = "form-label" })
+                        @Html.TextBoxFor(model => model.apellido2, new { @class = "form-control", placeholder = "Segundo apellido" })
+                        @Html.ValidationMessageFor(model => model.apellido2, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.email, new { @class = "form-label" })
+                        @Html.TextBoxFor(model => model.email, new { @class = "form-control", type = "email", placeholder = "email@example.com", required = "required" })
+                        @Html.ValidationMessageFor(model => model.email, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.telefono, new { @class = "form-label" })
+                        @Html.TextBoxFor(model => model.telefono, new { @class = "form-control", type = "tel", placeholder = "+1 234 567 8900" })
+                        @Html.ValidationMessageFor(model => model.telefono, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-footer">
+                <button type="submit" class="btn btn-primary">Guardar docente</button>
+                @Html.ActionLink("Cancelar", "ListadoDeDocentes", null, new { @class = "btn btn-outline-secondary" })
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        // Validación del formulario
+        (function () {
+            'use strict';
+            window.addEventListener('load', function () {
+                var forms = document.getElementsByClassName('needs-validation');
+                var validation = Array.prototype.filter.call(forms, function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+}
