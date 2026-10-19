@@ -1,0 +1,98 @@
+﻿@model List<EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico.HistorialAnioDto>
+@using EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico
+@{
+    var estudiante = (EstudianteResumenDto)ViewBag.Estudiante;
+    var anios = ViewBag.Anios as List<int>;
+    int? anioSeleccionado = ViewBag.AnioSeleccionado as int?;
+    ViewBag.Title = "Historial académico";
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Historial académico</h1>
+        <p class="text-secondary mb-0">@estudiante.nombre_completo · @estudiante.identificacion</p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("Ver expediente", "Expediente", new { id = estudiante.id_usuario }, new { @class = "btn btn-outline-secondary" })
+    </div>
+</div>
+
+@if (ViewBag.SinHistorial == true)
+{
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="empty">
+                <p class="empty-title">No hay historial académico disponible</p>
+                <p class="empty-subtitle text-secondary">El estudiante no cuenta con registros académicos de años lectivos anteriores.</p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            @using (Html.BeginForm("HistorialAcademico", "ExpedienteAcademico", new { id = estudiante.id_usuario }, FormMethod.Get))
+            {
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label" for="anio">Año lectivo</label>
+                        <select class="form-select" id="anio" name="anio">
+                            <option value="">Todos los años</option>
+                            @foreach (var a in anios)
+                            {
+                                <option value="@a" @(anioSeleccionado == a ? "selected" : "")>@a</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="submit" value="Filtrar" class="btn btn-primary" />
+                        @Html.ActionLink("Ver todo", "HistorialAcademico", new { id = estudiante.id_usuario }, new { @class = "btn btn-outline-secondary" })
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    foreach (var anio in Model)
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">@(anio.anio > 0 ? anio.anio.ToString() : "Sin año") · @anio.grado @anio.seccion</h3>
+                <span class="text-secondary">
+                    @anio.periodo
+                    @if (anio.promedio.HasValue)
+                    {
+                        <span class="badge bg-blue-lt ms-2">Promedio: @anio.promedio.Value.ToString("0.00")</span>
+                    }
+                </span>
+            </div>
+            @if (!anio.calificaciones.Any())
+            {
+                <div class="card-body text-secondary">Sin calificaciones registradas para este año lectivo.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr><th>Materia</th><th>Evaluación</th><th>Porcentaje</th><th>Calificación</th><th>Estado</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in anio.calificaciones)
+                            {
+                                <tr>
+                                    <td class="fw-medium">@c.materia</td>
+                                    <td>@c.evaluacion</td>
+                                    <td>@c.porcentaje.ToString("0.##")%</td>
+                                    <td>@c.calificacion.ToString("0.##")</td>
+                                    <td>@c.estado</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+}

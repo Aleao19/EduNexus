@@ -1,0 +1,113 @@
+﻿@using EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico
+@{
+    var estudiante = (EstudianteResumenDto)ViewBag.Estudiante;
+    var adecuaciones = (List<CasoApoyoDto>)ViewBag.Adecuaciones;
+    var ayudas = (List<CasoApoyoDto>)ViewBag.Ayudas;
+    ViewBag.Title = "Expediente de " + estudiante.nombre_completo;
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">@estudiante.nombre_completo</h1>
+        <p class="text-secondary mb-0">Expediente académico del estudiante</p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("Historial académico", "HistorialAcademico", new { id = estudiante.id_usuario }, new { @class = "btn btn-primary me-1" })
+        @Html.ActionLink("Regresar", "ListadoDeEstudiantes", null, new { @class = "btn btn-outline-secondary" })
+    </div>
+</div>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success alert-dismissible" role="alert">
+        @TempData["Mensaje"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible" role="alert">
+        @TempData["Error"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
+
+<div class="row row-cards g-3 mb-3">
+    <div class="col-sm-3"><div class="card card-sm shadow-sm"><div class="card-body">
+        <div class="text-secondary small">Identificación</div><div class="h3 mb-0">@estudiante.identificacion</div>
+    </div></div></div>
+    <div class="col-sm-3"><div class="card card-sm shadow-sm"><div class="card-body">
+        <div class="text-secondary small">Sección actual</div><div class="h3 mb-0">@estudiante.seccion_actual</div>
+    </div></div></div>
+    <div class="col-sm-3"><div class="card card-sm shadow-sm"><div class="card-body">
+        <div class="text-secondary small">Adecuaciones activas</div><div class="h3 mb-0">@estudiante.adecuaciones_activas</div>
+    </div></div></div>
+    <div class="col-sm-3"><div class="card card-sm shadow-sm"><div class="card-body">
+        <div class="text-secondary small">Ayudas activas</div><div class="h3 mb-0">@estudiante.ayudas_activas</div>
+    </div></div></div>
+</div>
+
+@helper TablaCasos(List<EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico.CasoApoyoDto> casos, string accionClasificar, string accionFinalizar, string textoVacio)
+{
+    if (!casos.Any())
+    {
+        <div class="card-body text-secondary">@textoVacio</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr><th>Tipo</th><th>Descripción del caso</th><th>Registro</th><th>Estado</th><th class="w-1">Acciones</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in casos)
+                    {
+                        <tr>
+                            <td>
+                                @if (c.id_tipo.HasValue)
+                                {
+                                    <span class="badge bg-blue-lt">@c.tipo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-yellow-lt">Sin clasificar</span>
+                                }
+                            </td>
+                            <td>@c.descripcion</td>
+                            <td>@c.fecha_registro.ToString("dd/MM/yyyy")</td>
+                            <td><span class="badge bg-@(c.estado == "Activa" ? "green" : "secondary")-lt">@c.estado</span></td>
+                            <td class="text-nowrap">
+                                @if (c.estado == "Activa")
+                                {
+                                    @Html.ActionLink(c.id_tipo.HasValue ? "Reclasificar" : "Clasificar", accionClasificar, new { id = c.id_caso }, new { @class = "btn btn-sm btn-outline-primary me-1" })
+                                    using (Html.BeginForm(accionFinalizar, "ExpedienteAcademico", new { id = c.id_caso }, FormMethod.Post, new { style = "display:inline" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary" onclick="return confirm('¿Marcar este caso como finalizado?');">Finalizar</button>
+                                    }
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Adecuaciones</h3>
+        @Html.ActionLink("+ Registrar adecuación", "RegistrarAdecuacion", new { id = estudiante.id_usuario }, new { @class = "btn btn-sm btn-primary" })
+    </div>
+    @TablaCasos(adecuaciones, "ClasificarAdecuacion", "FinalizarAdecuacion", "El estudiante no tiene adecuaciones registradas.")
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Ayudas y beneficios</h3>
+        @Html.ActionLink("+ Registrar ayuda", "RegistrarAyuda", new { id = estudiante.id_usuario }, new { @class = "btn btn-sm btn-primary" })
+    </div>
+    @TablaCasos(ayudas, "ClasificarAyuda", "FinalizarAyuda", "El estudiante no tiene ayudas registradas.")
+</div>

@@ -180,6 +180,7 @@
     <Compile Include="Controllers\DocentesController.cs" />
     <Compile Include="Controllers\DocumentosExpedienteController.cs" />
     <Compile Include="Controllers\ExpedientesController.cs" />
+    <Compile Include="Controllers\ExpedienteAcademicoController.cs" />
     <Compile Include="Controllers\GradosController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\HorarioDocentesController.cs" />
@@ -195,6 +196,11 @@
     </Compile>
     <Compile Include="Models\AlmacenamientoDocumentoExpediente.cs" />
     <Compile Include="Models\AutorizarAdministradorAttribute.cs" />
+    <Compile Include="Models\AdecuacionEntity.cs" />
+    <Compile Include="Models\AdecuacionEstudianteEntity.cs" />
+    <Compile Include="Models\TipoAyudaEntity.cs" />
+    <Compile Include="Models\AyudaEstudianteEntity.cs" />
+    <Compile Include="Models\AsignacionEntity.cs" />
     <Compile Include="Models\BitacoraEntity.cs" />
     <Compile Include="Models\CalendarioEntity.cs" />
     <Compile Include="Models\ContrasennaHasher.cs" />
@@ -361,6 +367,15 @@
     <Content Include="Views\Horarios\VisualizarHorario.cshtml" />
     <Content Include="Views\Materias\EditarMateria.cshtml" />
     <Content Include="Views\Materias\ListadoDeMaterias.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\ListadoDeEstudiantes.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\Expediente.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\HistorialAcademico.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\TiposDeAdecuacion.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\CrearTipoAdecuacion.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\RegistrarAdecuacion.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\ClasificarAdecuacion.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\RegistrarAyuda.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\ClasificarAyuda.cshtml" />
     <Content Include="Views\Grados\CrearGrado.cshtml" />
     <Content Include="Views\Grados\DetalleDeGrado.cshtml" />
     <Content Include="Views\Grados\EditarGrado.cshtml" />

@@ -1,0 +1,61 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico.TipoAdecuacionDto>
+@{
+    ViewBag.Title = "Tipos de adecuación";
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Tipos de adecuación</h1>
+        <p class="text-secondary mb-0">Categorías disponibles para clasificar los casos de adecuación.</p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("Regresar", "ListadoDeEstudiantes", null, new { @class = "btn btn-outline-secondary me-1" })
+        @Html.ActionLink("+ Nuevo tipo", "CrearTipoAdecuacion", null, new { @class = "btn btn-primary" })
+    </div>
+</div>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success alert-dismissible" role="alert">
+        @TempData["Mensaje"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible" role="alert">
+        @TempData["Error"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
+
+<div class="card shadow-sm">
+    @if (!Model.Any())
+    {
+        <div class="card-body text-secondary">No hay tipos de adecuación registrados.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>@Html.DisplayNameFor(model => model.nombre)</th>
+                        <th>@Html.DisplayNameFor(model => model.descripcion)</th>
+                        <th>@Html.DisplayNameFor(model => model.casos_activos)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="fw-medium">@item.nombre</td>
+                            <td>@item.descripcion</td>
+                            <td><span class="badge bg-blue-lt">@item.casos_activos</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

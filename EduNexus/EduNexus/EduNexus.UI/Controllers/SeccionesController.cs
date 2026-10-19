@@ -178,7 +178,7 @@ namespace EduNexus.UI.Controllers
                 join u in db.Usuarios on e.fk_id_usuario equals u.id_usuario
                 where e.fk_id_seccion == idSeccion
                 orderby u.nombre, u.apellido1
-                select new
+                select new EstudianteAsignadoDto
                 {
                     nombreCompleto = ((u.nombre ?? "") + " " +
                                       (u.apellido1 ?? "") + " " +
