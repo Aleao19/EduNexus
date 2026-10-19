@@ -14,8 +14,8 @@
 <body>
     @{ var usuarioSesion = Session["UsuarioActual"] as EduNexus.Abstracciones.ModelosParaUI.Usuarios.UsuarioDto; }
 
-    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark d-print-none">
-        <div class="container">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark d-print-none w-100 en-navbar">
+        <div class="container-xl">
             @Html.ActionLink("EduNexus", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
 
             <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" title="Alternar navegación" aria-controls="navbarSupportedContent"
@@ -23,8 +23,8 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse d-sm-inline-flex justify-content-between">
-                <ul class="navbar-nav flex-grow-1">
+            <div class="collapse navbar-collapse align-items-center justify-content-between">
+                <ul class="navbar-nav flex-grow-1 align-items-lg-center">
                     @if (usuarioSesion != null)
                     {
                         <li>@Html.ActionLink("Inicio", "Index", "Home", new { area = "" }, new { @class = "nav-link" })</li>
@@ -36,7 +36,7 @@
                     }
                 </ul>
 
-                <div class="navbar-nav flex-row order-md-last ms-auto">
+                <div class="navbar-nav flex-row align-items-center ms-auto">
                     @if (usuarioSesion != null)
                     {
                         <span class="nav-link text-white-50">@usuarioSesion.nombre @usuarioSesion.apellido1 (@usuarioSesion.nombreRol)</span>
@@ -51,7 +51,7 @@
         </div>
     </nav>
 
-    <div class="container body-content">
+    <div class="container-xl body-content">
         @if (TempData["MensajeError"] != null)
         {
             <div class="alert alert-danger alert-dismissible mt-3" role="alert">

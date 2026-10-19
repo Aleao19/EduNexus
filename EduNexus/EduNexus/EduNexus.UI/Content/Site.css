@@ -23,3 +23,39 @@ textarea {
 .input-validation-error {
     border-color: #d63939 !important;
 }
+
+/* Navbar a todo lo ancho y elementos alineados */
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.en-navbar {
+    margin: 0;
+    left: 0;
+    right: 0;
+    border-radius: 0;
+    min-height: 56px;
+}
+
+.en-navbar .navbar-brand {
+    display: flex;
+    align-items: center;
+    margin: 0 1.5rem 0 0;
+    padding: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.en-navbar .nav-link {
+    display: flex;
+    align-items: center;
+    padding-top: .5rem;
+    padding-bottom: .5rem;
+    line-height: 1.25;
+}
+
+.en-navbar .navbar-nav li {
+    list-style: none;
+}
