@@ -13,12 +13,6 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Dashboard
         public int TotalSecciones { get; set; }
         public int TotalMaterias { get; set; }
 
-        // Variación porcentual respecto al periodo anterior (solo visual)
-        public double VariacionEstudiantes { get; set; }
-        public double VariacionDocentes { get; set; }
-        public double VariacionSecciones { get; set; }
-        public double VariacionMaterias { get; set; }
-
 
         // ---- Gráfica: matrícula histórica por año (la matrícula en Costa Rica
         //      es un proceso anual, no mensual) ----

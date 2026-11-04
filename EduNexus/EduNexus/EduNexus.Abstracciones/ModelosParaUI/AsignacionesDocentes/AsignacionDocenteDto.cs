@@ -3,7 +3,7 @@
     public class AsignacionDocenteDto
     {
         public int id_asignacion_docente { get; set; }
-        public int id_docente { get; set; }
+        public string id_docente { get; set; }
         public int id_materia { get; set; }
         public int id_seccion { get; set; }
     }

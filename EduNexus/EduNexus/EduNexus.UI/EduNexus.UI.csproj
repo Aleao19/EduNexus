@@ -15,7 +15,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>EduNexus.UI</RootNamespace>
     <AssemblyName>EduNexus.UI</AssemblyName>
-    <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <MvcBuildViews>false</MvcBuildViews>
     <UseIISExpress>true</UseIISExpress>
     <Use64BitIISExpress />
@@ -26,6 +26,7 @@
     <UseGlobalApplicationHostFile />
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -82,6 +83,7 @@
       <HintPath>..\packages\System.Configuration.ConfigurationManager.10.0.8\lib\net462\System.Configuration.ConfigurationManager.dll</HintPath>
     </Reference>
     <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Pipelines, Version=5.0.0.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.IO.Pipelines.5.0.2\lib\net461\System.IO.Pipelines.dll</HintPath>
@@ -106,11 +108,8 @@
     <Reference Include="System.Web.Entity" />
     <Reference Include="System.Web.ApplicationServices" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Web.Abstractions" />
     <Reference Include="System.Web.Routing" />
     <Reference Include="System.Xml" />
@@ -155,6 +154,7 @@
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="WebGrease">
       <Private>True</Private>
       <HintPath>..\packages\WebGrease.1.6.0\lib\WebGrease.dll</HintPath>
@@ -178,29 +178,47 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AulaVirtualController.cs" />
     <Compile Include="Controllers\DocentesController.cs" />
+    <Compile Include="Controllers\DocumentosExpedienteController.cs" />
     <Compile Include="Controllers\ExpedientesController.cs" />
+    <Compile Include="Controllers\ExpedienteAcademicoController.cs" />
     <Compile Include="Controllers\GradosController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\HorarioDocentesController.cs" />
     <Compile Include="Controllers\HorariosController.cs" />
     <Compile Include="Controllers\MateriasController.cs" />
+    <Compile Include="Controllers\PrematriculasController.cs" />
     <Compile Include="Controllers\RolesController.cs" />
     <Compile Include="Controllers\SeccionesController.cs" />
+    <Compile Include="Controllers\SeccionMateriasController.cs" />
     <Compile Include="Controllers\UsuariosController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\AlmacenamientoDocumentoExpediente.cs" />
     <Compile Include="Models\AutorizarAdministradorAttribute.cs" />
+    <Compile Include="Models\AdecuacionEntity.cs" />
+    <Compile Include="Models\AdecuacionEstudianteEntity.cs" />
+    <Compile Include="Models\TipoAyudaEntity.cs" />
+    <Compile Include="Models\AyudaEstudianteEntity.cs" />
+    <Compile Include="Models\AsignacionEntity.cs" />
     <Compile Include="Models\BitacoraEntity.cs" />
     <Compile Include="Models\CalendarioEntity.cs" />
     <Compile Include="Models\ContrasennaHasher.cs" />
     <Compile Include="Models\EduNexusDbContext.cs" />
+    <Compile Include="Models\ExpedienteEntity.cs" />
+    <Compile Include="Models\ExpedienteMapper.cs" />
     <Compile Include="Models\GradoEntity.cs" />
+    <Compile Include="Models\HorarioEntity.cs" />
+    <Compile Include="Models\MateriaEntity.cs" />
+    <Compile Include="Models\PrematriculaEntity.cs" />
     <Compile Include="Models\SeccionEntity.cs" />
     <Compile Include="Models\SeccionEstudianteEntity.cs" />
     <Compile Include="Models\LoginModel.cs" />
     <Compile Include="Models\RequiereSesionAttribute.cs" />
     <Compile Include="Models\RolEntity.cs" />
+    <Compile Include="Models\SeccionMateriaEntity.cs" />
     <Compile Include="Models\UsuarioEntity.cs" />
+    <Compile Include="Models\ValidacionExpediente.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -297,7 +315,9 @@
     <Content Include="bin\roslyn\VBCSCompiler.exe.config" />
     <None Include="Scripts\jquery-3.7.0.intellisense.js" />
     <Content Include="Scripts\DataTable\dataTables.min.js" />
+    <Content Include="Scripts\Docentes\AsignarDocente.js" />
     <Content Include="Scripts\General\General.js" />
+    <Content Include="Scripts\Horarios\CrearHorario.js" />
     <Content Include="Scripts\jquery-3.7.0.js" />
     <Content Include="Scripts\jquery-3.7.0.min.js" />
     <Content Include="Scripts\jquery-3.7.0.slim.js" />
@@ -308,8 +328,10 @@
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
     <Content Include="Scripts\Login\Login.js" />
+    <Content Include="Scripts\Materias\EditarMateria.js" />
     <Content Include="Scripts\modernizr-2.8.3.js" />
     <Content Include="Scripts\tabler.min.js" />
+    <Content Include="Scripts\Chart\chart.umd.min.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -344,9 +366,17 @@
     <Content Include="Views\Horarios\EditarHorario.cshtml" />
     <Content Include="Views\Horarios\ListadoDeHorarios.cshtml" />
     <Content Include="Views\Horarios\VisualizarHorario.cshtml" />
-    <Content Include="Views\Materias\CrearMateria.cshtml" />
     <Content Include="Views\Materias\EditarMateria.cshtml" />
     <Content Include="Views\Materias\ListadoDeMaterias.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\ListadoDeEstudiantes.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\Expediente.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\HistorialAcademico.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\TiposDeAdecuacion.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\CrearTipoAdecuacion.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\RegistrarAdecuacion.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\ClasificarAdecuacion.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\RegistrarAyuda.cshtml" />
+    <Content Include="Views\ExpedienteAcademico\ClasificarAyuda.cshtml" />
     <Content Include="Views\Grados\CrearGrado.cshtml" />
     <Content Include="Views\Grados\DetalleDeGrado.cshtml" />
     <Content Include="Views\Grados\EditarGrado.cshtml" />
@@ -358,6 +388,17 @@
     <Content Include="Views\Roles\ListadoDeRoles.cshtml" />
     <Content Include="Views\Usuarios\CrearUsuario.cshtml" />
     <Content Include="Views\Usuarios\ListadoDeUsuarios.cshtml" />
+    <Content Include="Views\DocumentosExpediente\AdjuntarDocumento.cshtml" />
+    <Content Include="Views\DocumentosExpediente\HistorialDocumentos.cshtml" />
+    <Content Include="Views\SeccionMaterias\ListadoDeAsignaciones.cshtml" />
+    <Content Include="Views\SeccionMaterias\AsignarMateria.cshtml" />
+    <Content Include="Views\HorarioDocentes\BuscarDocente.cshtml" />
+    <Content Include="Views\HorarioDocentes\HorarioDeDocente.cshtml" />
+    <Content Include="Views\Secciones\AsignarEstudiantes.cshtml" />
+    <Content Include="Views\Prematriculas\Crear.cshtml" />
+    <Content Include="Views\Docentes\CrearDocente.cshtml" />
+    <Content Include="Views\Docentes\EditarDocente.cshtml" />
+    <Content Include="Views\Materias\CrearMateria.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

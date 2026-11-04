@@ -1,33 +1,144 @@
 ﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.AsignacionesDocentes.AsignacionDocenteDto>
 
 @{
-    ViewBag.Title = "Materias y secciones a cargo";
+    ViewBag.Title = "Carga académica del docente";
+    var asignaciones = Model.ToList();
 }
 
-<h2>Materias y secciones a cargo de @ViewBag.NombreDocente</h2>
+<!-- Header de inicio -->
+<div class="row align-items-center mb-4">
+    <div class="col">
+        <div>
+            <h1 class="page-title mb-2">Carga académica</h1>
+            <p class="text-secondary">
+                <span class="avatar avatar-sm rounded-circle bg-blue-lt fw-bold me-2">
+                    @((ViewBag.NombreDocente ?? "?").ToString().Substring(0, 1).ToUpper())
+                </span>
+                @ViewBag.NombreDocente
+            </p>
+        </div>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("+ Asignar materia", "AsignarDocente", new { id = ViewBag.IdDocente }, new { @class = "btn btn-primary" })
+    </div>
+</div>
 
-<p>
-    @Html.ActionLink("Asignar nueva", "AsignarDocente", new { id = ViewBag.IdDocente })
-</p>
+<!-- Resumen de asignaciones -->
+<div class="row row-cards g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Asignaciones activas</div>
+                <div class="h2 mb-0">@asignaciones.Count()</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Materias distintas</div>
+                <div class="h2 mb-0">@asignaciones.Select(a => a.id_materia).Distinct().Count()</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm shadow-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Secciones a cargo</div>
+                <div class="h2 mb-0">@asignaciones.Select(a => a.id_seccion).Distinct().Count()</div>
+            </div>
+        </div>
+    </div>
+</div>
 
-<table class="table table-responsive" id="myTable">
-    <thead>
-        <tr>
-            <th>Materia</th>
-            <th>Sección</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>Matemáticas</td>
-                <td>1-A</td>
-            </tr>
-        }
-    </tbody>
-</table>
+<!-- Contenido principal -->
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Materias y secciones asignadas</h3>
+    </div>
 
-<div>
-    @Html.ActionLink("Regresar", "ListadoDeDocentes")
+    @if (!asignaciones.Any())
+    {
+        <div class="card-body">
+            <div class="empty">
+                <div class="empty-header">📚</div>
+                <p class="empty-title">Sin asignaciones</p>
+                <p class="empty-subtitle text-secondary">
+                    Este docente aún no tiene materias asignadas. 
+                    Asigna su primera materia y sección.
+                </p>
+                <div class="empty-action">
+                    @Html.ActionLink("Asignar materia", "AsignarDocente", new { id = ViewBag.IdDocente }, new { @class = "btn btn-primary" })
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3 p-4">
+            @foreach (var asignacion in asignaciones.GroupBy(a => new { a.id_materia, a.id_seccion }))
+            {
+                <div class="col-12 col-sm-6 col-md-4">
+                    <div class="card border h-100">
+                        <div class="card-body">
+                            <!-- Encabezado de la materia -->
+                            <div class="d-flex align-items-start mb-3">
+                                <div>
+                                    <h6 class="card-title mb-1">
+                                        <span class="badge bg-blue">@asignacion.Key.id_materia</span>
+                                    </h6>
+                                    <p class="text-secondary small mb-0">
+                                        @{
+                                            var materias = (ViewBag.Materias as System.Collections.Generic.List<EduNexus.Abstracciones.ModelosParaUI.Materias.MateriasDto>)
+                                                          ?? new System.Collections.Generic.List<EduNexus.Abstracciones.ModelosParaUI.Materias.MateriasDto>();
+                                            var materia = materias.FirstOrDefault(m => m.id_materia == asignacion.Key.id_materia);
+                                            @(materia?.nombre ?? "Materia desconocida")
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Sección -->
+                            <div class="mb-3">
+                                <small class="text-secondary">Grupo:</small>
+                                <div class="h6 mb-0">
+                                    @{
+                                        var secciones = (ViewBag.Secciones as System.Collections.Generic.List<EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionesDto>)
+                                                       ?? new System.Collections.Generic.List<EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionesDto>();
+                                        var seccion = secciones.FirstOrDefault(s => s.id_seccion == asignacion.Key.id_seccion);
+                                        <span class="badge bg-green">@(seccion?.nombre ?? "Sección " + asignacion.Key.id_seccion)</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Información adicional -->
+                            <div class="small text-secondary mb-3">
+                                @{
+                                    if (seccion != null)
+                                    {
+                                        <div>📚 Grado: <strong>@seccion.nombre_grado</strong></div>
+                                        <div>👥 Estudiantes: <strong>@seccion.estudiantes_matriculados / @seccion.cupo</strong></div>
+                                    }
+                                }
+                            </div>
+
+                            <!-- Acciones -->
+                            <div class="btn-group" role="group">
+                                <a href="#" class="btn btn-sm btn-outline-secondary" title="Ver horarios">
+                                    📅 Horarios
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Botón de regreso -->
+<div class="mt-4">
+    <a href="@Url.Action("ListadoDeDocentes")" class="btn btn-outline-secondary">
+        ← Volver al listado
+    </a>
 </div>

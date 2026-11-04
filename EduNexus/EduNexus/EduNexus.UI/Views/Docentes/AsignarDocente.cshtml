@@ -1,40 +1,184 @@
 ﻿@model EduNexus.Abstracciones.ModelosParaUI.AsignacionesDocentes.AsignacionDocenteDto
 
 @{
-    ViewBag.Title = "Asignar docente";
+    ViewBag.Title = "Asignar materia y sección";
+
+    var disponibles = (ViewBag.HorariosDisponibles as System.Collections.Generic.List<EduNexus.Abstracciones.ModelosParaUI.Horarios.HorariosDto>)
+                      ?? new System.Collections.Generic.List<EduNexus.Abstracciones.ModelosParaUI.Horarios.HorariosDto>();
+    var nombresMaterias = (ViewBag.NombresMaterias as System.Collections.Generic.Dictionary<int, string>)
+                          ?? new System.Collections.Generic.Dictionary<int, string>();
+    var nombresSecciones = (ViewBag.NombresSecciones as System.Collections.Generic.Dictionary<int, string>)
+                           ?? new System.Collections.Generic.Dictionary<int, string>();
+    var materias = (ViewBag.Materias as System.Web.Mvc.SelectList)
+                   ?? new System.Web.Mvc.SelectList(new System.Collections.Generic.List<System.Web.Mvc.SelectListItem>());
+    var secciones = (ViewBag.Secciones as System.Web.Mvc.SelectList)
+                    ?? new System.Web.Mvc.SelectList(new System.Collections.Generic.List<System.Web.Mvc.SelectListItem>());
+
+    System.Func<System.Collections.Generic.Dictionary<int, string>, int, string> nombre =
+        (d, k) => d.ContainsKey(k) ? d[k] : "";
 }
 
-<h2>Asignar materia y sección a @ViewBag.NombreDocente</h2>
+<!-- Header -->
+<div class="row align-items-center mb-4">
+    <div class="col">
+        <h1 class="page-title mb-2">Asignar materia y sección</h1>
+        <p class="text-secondary">
+            Selecciona una materia y sección para el docente:
+            <strong>@ViewBag.NombreDocente</strong>
+        </p>
+    </div>
+</div>
 
 @using (Html.BeginForm())
 {
     @Html.AntiForgeryToken()
     @Html.HiddenFor(model => model.id_docente)
 
-    <div class="form-horizontal">
-        <hr />
-        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        <div class="container">
-            <div class="row">
-                <div class="col-md-8 offset-md-1">
-                    <div class="form-group mt-3">
-                        <label class="control-label col-md-2">Materia</label>
-                        <div class="col-md-10">
-                            @Html.DropDownListFor(model => model.id_materia, (SelectList)ViewBag.Materias, "Seleccione una materia", new { @class = "form-control" })
+    <!-- Contenedor principal -->
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Cards de selección -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body p-4">
+
+                    <!-- Paso 1: Seleccionar Materia -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="badge badge-lg bg-blue rounded-circle fw-bold me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">1</span>
+                            <div>
+                                <h6 class="mb-1">Selecciona la materia</h6>
+                                <p class="text-secondary small mb-0">¿Cuál es la materia que impartirá?</p>
+                            </div>
+                        </div>
+                        <div class="form-group mt-3">
+                            @Html.DropDownListFor(
+                                model => model.id_materia,
+                                materias,
+                                "-- Selecciona una materia --",
+                                new { @class = "form-select form-select-lg", @id = "selectMateria" }
+                            )
+                            @Html.ValidationMessageFor(model => model.id_materia, "", new { @class = "text-danger small mt-2" })
                         </div>
                     </div>
 
-                    <div class="form-group mt-3">
-                        <label class="control-label col-md-2">Sección</label>
-                        <div class="col-md-10">
-                            @Html.DropDownListFor(model => model.id_seccion, (SelectList)ViewBag.Secciones, "Seleccione una sección", new { @class = "form-control" })
+                    <hr class="my-4">
+
+                    <!-- Paso 2: Seleccionar Sección -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="badge badge-lg bg-blue rounded-circle fw-bold me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">2</span>
+                            <div>
+                                <h6 class="mb-1">Selecciona la sección</h6>
+                                <p class="text-secondary small mb-0">¿A cuál sección le impartirá esta materia?</p>
+                            </div>
+                        </div>
+                        <div class="form-group mt-3">
+                            @Html.DropDownListFor(
+                                model => model.id_seccion,
+                                secciones,
+                                "-- Selecciona una sección --",
+                                new { @class = "form-select form-select-lg", @id = "selectSeccion" }
+                            )
+                            @Html.ValidationMessageFor(model => model.id_seccion, "", new { @class = "text-danger small mt-2" })
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <div class="col-md-offset-2 col-md-10 my-3">
-                            <input type="submit" value="Asignar" class="btn btn-cyan" />
+                    <hr class="my-4">
+
+                    <!-- Paso 3: Ver horarios disponibles -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="badge badge-lg bg-blue rounded-circle fw-bold me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">3</span>
+                            <div>
+                                <h6 class="mb-1">Revisa los horarios disponibles</h6>
+                                <p class="text-secondary small mb-0">Verifica que no haya conflictos de horarios</p>
+                            </div>
                         </div>
+
+                        <!-- Estado inicial -->
+                        <div id="hdInicio" class="alert alert-info">
+                            <span>Selecciona materia y sección para ver los horarios disponibles</span>
+                        </div>
+
+                        <!-- Tabla de horarios -->
+                        <div class="table-responsive" id="hdTabla" style="display:none;">
+                            <table class="table table-vcenter table-hover card-table">
+                                <thead>
+                                    <tr>
+                                        <th><strong>Día</strong></th>
+                                        <th><strong>Hora</strong></th>
+                                        <th><strong>Materia</strong></th>
+                                        <th><strong>Sección</strong></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var h in disponibles)
+                                    {
+                                        <tr class="hd-fila" data-materia="@h.materia" data-seccion="@h.seccion" style="display:none;">
+                                            <td class="text-nowrap">
+                                                <span class="badge bg-light-primary">@h.dia_semana.Substring(0, 3).ToUpper()</span>
+                                            </td>
+                                            <td class="text-nowrap">
+                                                <strong>@h.hora_inicio.ToString("HH:mm")</strong> - <small>@h.hora_fin.ToString("HH:mm")</small>
+                                            </td>
+                                            <td>@nombre(nombresMaterias, h.materia)</td>
+                                            <td>@nombre(nombresSecciones, h.seccion)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Sin horarios disponibles -->
+                        <div id="hdVacio" style="display:none;">
+                            <div class="alert alert-warning">
+                                <strong>⚠️ Atención:</strong> No hay horarios disponibles para esta materia y sección.
+                                <a href="@Url.Action("CrearHorario", "Horarios")" class="alert-link ms-2">
+                                    Crea un nuevo horario →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="d-flex gap-2 mb-4">
+                <button type="submit" id="hdAsignar" class="btn btn-primary btn-lg" disabled>
+                    ✓ Asignar materia
+                </button>
+                <a href="@Url.Action("ListadoDeDocentes")" class="btn btn-outline-secondary btn-lg">
+                    Cancelar
+                </a>
+            </div>
+        </div>
+
+        <!-- Panel lateral: Resumen -->
+        <div class="col-lg-4">
+            <div class="card bg-light shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h6 class="card-title mb-3">📋 Resumen de la asignación</h6>
+
+                    <div class="mb-3">
+                        <small class="text-secondary">Docente:</small>
+                        <p class="mb-0 fw-bold">@ViewBag.NombreDocente</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-secondary">Materia seleccionada:</small>
+                        <p id="resumenMateria" class="mb-0 fw-bold text-muted">No seleccionada</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-secondary">Sección seleccionada:</small>
+                        <p id="resumenSeccion" class="mb-0 fw-bold text-muted">No seleccionada</p>
+                    </div>
+
+                    <hr>
+
+                    <div class="alert alert-success mb-0" id="alertaConfirmacion" style="display:none;">
+                        <strong>✓ ¡Listo!</strong> Puedes confirmar la asignación.
                     </div>
                 </div>
             </div>
@@ -42,6 +186,6 @@
     </div>
 }
 
-<div>
-    @Html.ActionLink("Regresar", "ListadoDeDocentes")
-</div>
+@section scripts {
+    <script src="~/Scripts/Docentes/AsignarDocente.js"></script>
+}

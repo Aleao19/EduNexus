@@ -5,7 +5,6 @@ using EduNexus.UI.Models.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Remoting.Messaging;
 using System.Web;
 using System.Web.Mvc;
 
@@ -15,74 +14,126 @@ namespace EduNexus.UI.Controllers
     {
         public ActionResult Index()
         {
-            // TODO: reemplazar estos datos mock por llamadas a los
-            // repositorios/servicios reales (Estudiantes, Docentes, Secciones, Materias, Bitácora).
-            var model = new DashboardViewModel
+            // Dashboard: todos los datos salen de la base de datos (sin datos quemados).
+            var model = new DashboardViewModel();
+
+            using (var db = new EduNexusDbContext())
             {
-                TotalEstudiantes = 486,
-                TotalDocentes = 32,
-                TotalSecciones = 18,
-                TotalMaterias = 24,
+                string idRolEstudiante = db.Roles.Where(r => r.nombre == "Estudiante").Select(r => r.id_rol).FirstOrDefault();
+                string idRolDocente = db.Roles.Where(r => r.nombre == "Docente").Select(r => r.id_rol).FirstOrDefault();
 
-                VariacionEstudiantes = 4.8,
-                VariacionDocentes = 2.1,
-                VariacionSecciones = 0,
-                VariacionMaterias = -1.5,
+                // ---- KPIs ----
+                model.TotalEstudiantes = idRolEstudiante == null ? 0 : db.Usuarios.Count(u => u.rol == idRolEstudiante && u.estado);
+                model.TotalDocentes = idRolDocente == null ? 0 : db.Usuarios.Count(u => u.rol == idRolDocente && u.estado);
+                model.TotalSecciones = db.Secciones.Count();
+                model.TotalMaterias = db.Materias.Count();
 
-                AniosMatricula = new List<string> { "2022", "2023", "2024", "2025", "2026" },
-                MatriculaPorAnio = new List<int> { 430, 448, 460, 472, 486 },
+                var calendarios = db.Calendarios.ToList().ToDictionary(c => c.id_calendario);
+                var secciones = db.Secciones.ToList();
+                var asignacionesSeccion = db.SeccionesEstudiantes.ToList();
 
-                NombresSecciones = new List<string> { "7-A", "7-B", "8-A", "8-B", "9-A" },
-                EstudiantesPorSeccion = new List<int> { 32, 30, 35, 28, 31 },
+                // ---- Gráfica: matrícula por año (estudiantes asignados a secciones por año lectivo) ----
+                var matriculaPorAnio = asignacionesSeccion
+                    .Join(secciones, se => se.fk_id_seccion, s => s.id_seccion, (se, s) => new { se.fk_id_usuario, s.fk_id_calendario })
+                    .Where(x => calendarios.ContainsKey(x.fk_id_calendario))
+                    .GroupBy(x => calendarios[x.fk_id_calendario].fecha_inicio.Year)
+                    .Select(g => new { Anio = g.Key, Total = g.Select(x => x.fk_id_usuario).Distinct().Count() })
+                    .OrderBy(x => x.Anio)
+                    .ToList();
+                model.AniosMatricula = matriculaPorAnio.Select(x => x.Anio.ToString()).ToList();
+                model.MatriculaPorAnio = matriculaPorAnio.Select(x => x.Total).ToList();
 
-                NombresMaterias = new List<string> { "Matemática", "Español", "Ciencias", "Inglés", "Sociales" },
-                DocentesPorMateria = new List<int> { 6, 5, 4, 5, 3 },
-
-                ActividadReciente = new List<BitacoraDto>
+                // ---- Gráfica: estudiantes por sección (secciones del año lectivo más reciente) ----
+                int? anioActual = secciones
+                    .Where(s => calendarios.ContainsKey(s.fk_id_calendario))
+                    .Select(s => (int?)calendarios[s.fk_id_calendario].fecha_inicio.Year)
+                    .DefaultIfEmpty(null)
+                    .Max();
+                var grados = db.Grados.ToList().ToDictionary(g => g.id_grado);
+                var seccionesAnio = secciones
+                    .Where(s => anioActual == null || (calendarios.ContainsKey(s.fk_id_calendario) && calendarios[s.fk_id_calendario].fecha_inicio.Year == anioActual))
+                    .OrderBy(s => grados.ContainsKey(s.fk_id_grado) ? grados[s.fk_id_grado].nivel : 0)
+                    .ThenBy(s => s.nombre)
+                    .ToList();
+                foreach (var s in seccionesAnio)
                 {
-                    new BitacoraDto
-                    {
-                        id_evento = 1,
-                        tipoDeEvento = "Creación",
-                        descripcionEvento = "Se matriculó un nuevo estudiante en la sección 8-A.",
-                        fecha = DateTime.Now.AddMinutes(-25),
-                        Usuario = "Pedro"
-                    },
-                    new BitacoraDto
-                    {
-                        id_evento = 2,
-                        tipoDeEvento = "Actualización",
-                        descripcionEvento = "Se actualizó el horario de la materia Ciencias.",
-                        fecha = DateTime.Now.AddHours(-3),
-                        Usuario = "María"
-                    },
-                    new BitacoraDto
-                    {
-                        id_evento = 3,
-                        tipoDeEvento = "Asignación",
-                        descripcionEvento = "Se asignó un docente a la sección 9-A.",
-                        fecha = DateTime.Now.AddHours(-6),
-                        Usuario = "Carlos"
-                    },
-                    new BitacoraDto
-                    {
-                        id_evento = 4,
-                        tipoDeEvento = "Eliminación",
-                        descripcionEvento = "Se eliminó un registro duplicado de expediente.",
-                        fecha = DateTime.Now.AddDays(-1),
-                        Usuario = "Pedro"
-                    }
-                },
-
-                ProximasClases = new List<ProximaClaseDto>
-                {
-                    new ProximaClaseDto { Materia = "Matemática", Docente = "Prof. Rojas", Seccion = "8-A", Hora = "08:00 - 09:00", Dia = DateTime.Now.DayOfWeek },
-                    new ProximaClaseDto { Materia = "Inglés", Docente = "Prof. Vargas", Seccion = "7-B", Hora = "09:00 - 10:00", Dia = DateTime.Now.DayOfWeek },
-                    new ProximaClaseDto { Materia = "Ciencias", Docente = "Prof. Solano", Seccion = "9-A", Hora = "10:15 - 11:15", Dia = DateTime.Now.DayOfWeek }
+                    model.NombresSecciones.Add(s.nombre);
+                    model.EstudiantesPorSeccion.Add(asignacionesSeccion.Count(se => se.fk_id_seccion == s.id_seccion));
                 }
-            };
+
+                // ---- Gráfica: docentes por materia (docentes distintos que imparten cada materia) ----
+                var docentesPorMateria = db.Materias.ToList()
+                    .GroupBy(m => (m.nombre ?? "").Trim())
+                    .Select(g => new { Materia = g.Key, Total = g.Where(m => !string.IsNullOrEmpty(m.profesor)).Select(m => m.profesor).Distinct().Count() })
+                    .OrderBy(x => x.Materia)
+                    .ToList();
+                model.NombresMaterias = docentesPorMateria.Select(x => x.Materia).ToList();
+                model.DocentesPorMateria = docentesPorMateria.Select(x => x.Total).ToList();
+
+                // ---- Actividad reciente (bitácora) ----
+                model.ActividadReciente = ObtenerBitacora(db, 5);
+
+                // ---- Próximas clases de hoy (horarios del día que aún no terminan) ----
+                string hoy = NormalizarDia(DateTime.Now.ToString("dddd", new System.Globalization.CultureInfo("es-ES")));
+                TimeSpan ahora = DateTime.Now.TimeOfDay;
+                var materias = db.Materias.ToList().ToDictionary(m => m.id_materia);
+                var usuarios = db.Usuarios.ToList().ToDictionary(u => u.id_usuario);
+                var seccionesPorId = secciones.ToDictionary(s => s.id_seccion);
+
+                model.ProximasClases = db.Horarios.ToList()
+                    .Where(h => NormalizarDia(h.dia_semana) == hoy && h.hora_fin > ahora)
+                    .OrderBy(h => h.hora_inicio)
+                    .Take(8)
+                    .Select(h =>
+                    {
+                        MateriaEntity materia = materias.ContainsKey(h.fk_materia) ? materias[h.fk_materia] : null;
+                        UsuarioEntity docente = (materia != null && materia.profesor != null && usuarios.ContainsKey(materia.profesor)) ? usuarios[materia.profesor] : null;
+                        return new ProximaClaseDto
+                        {
+                            Materia = materia != null ? materia.nombre : "—",
+                            Docente = docente != null ? docente.nombre + " " + docente.apellido1 : "Sin docente",
+                            Seccion = seccionesPorId.ContainsKey(h.fk_seccion) ? seccionesPorId[h.fk_seccion].nombre : "—",
+                            Hora = DateTime.Today.Add(h.hora_inicio).ToString("HH:mm") + " - " + DateTime.Today.Add(h.hora_fin).ToString("HH:mm"),
+                            Dia = DateTime.Now.DayOfWeek
+                        };
+                    })
+                    .ToList();
+            }
 
             return View(model);
+        }
+
+        // Lee la bitácora real (más reciente primero) con el nombre del usuario que hizo el cambio.
+        private static List<BitacoraDto> ObtenerBitacora(EduNexusDbContext db, int? cantidad)
+        {
+            IQueryable<BitacoraEntity> consulta = db.Bitacora.OrderByDescending(b => b.fecha).ThenByDescending(b => b.id_evento);
+            if (cantidad.HasValue)
+            {
+                consulta = consulta.Take(cantidad.Value);
+            }
+            var eventos = consulta.ToList();
+            var ids = eventos.Select(b => b.fk_id_usuario).Distinct().ToList();
+            var usuarios = db.Usuarios.Where(u => ids.Contains(u.id_usuario)).ToList().ToDictionary(u => u.id_usuario);
+
+            return eventos.Select(b => new BitacoraDto
+            {
+                id_evento = b.id_evento,
+                tipoDeEvento = b.tipo_de_evento,
+                descripcionEvento = b.descripcion_evento,
+                fecha = b.fecha,
+                datosAnteriores = b.datos_anteriores,
+                datosPosteriores = b.datos_posteriores,
+                Usuario = (b.fk_id_usuario != null && usuarios.ContainsKey(b.fk_id_usuario))
+                    ? usuarios[b.fk_id_usuario].nombre + " " + usuarios[b.fk_id_usuario].apellido1
+                    : b.fk_id_usuario
+            }).ToList();
+        }
+
+        private static string NormalizarDia(string dia)
+        {
+            if (string.IsNullOrWhiteSpace(dia)) return "";
+            return dia.Trim().ToLowerInvariant()
+                .Replace("á", "a").Replace("é", "e").Replace("í", "i").Replace("ó", "o").Replace("ú", "u");
         }
 
         [AllowAnonymous]
@@ -169,42 +220,10 @@ namespace EduNexus.UI.Controllers
 
         public ActionResult Bitacora()
         {
-            List<BitacoraDto> bitacoras = new List<BitacoraDto>()
+            using (var db = new EduNexusDbContext())
             {
-                new BitacoraDto
-                {
-                    id_evento = 1,
-                    tipoDeEvento = "Creación",
-                    descripcionEvento = "Se creó un nuevo registro.",
-                    fecha = DateTime.Now,
-                    datosAnteriores = null,
-                    datosPosteriores = "{ \"nombre\": \"Juan\", \"edad\": 30 }",
-                    Usuario = "Pedro"
-                },
-                new BitacoraDto
-                {
-                    id_evento = 2,
-                    tipoDeEvento = "Actualización",
-                    descripcionEvento = "Se actualizó un registro existente.",
-                    fecha = DateTime.Now,
-                    datosAnteriores = "{ \"nombre\": \"Juan\", \"edad\": 30 }",
-                    datosPosteriores = "{ \"nombre\": \"Juan\", \"edad\": 31 }",
-                    Usuario = "Pedro"
-                },
-                new BitacoraDto
-                {
-                    id_evento = 3,
-                    tipoDeEvento = "Eliminación",
-                    descripcionEvento = "Se eliminó un registro.",
-                    fecha = DateTime.Now,
-                    datosAnteriores = "{ \"nombre\": \"Juan\", \"edad\": 31 }",
-                    datosPosteriores = null,
-                    Usuario = "Pedro"
-                }
-            };
-
-
-            return View(bitacoras);
+                return View(ObtenerBitacora(db, null));
+            }
         }
     }
 }

@@ -26,9 +26,7 @@
                             <div class="text-secondary small">Estudiantes</div>
                             <div class="d-flex align-items-baseline gap-2">
                                 <div class="h2 mb-0">@Model.TotalEstudiantes</div>
-                                <span class="badge bg-@(Model.VariacionEstudiantes >= 0 ? "green" : "red")-lt">
-                                    @(Model.VariacionEstudiantes >= 0 ? "+" : "")@Model.VariacionEstudiantes.ToString("0.0")%
-                                </span>
+                                <span class="text-secondary small">activos</span>
                             </div>
                         </div>
                     </div>
@@ -49,9 +47,7 @@
                             <div class="text-secondary small">Docentes</div>
                             <div class="d-flex align-items-baseline gap-2">
                                 <div class="h2 mb-0">@Model.TotalDocentes</div>
-                                <span class="badge bg-@(Model.VariacionDocentes >= 0 ? "green" : "red")-lt">
-                                    @(Model.VariacionDocentes >= 0 ? "+" : "")@Model.VariacionDocentes.ToString("0.0")%
-                                </span>
+                                <span class="text-secondary small">activos</span>
                             </div>
                         </div>
                     </div>
@@ -72,7 +68,7 @@
                             <div class="text-secondary small">Secciones</div>
                             <div class="d-flex align-items-baseline gap-2">
                                 <div class="h2 mb-0">@Model.TotalSecciones</div>
-                                <span class="badge bg-secondary-lt">sin cambios</span>
+                                <span class="text-secondary small">registradas</span>
                             </div>
                         </div>
                     </div>
@@ -93,9 +89,7 @@
                             <div class="text-secondary small">Materias</div>
                             <div class="d-flex align-items-baseline gap-2">
                                 <div class="h2 mb-0">@Model.TotalMaterias</div>
-                                <span class="badge bg-@(Model.VariacionMaterias >= 0 ? "green" : "red")-lt">
-                                    @(Model.VariacionMaterias >= 0 ? "+" : "")@Model.VariacionMaterias.ToString("0.0")%
-                                </span>
+                                <span class="text-secondary small">registradas</span>
                             </div>
                         </div>
                     </div>
@@ -148,12 +142,17 @@
                     </div>
                 </div>
                 <div class="list-group list-group-flush">
+                    @if (!Model.ActividadReciente.Any())
+                    {
+                        <div class="list-group-item text-secondary">Todavía no hay actividad registrada en la bitácora.</div>
+                    }
                     @foreach (var evento in Model.ActividadReciente)
                     {
-                        string badgeColor = evento.tipoDeEvento == "Creación" ? "green"
-                                            : evento.tipoDeEvento == "Actualización" ? "blue"
-                                            : evento.tipoDeEvento == "Asignación" ? "purple"
-                                            : "red";
+                        string tipoEvento = (evento.tipoDeEvento ?? "").ToLower();
+                        string badgeColor = (tipoEvento.Contains("elimin") || tipoEvento.Contains("finaliz") || tipoEvento.Contains("bloque")) ? "red"
+                                            : (tipoEvento.Contains("asign") || tipoEvento.Contains("clasific")) ? "purple"
+                                            : (tipoEvento.Contains("modific") || tipoEvento.Contains("actualiz") || tipoEvento.Contains("edit")) ? "blue"
+                                            : "green";
                         <div class="list-group-item">
                             <div class="row align-items-center">
                                 <div class="col-auto">
@@ -192,6 +191,10 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @if (!Model.ProximasClases.Any())
+                            {
+                                <tr><td colspan="4" class="text-secondary">No hay más clases programadas para hoy.</td></tr>
+                            }
                             @foreach (var clase in Model.ProximasClases)
                             {
                                 <tr>
@@ -345,9 +348,20 @@
 </main>
 
 @section scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    <script src="~/Scripts/Chart/chart.umd.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        (function () {
+            // Si una gráfica no tiene datos en la BD, se muestra un mensaje en lugar del lienzo vacío
+            function sinDatos(idCanvas, valores) {
+                if (valores && valores.some(function (v) { return v > 0; })) { return false; }
+                var canvas = document.getElementById(idCanvas);
+                var aviso = document.createElement('div');
+                aviso.className = 'text-secondary text-center py-5';
+                aviso.textContent = 'Todavía no hay datos registrados.';
+                canvas.parentNode.replaceChild(aviso, canvas);
+                return true;
+            }
+
             var aniosMatricula = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.AniosMatricula));
             var matriculaPorAnio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MatriculaPorAnio));
             var nombresSecciones = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.NombresSecciones));
@@ -358,7 +372,7 @@
             // Gráfica de barras: Matrícula histórica por año
             // (la matrícula es un proceso anual en el sistema educativo público de Costa Rica,
             // por eso se compara año contra año y no mes a mes)
-            new Chart(document.getElementById('chartMatricula'), {
+            if (!sinDatos('chartMatricula', matriculaPorAnio)) new Chart(document.getElementById('chartMatricula'), {
                 type: 'bar',
                 data: {
                     labels: aniosMatricula,
@@ -373,18 +387,18 @@
                 options: {
                     responsive: true,
                     plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: false } }
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
                 }
             });
 
             // Gráfica de dona: Estudiantes por sección
-            new Chart(document.getElementById('chartSecciones'), {
+            if (!sinDatos('chartSecciones', estudiantesPorSeccion)) new Chart(document.getElementById('chartSecciones'), {
                 type: 'doughnut',
                 data: {
                     labels: nombresSecciones,
                     datasets: [{
                         data: estudiantesPorSeccion,
-                        backgroundColor: ['#206bc4', '#2fb344', '#ae3ec9', '#f76707', '#0ca678']
+                        backgroundColor: ['#206bc4', '#2fb344', '#ae3ec9', '#f76707', '#0ca678', '#d63939', '#f59f00', '#4299e1', '#74b816', '#d6336c', '#17a2b8', '#6574cd']
                     }]
                 },
                 options: {
@@ -394,7 +408,7 @@
             });
 
             // Gráfica de barras: Docentes por materia
-            new Chart(document.getElementById('chartMaterias'), {
+            if (!sinDatos('chartMaterias', docentesPorMateria)) new Chart(document.getElementById('chartMaterias'), {
                 type: 'bar',
                 data: {
                     labels: nombresMaterias,
@@ -411,6 +425,6 @@
                     scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                 }
             });
-        });
+        })();
     </script>
 }

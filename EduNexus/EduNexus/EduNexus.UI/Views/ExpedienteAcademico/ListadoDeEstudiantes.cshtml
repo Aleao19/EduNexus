@@ -1,0 +1,91 @@
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico.EstudianteResumenDto>
+
+@{
+    ViewBag.Title = "Expediente académico";
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Expediente académico</h1>
+        <p class="text-secondary mb-0">Historial, adecuaciones y ayudas de cada estudiante.</p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("Tipos de adecuación", "TiposDeAdecuacion", null, new { @class = "btn btn-outline-secondary" })
+    </div>
+</div>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success alert-dismissible" role="alert">
+        @TempData["Mensaje"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible" role="alert">
+        @TempData["Error"]
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+    </div>
+}
+
+@if (ViewBag.SinRolEstudiante == true)
+{
+    <div class="alert alert-warning">No existe el rol "Estudiante". Créelo en Roles y asígnelo a los usuarios estudiantes.</div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Estudiantes</h3>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card-body">
+            <div class="empty">
+                <p class="empty-title">No hay estudiantes registrados</p>
+                <p class="empty-subtitle text-secondary">Registre usuarios con el rol Estudiante en el módulo de Usuarios.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table" id="myTable">
+                <thead>
+                    <tr>
+                        <th>@Html.DisplayNameFor(model => model.nombre_completo)</th>
+                        <th>@Html.DisplayNameFor(model => model.identificacion)</th>
+                        <th>@Html.DisplayNameFor(model => model.seccion_actual)</th>
+                        <th>@Html.DisplayNameFor(model => model.adecuaciones_activas)</th>
+                        <th>@Html.DisplayNameFor(model => model.ayudas_activas)</th>
+                        <th>@Html.DisplayNameFor(model => model.estado)</th>
+                        <th class="w-1">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="fw-medium">@item.nombre_completo</td>
+                            <td>@item.identificacion</td>
+                            <td>@item.seccion_actual</td>
+                            <td><span class="badge bg-blue-lt">@item.adecuaciones_activas</span></td>
+                            <td><span class="badge bg-green-lt">@item.ayudas_activas</span></td>
+                            <td><span class="badge bg-@(item.estado == "Activo" ? "green" : "red")-lt">@item.estado</span></td>
+                            <td class="text-nowrap">
+                                @Html.ActionLink("Expediente", "Expediente", new { id = item.id_usuario }, new { @class = "btn btn-sm btn-primary me-1" })
+                                @Html.ActionLink("Historial", "HistorialAcademico", new { id = item.id_usuario }, new { @class = "btn btn-sm btn-outline-secondary" })
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section scripts
+{
+    <script src="~/Scripts/General/General.js"></script>
+}
