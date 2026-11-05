@@ -1,0 +1,167 @@
+
+@model IEnumerable<EduNexus.UI.Models.Identity.UsuarioEntity>
+
+@using System.Linq
+
+@{
+    ViewBag.Title = "Estudiantes activos";
+}
+
+<div class="container-xl mt-4">
+
+    <!-- ENCABEZADO -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h1>Renovación de matrícula</h1>
+
+            <p class="text-secondary">
+                Seleccione el estudiante al que desea realizarle
+                la renovación de matrícula.
+            </p>
+        </div>
+
+        <div>
+            @Html.ActionLink(
+                "Regresar al listado",
+                "Listado",
+                "Prematriculas",
+                null,
+                new
+                {
+                    @class = "btn btn-outline-secondary"
+                }
+            )
+        </div>
+
+    </div>
+
+    <!-- MENSAJES -->
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["Mensaje"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["Error"]
+        </div>
+    }
+
+    <!-- TABLA DE ESTUDIANTES -->
+    <div class="card shadow-sm">
+
+        <div class="card-header">
+            <h3 class="card-title mb-0">
+                Estudiantes activos registrados
+            </h3>
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-vcenter card-table"
+                   id="myTable">
+
+                <thead>
+                    <tr>
+                        <th>Identificación</th>
+                        <th>Nombre completo</th>
+                        <th>Teléfono</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var estudiante in Model)
+                        {
+                            <tr>
+
+                                <!-- IDENTIFICACIÓN -->
+                                <td>
+                                    @estudiante.identificacion
+                                </td>
+
+                                <!-- NOMBRE COMPLETO -->
+                                <td>
+                                    @estudiante.nombre
+                                    @estudiante.apellido1
+                                    @estudiante.apellido2
+                                </td>
+
+                                <!-- TELÉFONO -->
+                                <td>
+                                    @(string.IsNullOrWhiteSpace(estudiante.telefono)
+                                        ? "No registrado"
+                                        : estudiante.telefono)
+                                </td>
+
+                                <!-- ACCIONES -->
+                                <td>
+
+                                    @Html.ActionLink(
+                                        "Renovar matrícula",
+                                        "Renovar",
+                                        "Prematriculas",
+                                        new
+                                        {
+                                            id = estudiante.id_usuario
+                                        },
+                                        new
+                                        {
+                                            @class = "btn btn-sm btn-primary",
+                                            title = "Registrar renovación de matrícula"
+                                        }
+                                    )
+
+                                </td>
+
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4"
+                                class="text-center text-secondary py-4">
+
+                                No existen estudiantes activos registrados.
+
+                            </td>
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <!-- INFORMACIÓN IMPORTANTE -->
+    <div class="alert alert-info mt-4">
+
+        <strong>Información importante:</strong>
+
+        <p class="mb-0 mt-2">
+            La renovación de matrícula genera una nueva solicitud
+            con estado <strong>Pendiente</strong>.
+
+            La administración deberá aprobarla posteriormente,
+            considerando la disponibilidad de cupos.
+        </p>
+
+    </div>
+
+</div>
+
+@section scripts
+{
+    <script src="~/Scripts/General/General.js"></script>
+}

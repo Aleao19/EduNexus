@@ -1,0 +1,279 @@
+
+@model EduNexus.Abstracciones.ModelosParaUI.Prematriculas.PrematriculaDto
+
+@using System.Collections.Generic
+@using System.Web.Mvc
+
+@{
+    ViewBag.Title = "Renovar matrícula";
+
+    var grados = ViewBag.Grados as IEnumerable<SelectListItem>
+                 ?? new List<SelectListItem>();
+
+    var periodoDestino = !string.IsNullOrWhiteSpace(Model.nombre_calendario)
+        ? Model.nombre_calendario
+        : "No disponible";
+}
+
+<div class="container-xl mt-4">
+
+    <h1>Renovación de matrícula</h1>
+
+    <p class="text-secondary">
+        Registre la renovación de un estudiante activo
+        para el siguiente período lectivo.
+    </p>
+
+    <div class="card shadow-sm">
+
+        <div class="card-header">
+            <h3 class="card-title">
+                Solicitud de renovación
+            </h3>
+        </div>
+
+        <div class="card-body">
+
+            @using (Html.BeginForm(
+                "Renovar",
+                "Prematriculas",
+                FormMethod.Post,
+                new { id = "formRenovacion" }))
+            {
+                @Html.AntiForgeryToken()
+
+                <!-- IDENTIFICADOR DE LA MATRÍCULA ORIGINAL -->
+                @Html.HiddenFor(m => m.id_prematricula)
+
+                <!-- ERRORES GENERALES -->
+                @Html.ValidationSummary(
+                    true,
+                    "",
+                    new { @class = "alert alert-danger" }
+                )
+
+                <h4 class="mb-3">
+                    Información del estudiante
+                </h4>
+
+                <div class="row">
+
+                    <!-- IDENTIFICACIÓN -->
+                    <div class="col-md-6 mb-3">
+
+                        <label for="identificacionConsulta"
+                               class="form-label">
+                            Identificación
+                        </label>
+
+                        <input type="text"
+                               id="identificacionConsulta"
+                               class="form-control"
+                               value="@Model.identificacion"
+                               readonly />
+
+                    </div>
+
+                    <!-- NOMBRE COMPLETO -->
+                    <div class="col-md-6 mb-3">
+
+                        <label for="nombreConsulta"
+                               class="form-label">
+                            Nombre completo
+                        </label>
+
+                        <input type="text"
+                               id="nombreConsulta"
+                               class="form-control"
+                               value="@Model.nombre @Model.apellido1 @Model.apellido2"
+                               readonly />
+
+                    </div>
+
+                    <!-- FECHA DE NACIMIENTO -->
+                    <div class="col-md-6 mb-3">
+
+                        <label for="fechaConsulta"
+                               class="form-label">
+                            Fecha de nacimiento
+                        </label>
+
+                        <input type="text"
+                               id="fechaConsulta"
+                               class="form-control"
+                               value="@(Model.fecha_nacimiento.HasValue
+                                   ? Model.fecha_nacimiento.Value.ToString("dd/MM/yyyy")
+                                   : "No registrada")"
+                               readonly />
+
+                    </div>
+
+                    <!-- GRADO ANTERIOR -->
+                    <div class="col-md-6 mb-3">
+
+                        <label for="gradoAnterior"
+                               class="form-label">
+                            Grado anterior
+                        </label>
+
+                        <input type="text"
+                               id="gradoAnterior"
+                               class="form-control"
+                               value="@Model.nombre_grado"
+                               readonly />
+
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <h4 class="mb-3">
+                    Información de la renovación
+                </h4>
+
+                <!-- PERÍODO LECTIVO DE DESTINO -->
+                <div class="mb-3">
+
+                    <label for="periodoLectivo"
+                           class="form-label">
+                        Período lectivo de destino
+                    </label>
+
+                    <input type="text"
+                           id="periodoLectivo"
+                           class="form-control"
+                           value="@periodoDestino"
+                           readonly />
+
+                    <div class="form-text">
+                        La renovación se realizará para el
+                        período lectivo indicado.
+                        Este período es determinado
+                        automáticamente por el sistema.
+                    </div>
+
+                </div>
+
+                <!-- NUEVO GRADO -->
+                <div class="mb-3">
+
+                    @Html.LabelFor(
+                        m => m.grado,
+                        "Grado solicitado para la renovación",
+                        new { @class = "form-label" }
+                    )
+
+                    <span class="text-danger">*</span>
+
+                    @Html.DropDownListFor(
+                        m => m.grado,
+                        grados,
+                        "Seleccione el grado para el nuevo período",
+                        new
+                        {
+                            @class = "form-select",
+                            required = "required"
+                        }
+                    )
+
+                    @Html.ValidationMessageFor(
+                        m => m.grado,
+                        "",
+                        new { @class = "text-danger" }
+                    )
+
+                </div>
+
+                <!-- INFORMACIÓN IMPORTANTE -->
+                <div class="alert alert-info">
+
+                    <strong>Importante:</strong>
+
+                    <p class="mb-2 mt-2">
+                        Esta renovación corresponde al período:
+                        <strong>@periodoDestino</strong>.
+                    </p>
+
+                    <p class="mb-0">
+                        La renovación se registrará con estado
+                        <strong>Pendiente</strong>.
+
+                        Posteriormente, la administración deberá
+                        aprobar la solicitud según la disponibilidad
+                        de cupos del período seleccionado.
+                    </p>
+
+                </div>
+
+                <!-- BOTONES -->
+                <div class="d-flex gap-2 mt-4">
+
+                    <button type="submit"
+                            class="btn btn-primary"
+                            id="btnRenovar">
+
+                        Registrar renovación
+
+                    </button>
+
+                    @Html.ActionLink(
+                        "Cancelar",
+                        "EstudiantesActivos",
+                        "Prematriculas",
+                        null,
+                        new
+                        {
+                            @class = "btn btn-outline-secondary"
+                        }
+                    )
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>
+
+@section scripts {
+
+    @Scripts.Render("~/bundles/jqueryval")
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            var formulario =
+                document.getElementById("formRenovacion");
+
+            var boton =
+                document.getElementById("btnRenovar");
+
+            if (!formulario || !boton) {
+                return;
+            }
+
+            formulario.addEventListener("submit", function (evento) {
+
+                if (evento.defaultPrevented ||
+                    !formulario.checkValidity()) {
+                    return;
+                }
+
+                var confirmar = confirm(
+                    "¿Desea registrar la renovación de matrícula " +
+                    "para el período lectivo indicado?"
+                );
+
+                if (!confirmar) {
+                    evento.preventDefault();
+                    return;
+                }
+
+                boton.disabled = true;
+                boton.textContent = "Registrando...";
+            });
+        });
+    </script>
+}

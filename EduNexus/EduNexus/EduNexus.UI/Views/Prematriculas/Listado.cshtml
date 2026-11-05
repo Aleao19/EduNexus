@@ -1,0 +1,345 @@
+
+@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Prematriculas.PrematriculaDto>
+
+@using System
+@using System.Linq
+
+@{
+    ViewBag.Title = "Solicitudes de prematrícula";
+}
+
+<div class="container-xl mt-4">
+
+    <!-- ENCABEZADO -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h1>Solicitudes de prematrícula</h1>
+
+            <p class="text-secondary">
+                Administración y seguimiento de las solicitudes registradas.
+            </p>
+        </div>
+
+        <div>
+            @Html.ActionLink(
+                "Estudiantes activos",
+                "EstudiantesActivos",
+                "Prematriculas",
+                null,
+                new { @class = "btn btn-primary" }
+            )
+        </div>
+
+    </div>
+
+    <!-- MENSAJES -->
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["Mensaje"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["Error"]
+        </div>
+    }
+
+    <!-- TABLA -->
+    <div class="card shadow-sm">
+
+        <div class="card-header">
+            <h3 class="card-title mb-0">
+                Solicitudes registradas
+            </h3>
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-vcenter card-table"
+                   id="myTable">
+
+                <thead>
+                    <tr>
+                        <th>Identificación</th>
+                        <th>Estudiante</th>
+                        <th>Grado solicitado</th>
+                        <th>Tipo</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            var estado = (item.estado ?? "").Trim();
+
+                            var pendiente = string.Equals(
+                                estado,
+                                "Pendiente",
+                                StringComparison.OrdinalIgnoreCase
+                            );
+
+                            var aprobada = string.Equals(
+                                estado,
+                                "Aprobada",
+                                StringComparison.OrdinalIgnoreCase
+                            );
+
+                            var rechazada = string.Equals(
+                                estado,
+                                "Rechazada",
+                                StringComparison.OrdinalIgnoreCase
+                            );
+
+                            <tr>
+
+                                <!-- IDENTIFICACIÓN -->
+                                <td>
+                                    @item.identificacion
+                                </td>
+
+                                <!-- ESTUDIANTE -->
+                                <td>
+                                    @item.nombre
+                                    @item.apellido1
+                                    @item.apellido2
+                                </td>
+
+                                <!-- GRADO -->
+                                <td>
+                                    @item.nombre_grado
+                                </td>
+
+                                <!-- TIPO DE INGRESO -->
+                                <td>
+
+                                    @if (item.esNuevoIngreso)
+                                    {
+                                        <span class="badge bg-blue-lt">
+                                            Nuevo ingreso
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-purple-lt">
+                                            Renovación
+                                        </span>
+                                    }
+
+                                </td>
+
+                                <!-- FECHA -->
+                                <td>
+                                    @item.fecha_prematricula.ToString("dd/MM/yyyy")
+                                </td>
+
+                                <!-- ESTADO -->
+                                <td>
+
+                                    @if (pendiente)
+                                    {
+                                        <span class="badge bg-yellow-lt">
+                                            Pendiente
+                                        </span>
+                                    }
+                                    else if (aprobada)
+                                    {
+                                        <span class="badge bg-success-lt">
+                                            Aprobada
+                                        </span>
+                                    }
+                                    else if (rechazada)
+                                    {
+                                        <span class="badge bg-danger-lt">
+                                            Rechazada
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-lt">
+                                            @(string.IsNullOrWhiteSpace(estado)
+                                                ? "Sin estado"
+                                                : estado)
+                                        </span>
+                                    }
+
+                                </td>
+
+                                <!-- ACCIONES -->
+                                <td class="text-nowrap">
+
+                                    <div class="d-flex flex-wrap gap-1">
+
+                                        @if (pendiente)
+                                        {
+                                            <!-- EDITAR -->
+                                            @Html.ActionLink(
+                                                "Editar",
+                                                "Editar",
+                                                "Prematriculas",
+                                                new
+                                                {
+                                                    id = item.id_prematricula
+                                                },
+                                                new
+                                                {
+                                                    @class = "btn btn-sm btn-outline-primary"
+                                                }
+                                            )
+
+                                            <!-- APROBAR -->
+                                            using (Html.BeginForm(
+                                                "Aprobar",
+                                                "Prematriculas",
+                                                new
+                                                {
+                                                    id = item.id_prematricula
+                                                },
+                                                FormMethod.Post,
+                                                new
+                                                {
+                                                    @class = "form-accion",
+                                                    style = "display:inline"
+                                                }))
+                                            {
+                                                @Html.AntiForgeryToken()
+
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-success"
+                                                        onclick="return confirmarAccion(this, '¿Desea aprobar esta solicitud?');">
+
+                                                    Aprobar
+
+                                                </button>
+                                            }
+
+                                            <!-- RECHAZAR -->
+                                            using (Html.BeginForm(
+                                                "Rechazar",
+                                                "Prematriculas",
+                                                new
+                                                {
+                                                    id = item.id_prematricula
+                                                },
+                                                FormMethod.Post,
+                                                new
+                                                {
+                                                    @class = "form-accion",
+                                                    style = "display:inline"
+                                                }))
+                                            {
+                                                @Html.AntiForgeryToken()
+
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-danger"
+                                                        onclick="return confirmarAccion(this, '¿Desea rechazar esta solicitud?');">
+
+                                                    Rechazar
+
+                                                </button>
+                                            }
+                                        }
+
+                                        @if (aprobada)
+                                        {
+                                            <!-- COMPROBANTE -->
+                                            @Html.ActionLink(
+                                                "Comprobante",
+                                                "Comprobante",
+                                                "Prematriculas",
+                                                new
+                                                {
+                                                    id = item.id_prematricula
+                                                },
+                                                new
+                                                {
+                                                    @class = "btn btn-sm btn-primary",
+                                                    target = "_blank",
+                                                    rel = "noopener noreferrer"
+                                                }
+                                            )
+                                        }
+
+                                        @if (rechazada)
+                                        {
+                                            <span class="text-secondary">
+                                                Sin acciones disponibles
+                                            </span>
+                                        }
+
+                                        @if (!pendiente && !aprobada && !rechazada)
+                                        {
+                                            <span class="text-secondary">
+                                                Estado no reconocido
+                                            </span>
+                                        }
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7"
+                                class="text-center text-secondary py-4">
+
+                                No existen solicitudes de prematrícula registradas.
+
+                            </td>
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section scripts
+{
+    <script src="~/Scripts/General/General.js"></script>
+
+    <script>
+        function confirmarAccion(boton, mensaje) {
+
+            var confirmado = confirm(mensaje);
+
+            if (!confirmado) {
+                return false;
+            }
+
+            var formulario = boton.form;
+
+            if (!formulario) {
+                return false;
+            }
+
+            // Bloquea envíos repetidos.
+            // El botón se deshabilita después de iniciar
+            // el envío para no impedir el POST.
+            setTimeout(function () {
+                boton.disabled = true;
+                boton.textContent = "Procesando...";
+            }, 0);
+
+            return true;
+        }
+    </script>
+}

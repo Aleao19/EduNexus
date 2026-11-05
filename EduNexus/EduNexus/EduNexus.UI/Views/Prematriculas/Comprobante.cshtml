@@ -1,0 +1,532 @@
+
+@model EduNexus.Abstracciones.ModelosParaUI.Prematriculas.PrematriculaDto
+
+@using System
+@using System.Linq
+
+@{
+    ViewBag.Title = "Comprobante de matrícula";
+    Layout = null;
+
+    string fechaNacimiento = Model.fecha_nacimiento.HasValue
+        ? Model.fecha_nacimiento.Value.ToString("dd/MM/yyyy")
+        : "No registrada";
+
+    string nombreCompleto = string.Join(" ",
+        new[]
+        {
+            Model.nombre,
+            Model.apellido1,
+            Model.apellido2
+        }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
+    string tipoIngreso = Model.esNuevoIngreso
+        ? "Nuevo ingreso"
+        : "Renovación de matrícula";
+
+    bool aprobada = string.Equals(
+        (Model.estado ?? "").Trim(),
+        "Aprobada",
+        StringComparison.OrdinalIgnoreCase
+    );
+
+    string telefono = string.IsNullOrWhiteSpace(Model.telefono)
+        ? "No registrado"
+        : Model.telefono;
+
+    string direccion = string.IsNullOrWhiteSpace(Model.direccion)
+        ? "No registrada"
+        : Model.direccion;
+
+    // PERÍODO LECTIVO
+    string periodoLectivo =
+        !string.IsNullOrWhiteSpace(Model.nombre_calendario)
+        && Model.nombre_calendario != "Sin período asignado"
+            ? Model.nombre_calendario
+            : "Pendiente de asignación";
+
+    // CUOTA VOLUNTARIA
+    // El controlador todavía no obtiene un monto oficial.
+    // Por eso no se muestra ₡0 como si fuera una cuota confirmada.
+    string cuotaVoluntaria = "Monto pendiente de confirmación";
+}
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1" />
+
+    <title>Comprobante de matrícula | EduNexus</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f1f4f8;
+            font-family: Arial, sans-serif;
+            color: #253247;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .comprobante {
+            background: white;
+            max-width: 850px;
+            margin: auto;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 3px 15px rgba(0,0,0,.08);
+        }
+
+        .encabezado {
+            text-align: center;
+            border-bottom: 2px solid #234b7a;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+
+        .encabezado h1 {
+            color: #234b7a;
+            margin-bottom: 5px;
+            font-size: 32px;
+        }
+
+        .encabezado h2 {
+            margin-bottom: 10px;
+            font-size: 23px;
+        }
+
+        .encabezado p {
+            color: #667085;
+        }
+
+        .numero-comprobante {
+            display: inline-block;
+            background: #eef4fc;
+            color: #234b7a;
+            padding: 10px 18px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .periodo {
+            background: #eef4fc;
+            border-left: 4px solid #234b7a;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .periodo strong {
+            color: #234b7a;
+        }
+
+        .seccion {
+            margin-top: 25px;
+        }
+
+        .seccion h3 {
+            color: #234b7a;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+            font-size: 18px;
+        }
+
+        .dato {
+            margin-bottom: 12px;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        .dato strong {
+            color: #344054;
+        }
+
+        .estado {
+            display: inline-block;
+            background: #e8f5e9;
+            color: #256029;
+            padding: 5px 12px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .cuota {
+            background: #eef4fc;
+            padding: 18px;
+            border-radius: 8px;
+            margin-top: 25px;
+        }
+
+        .cuota h3 {
+            color: #234b7a;
+            margin-top: 0;
+        }
+
+        .cuota h2 {
+            color: #234b7a;
+            font-size: 24px;
+        }
+
+        .cuota p {
+            line-height: 1.6;
+        }
+
+        .nota {
+            margin-top: 25px;
+            padding: 15px;
+            border-left: 4px solid #234b7a;
+            background: #f8fafc;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .firma {
+            margin-top: 75px;
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+        }
+
+        .linea {
+            width: 45%;
+            border-top: 1px solid #333;
+            text-align: center;
+            padding-top: 10px;
+            font-size: 14px;
+        }
+
+        .acciones {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .acciones button,
+        .acciones a {
+            display: inline-block;
+            padding: 11px 18px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+
+        .btn-imprimir {
+            background: #2458a6;
+            color: white;
+        }
+
+        .btn-imprimir:hover {
+            background: #1b447f;
+        }
+
+        .btn-regresar {
+            background: #e4e9f0;
+            color: #253247;
+        }
+
+        .pie {
+            margin-top: 35px;
+            text-align: center;
+            font-size: 12px;
+            color: #667085;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+
+        .mensaje-error {
+            background: #fde8e8;
+            color: #a21d2d;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        @@page {
+            size: letter;
+            margin: 15mm;
+        }
+
+        @@media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+
+            .comprobante {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .acciones {
+                display: none;
+            }
+
+            .seccion,
+            .cuota,
+            .firma,
+            .periodo {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .encabezado {
+                margin-top: 0;
+            }
+        }
+
+        @@media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .comprobante {
+                padding: 20px;
+            }
+
+            .firma {
+                gap: 15px;
+            }
+
+            .linea {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    @if (!aprobada)
+    {
+        <div class="comprobante">
+
+            <div class="mensaje-error">
+
+                <h2>Comprobante no disponible</h2>
+
+                <p>
+                    Solo es posible generar comprobantes
+                    de solicitudes de matrícula aprobadas.
+                </p>
+
+            </div>
+
+        </div>
+    }
+    else
+    {
+        <div class="comprobante">
+
+            <!-- ENCABEZADO -->
+            <div class="encabezado">
+
+                <h1>EduNexus</h1>
+
+                <h2>Comprobante de matrícula</h2>
+
+                <p>
+                    Constancia de matrícula estudiantil
+                </p>
+
+                <div class="numero-comprobante">
+                    Número de solicitud:
+                    @Model.id_prematricula
+                </div>
+
+            </div>
+
+            <!-- PERÍODO LECTIVO -->
+            <div class="periodo">
+
+                <strong>Período lectivo:</strong>
+
+                @periodoLectivo
+
+            </div>
+
+            <!-- INFORMACIÓN DEL ESTUDIANTE -->
+            <div class="seccion">
+
+                <h3>Información del estudiante</h3>
+
+                <div class="dato">
+                    <strong>Identificación:</strong>
+                    @Model.identificacion
+                </div>
+
+                <div class="dato">
+                    <strong>Nombre completo:</strong>
+                    @nombreCompleto
+                </div>
+
+                <div class="dato">
+                    <strong>Fecha de nacimiento:</strong>
+                    @fechaNacimiento
+                </div>
+
+                <div class="dato">
+                    <strong>Género:</strong>
+                    @Model.genero
+                </div>
+
+                <div class="dato">
+                    <strong>Teléfono:</strong>
+                    @telefono
+                </div>
+
+                <div class="dato">
+                    <strong>Dirección:</strong>
+                    @direccion
+                </div>
+
+            </div>
+
+            <!-- INFORMACIÓN DE MATRÍCULA -->
+            <div class="seccion">
+
+                <h3>Información de matrícula</h3>
+
+                <div class="dato">
+                    <strong>Grado matriculado:</strong>
+                    @Model.nombre_grado
+                </div>
+
+                <div class="dato">
+                    <strong>Período lectivo:</strong>
+                    @periodoLectivo
+                </div>
+
+                <div class="dato">
+                    <strong>Fecha de solicitud:</strong>
+                    @Model.fecha_prematricula.ToString("dd/MM/yyyy")
+                </div>
+
+                <div class="dato">
+
+                    <strong>Estado de matrícula:</strong>
+
+                    <span class="estado">
+                        Aprobada
+                    </span>
+
+                </div>
+
+                <div class="dato">
+                    <strong>Tipo de ingreso:</strong>
+                    @tipoIngreso
+                </div>
+
+            </div>
+
+            <!-- CUOTA VOLUNTARIA -->
+            <div class="cuota">
+
+                <h3>Cuota voluntaria</h3>
+
+                <p>
+                    Información sobre el aporte voluntario
+                    establecido por la institución.
+                </p>
+
+                <h2>
+                    @cuotaVoluntaria
+                </h2>
+
+                <p>
+                    El monto oficial será informado
+                    por la administración de la institución.
+                </p>
+
+                <p>
+                    Este aporte es voluntario y no constituye
+                    un requisito obligatorio para la matrícula.
+                </p>
+
+            </div>
+
+            <!-- NOTA INFORMATIVA -->
+            <div class="nota">
+
+                <strong>Nota:</strong>
+
+                Este comprobante refleja la información
+                registrada en el sistema EduNexus.
+
+                Su emisión está disponible únicamente
+                para solicitudes de matrícula aprobadas.
+
+                La fecha indicada corresponde al registro
+                de la solicitud y no necesariamente
+                a la fecha de aprobación.
+
+                La cuota voluntaria está pendiente
+                de confirmación institucional.
+
+            </div>
+
+            <!-- FIRMAS -->
+            <div class="firma">
+
+                <div class="linea">
+                    Firma del padre o encargado
+                </div>
+
+                <div class="linea">
+                    Firma de la institución
+                </div>
+
+            </div>
+
+            <!-- PIE DE PÁGINA -->
+            <div class="pie">
+
+                <p>
+                    EduNexus - Sistema de Gestión Académica
+                </p>
+
+                <p>
+                    Documento generado para fines
+                    de constancia de matrícula.
+                </p>
+
+            </div>
+
+        </div>
+
+        <!-- BOTONES -->
+        <div class="acciones">
+
+            <button type="button"
+                    class="btn-imprimir"
+                    onclick="window.print()">
+
+                Imprimir / Guardar PDF
+
+            </button>
+
+            <a class="btn-regresar"
+               href="@Url.Action("Listado", "Prematriculas")">
+
+                Regresar al listado
+
+            </a>
+
+        </div>
+    }
+
+</body>
+</html>

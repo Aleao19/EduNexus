@@ -1,18 +1,35 @@
-﻿@model EduNexus.Abstracciones.ModelosParaUI.Prematriculas.PrematriculaDto
+﻿
+@model EduNexus.Abstracciones.ModelosParaUI.Prematriculas.PrematriculaDto
+
+@using System
 @using System.Collections.Generic
 @using System.Web.Mvc
 
 @{
     Layout = null;
     ViewBag.Title = "Registrar prematrícula";
+
+    var grados = ViewBag.Grados as IEnumerable<SelectListItem>
+        ?? new List<SelectListItem>();
+
+    var generos = new List<SelectListItem>
+    {
+        new SelectListItem { Value = "Femenino", Text = "Femenino" },
+        new SelectListItem { Value = "Masculino", Text = "Masculino" },
+        new SelectListItem { Value = "Otro", Text = "Otro" }
+    };
 }
 
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1" />
+
     <title>Registrar prematrícula | EduNexus</title>
+
     <style>
         * {
             box-sizing: border-box;
@@ -56,6 +73,11 @@
             color: #176b32;
         }
 
+        .mensaje-error {
+            background: #fde8e8;
+            color: #a21d2d;
+        }
+
         .formulario {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -76,12 +98,22 @@
             font-weight: bold;
         }
 
-        input, select, textarea {
+        input,
+        select,
+        textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ccd4e0;
             border-radius: 6px;
             font-size: 14px;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #2458a6;
+            box-shadow: 0 0 0 2px rgba(36, 88, 166, 0.12);
         }
 
         .opcion {
@@ -90,9 +122,9 @@
             gap: 10px;
         }
 
-            .opcion input {
-                width: auto;
-            }
+        .opcion input {
+            width: auto;
+        }
 
         .acciones {
             display: flex;
@@ -113,9 +145,22 @@
             font-size: 14px;
         }
 
+        .boton:hover {
+            background: #193b68;
+        }
+
+        .boton:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
         .boton-secundario {
             background: #e5eaf1;
             color: #263247;
+        }
+
+        .boton-secundario:hover {
+            background: #d5deeb;
         }
 
         .errores {
@@ -123,10 +168,35 @@
             color: #a21d2d;
         }
 
+        .text-danger,
+        .field-validation-error {
+            color: #a21d2d;
+            font-size: 13px;
+        }
+
+        .input-validation-error {
+            border-color: #a21d2d;
+        }
+
         .nota {
             margin-top: 18px;
-            color: #657187;
+            padding: 14px;
+            background: #edf4ff;
+            border-left: 4px solid #2458a6;
+            border-radius: 6px;
+            color: #365476;
             font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .obligatorio {
+            color: #a21d2d;
+        }
+
+        .ayuda {
+            color: #657187;
+            font-size: 12px;
+            font-weight: normal;
         }
 
         @@media (max-width: 600px) {
@@ -144,143 +214,452 @@
         }
     </style>
 </head>
+
 <body>
+
     <main class="contenedor">
+
         <h1>Registrar prematrícula</h1>
 
         <p class="descripcion">
-            Ingrese la información del estudiante aspirante.
+            Complete la información del estudiante para
+            enviar su solicitud de prematrícula a la institución.
         </p>
+
+        @* MENSAJE DE ÉXITO *@
 
         @if (TempData["Mensaje"] != null)
         {
-            <div class="mensaje mensaje-exito">
+            <div class="mensaje mensaje-exito" role="alert">
                 @TempData["Mensaje"]
             </div>
         }
 
-        @using (Html.BeginForm("Crear", "Prematriculas", FormMethod.Post))
+        @* MENSAJE DE ERROR *@
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="mensaje mensaje-error" role="alert">
+                @TempData["Error"]
+            </div>
+        }
+
+        @using (Html.BeginForm(
+            "Crear",
+            "Prematriculas",
+            FormMethod.Post,
+            new { id = "formPrematricula" }))
         {
             @Html.AntiForgeryToken()
 
             <div class="errores">
-                @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+                @Html.ValidationSummary(
+                    true,
+                    "",
+                    new { @class = "text-danger" }
+                )
             </div>
 
             <div class="formulario">
+
+                <!-- IDENTIFICACIÓN -->
                 <div class="campo">
-                    @Html.LabelFor(m => m.identificacion)
-                    @Html.TextBoxFor(m => m.identificacion,
-                             new { required = "required", maxlength = "50" })
-                    @Html.ValidationMessageFor(m => m.identificacion, "", new { @class = "text-danger" })
+
+                    <label for="identificacion">
+                        Identificación
+                        <span class="obligatorio">*</span>
+                    </label>
+
+                    @Html.TextBoxFor(
+                        m => m.identificacion,
+                        new
+                        {
+                            required = "required",
+                            maxlength = "50",
+                            autocomplete = "off"
+                        }
+                    )
+
+                    @Html.ValidationMessageFor(
+                        m => m.identificacion,
+                        "",
+                        new { @class = "text-danger" }
+                    )
+
                 </div>
 
+                <!-- NOMBRE -->
                 <div class="campo">
-                    @Html.LabelFor(m => m.nombre)
-                    @Html.TextBoxFor(m => m.nombre,
-                             new { required = "required", maxlength = "100" })
-                    @Html.ValidationMessageFor(m => m.nombre, "", new { @class = "text-danger" })
+
+                    <label for="nombre">
+                        Nombre
+                        <span class="obligatorio">*</span>
+                    </label>
+
+                    @Html.TextBoxFor(
+                        m => m.nombre,
+                        new
+                        {
+                            required = "required",
+                            maxlength = "100"
+                        }
+                    )
+
+                    @Html.ValidationMessageFor(
+                        m => m.nombre,
+                        "",
+                        new { @class = "text-danger" }
+                    )
+
                 </div>
 
+                <!-- PRIMER APELLIDO -->
                 <div class="campo">
-                    @Html.LabelFor(m => m.apellido1)
-                    @Html.TextBoxFor(m => m.apellido1,
-                             new { required = "required", maxlength = "100" })
-                    @Html.ValidationMessageFor(m => m.apellido1, "", new { @class = "text-danger" })
+
+                    <label for="apellido1">
+                        Primer apellido
+                        <span class="obligatorio">*</span>
+                    </label>
+
+                    @Html.TextBoxFor(
+                        m => m.apellido1,
+                        new
+                        {
+                            required = "required",
+                            maxlength = "100"
+                        }
+                    )
+
+                    @Html.ValidationMessageFor(
+                        m => m.apellido1,
+                        "",
+                        new { @class = "text-danger" }
+                    )
+
                 </div>
 
+                <!-- SEGUNDO APELLIDO -->
                 <div class="campo">
-                    @Html.LabelFor(m => m.apellido2)
-                    @Html.TextBoxFor(m => m.apellido2,
-                             new { maxlength = "100" })
+
+                    <label for="apellido2">
+                        Segundo apellido
+                    </label>
+
+                    @Html.TextBoxFor(
+                        m => m.apellido2,
+                        new
+                        {
+                            maxlength = "100"
+                        }
+                    )
+
+                    @Html.ValidationMessageFor(
+                        m => m.apellido2,
+                        "",
+                        new { @class = "text-danger" }
+                    )
+
                 </div>
 
+                <!-- GÉNERO -->
                 <div class="campo">
-                    @Html.LabelFor(m => m.genero)
-                    @Html.DropDownListFor(m => m.genero,
-                             new SelectList(new[]
-                             {
-                            new { Value = "", Text = "Seleccione una opción" },
-                            new { Value = "Femenino", Text = "Femenino" },
-                            new { Value = "Masculino", Text = "Masculino" },
-                            new { Value = "Otro", Text = "Otro" }
-                         }, "Value", "Text"),
-                             new { })
-                </div>
 
-                <div class="campo">
-                    @Html.LabelFor(m => m.grado)
+                    <label for="genero">
+                        Género
+                        <span class="obligatorio">*</span>
+                    </label>
+
                     @Html.DropDownListFor(
-                             m => m.grado,
-                             (IEnumerable<SelectListItem>)ViewBag.Grados,
-                             "Seleccione un grado",
-                             new { required = "required" })
-                    @Html.ValidationMessageFor(m => m.grado, "", new { @class = "text-danger" })
+                        m => m.genero,
+                        generos,
+                        "Seleccione una opción",
+                        new
+                        {
+                            required = "required"
+                        }
+                    )
+
+                    @Html.ValidationMessageFor(
+                        m => m.genero,
+                        "",
+                        new { @class = "text-danger" }
+                    )
+
                 </div>
 
+                <!-- GRADO SOLICITADO -->
                 <div class="campo">
-                    @Html.LabelFor(m => m.telefono)
-                    @Html.TextBoxFor(m => m.telefono,
-                             new { type = "tel", maxlength = "30" })
+
+                    <label for="grado">
+                        Grado solicitado
+                        <span class="obligatorio">*</span>
+                    </label>
+
+                    @Html.DropDownListFor(
+                        m => m.grado,
+                        grados,
+                        "Seleccione un grado",
+                        new
+                        {
+                            required = "required"
+                        }
+                    )
+
+                    @Html.ValidationMessageFor(
+                        m => m.grado,
+                        "",
+                        new { @class = "text-danger" }
+                    )
+
                 </div>
 
+                <!-- TELÉFONO -->
                 <div class="campo">
-                    @Html.LabelFor(m => m.fecha_nacimiento)
-                    @Html.TextBoxFor(m => m.fecha_nacimiento, "{0:yyyy-MM-dd}",
-                             new { type = "date", required = "required" })
-                    @Html.ValidationMessageFor(m => m.fecha_nacimiento, "", new { @class = "text-danger" })
+
+                    <label for="telefono">
+                        Teléfono
+                    </label>
+
+                    @Html.TextBoxFor(
+                        m => m.telefono,
+                        new
+                        {
+                            type = "tel",
+                            maxlength = "8",
+                            minlength = "8",
+                            pattern = "[0-9]{8}",
+                            inputmode = "numeric",
+                            placeholder = "Ejemplo: 88888888",
+                            title = "Ingrese un número de 8 dígitos"
+                        }
+                    )
+
+                    @Html.ValidationMessageFor(
+                        m => m.telefono,
+                        "",
+                        new { @class = "text-danger" }
+                    )
+
+                    <span class="ayuda">
+                        Campo opcional. Si ingresa un teléfono,
+                        debe contener exactamente 8 dígitos.
+                    </span>
+
                 </div>
 
+                <!-- FECHA DE NACIMIENTO -->
                 <div class="campo">
-                    @Html.LabelFor(m => m.contactoEmergencia)
-                    @Html.TextBoxFor(m => m.contactoEmergencia,
-                             new { maxlength = "150" })
+
+                    <label for="fecha_nacimiento">
+                        Fecha de nacimiento
+                        <span class="obligatorio">*</span>
+                    </label>
+
+                    @Html.TextBoxFor(
+                        m => m.fecha_nacimiento,
+                        "{0:yyyy-MM-dd}",
+                        new
+                        {
+                            type = "date",
+                            required = "required",
+                            max = DateTime.Today.ToString("yyyy-MM-dd")
+                        }
+                    )
+
+                    @Html.ValidationMessageFor(
+                        m => m.fecha_nacimiento,
+                        "",
+                        new { @class = "text-danger" }
+                    )
+
                 </div>
 
+                <!-- CONTACTO DE EMERGENCIA -->
+                <div class="campo">
+
+                    <label for="contactoEmergencia">
+                        Contacto de emergencia
+                    </label>
+
+                    @Html.TextBoxFor(
+                        m => m.contactoEmergencia,
+                        new
+                        {
+                            maxlength = "150"
+                        }
+                    )
+
+                    @Html.ValidationMessageFor(
+                        m => m.contactoEmergencia,
+                        "",
+                        new { @class = "text-danger" }
+                    )
+
+                </div>
+
+                <!-- DIRECCIÓN -->
                 <div class="campo campo-completo">
-                    @Html.LabelFor(m => m.direccion)
-                    @Html.TextAreaFor(m => m.direccion,
-                             new { rows = "3", maxlength = "500" })
+
+                    <label for="direccion">
+                        Dirección
+                    </label>
+
+                    @Html.TextAreaFor(
+                        m => m.direccion,
+                        new
+                        {
+                            rows = "3",
+                            maxlength = "500"
+                        }
+                    )
+
+                    @Html.ValidationMessageFor(
+                        m => m.direccion,
+                        "",
+                        new { @class = "text-danger" }
+                    )
+
                 </div>
 
+                <!-- ADECUACIÓN EDUCATIVA -->
                 <div class="campo">
+
                     <label class="opcion">
                         @Html.CheckBoxFor(m => m.tiene_adecuacion)
                         Tiene adecuación educativa
                     </label>
+
                 </div>
 
+                <!-- DISCAPACIDAD -->
                 <div class="campo">
+
                     <label class="opcion">
                         @Html.CheckBoxFor(m => m.tiene_discapacidad)
                         Tiene discapacidad
                     </label>
+
                 </div>
 
+                <!-- NUEVO INGRESO -->
                 <div class="campo campo-completo">
+
                     <label class="opcion">
-                        @Html.CheckBoxFor(m => m.esNuevoIngreso)
+
+                        <input type="checkbox"
+                               checked="checked"
+                               disabled="disabled" />
+
                         Es estudiante de nuevo ingreso
+
                     </label>
+
+                    <span class="ayuda">
+                        Las renovaciones de matrícula se realizan
+                        mediante el proceso administrativo correspondiente.
+                    </span>
+
                 </div>
+
             </div>
 
+            <!-- BOTONES -->
             <div class="acciones">
-                <button type="submit" class="boton">
+
+                <button type="submit"
+                        class="boton"
+                        id="btnRegistrar">
+
                     Registrar prematrícula
+
                 </button>
 
                 <a href="@Url.Action("Index", "Home")"
                    class="boton boton-secundario">
+
                     Cancelar
+
                 </a>
+
             </div>
 
+            <!-- INFORMACIÓN IMPORTANTE -->
             <p class="nota">
-                Si el estudiante es de nuevo ingreso, el sistema intentará
-                registrar también su expediente.
+
+                Una vez enviada la solicitud de prematrícula,
+                esta quedará pendiente de revisión por parte
+                de la administración de la institución.
+
+                El registro de la solicitud no garantiza
+                la asignación de un cupo.
+
+                Los campos marcados con
+                <span class="obligatorio">*</span>
+                son obligatorios.
+
             </p>
         }
+
     </main>
+
+    <!-- VALIDACIONES Y PREVENCIÓN DE DOBLE ENVÍO -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            var formulario =
+                document.getElementById("formPrematricula");
+
+            var boton =
+                document.getElementById("btnRegistrar");
+
+            if (!formulario || !boton) {
+                return;
+            }
+
+            var enviando = false;
+
+            formulario.addEventListener("submit", function (evento) {
+
+                // Evitar un segundo envío.
+                if (enviando) {
+                    evento.preventDefault();
+                    return;
+                }
+
+                // Verificar las validaciones HTML.
+                if (!formulario.checkValidity()) {
+                    evento.preventDefault();
+                    formulario.reportValidity();
+                    return;
+                }
+
+                // Confirmar el registro.
+                var confirmar = confirm(
+                    "¿Desea registrar esta solicitud de prematrícula?"
+                );
+
+                if (!confirmar) {
+                    evento.preventDefault();
+                    return;
+                }
+
+                // Marcar el formulario como enviado.
+                enviando = true;
+
+                // Deshabilitar el botón después de
+                // iniciarse el envío, sin impedir que
+                // el navegador envíe el formulario.
+                setTimeout(function () {
+
+                    boton.disabled = true;
+                    boton.textContent = "Registrando...";
+
+                }, 0);
+
+            });
+
+        });
+    </script>
+
 </body>
 </html>

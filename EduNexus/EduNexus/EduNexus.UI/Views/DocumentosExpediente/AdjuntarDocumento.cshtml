@@ -1,0 +1,172 @@
+
+@model EduNexus.Abstracciones.ModelosParaUI.Expedientes.DocumentoExpedienteDto
+
+@{
+    ViewBag.Title = "Adjuntar documento";
+}
+
+<h2>Adjuntar documento al expediente</h2>
+
+<hr />
+
+@using (Html.BeginForm(
+    "AdjuntarDocumento",
+    "DocumentosExpediente",
+    FormMethod.Post,
+    new { enctype = "multipart/form-data" }))
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-horizontal">
+
+        @Html.ValidationSummary(
+            true,
+            "",
+            new { @class = "text-danger" }
+        )
+
+        @Html.HiddenFor(model => model.id_expediente)
+
+        <div class="container">
+
+            <div class="row">
+
+                <div class="col-md-8">
+
+                    <div class="form-group mt-3">
+
+                        <label>Expediente</label>
+
+                        <div class="col-md-10">
+
+                            <input type="text"
+                                   class="form-control"
+                                   value="@Model.id_expediente"
+                                   readonly />
+
+                            @Html.ValidationMessageFor(
+                                model => model.id_expediente,
+                                "",
+                                new { @class = "text-danger" }
+                            )
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-group mt-3">
+
+                        @Html.LabelFor(
+                            model => model.nombre_documento
+                        )
+
+                        <div class="col-md-10">
+
+                            @Html.TextBoxFor(
+                                model => model.nombre_documento,
+                                new {
+                                    @class = "form-control",
+                                    placeholder = "Ejemplo: Certificado médico"
+                                }
+                            )
+
+                            @Html.ValidationMessageFor(
+                                model => model.nombre_documento,
+                                "",
+                                new { @class = "text-danger" }
+                            )
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-group mt-3">
+
+                        @Html.LabelFor(
+                            model => model.descripcion
+                        )
+
+                        <div class="col-md-10">
+
+                            @Html.TextAreaFor(
+                                model => model.descripcion,
+                                new {
+                                    @class = "form-control",
+                                    rows = "4",
+                                    placeholder = "Descripción del documento"
+                                }
+                            )
+
+                            @Html.ValidationMessageFor(
+                                model => model.descripcion,
+                                "",
+                                new { @class = "text-danger" }
+                            )
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-group mt-3">
+
+                        <label for="archivo">
+                            Seleccionar documento
+                        </label>
+
+                        <div class="col-md-10">
+
+                            <input type="file"
+                                   id="archivo"
+                                   name="archivo"
+                                   class="form-control"
+                                   accept=".pdf,.jpg,.jpeg,.png"
+                                   required />
+
+                            @Html.ValidationMessage(
+                                "archivo",
+                                "",
+                                new { @class = "text-danger" }
+                            )
+
+                            <small class="text-muted">
+                                Formatos permitidos:
+                                PDF, JPG, JPEG y PNG.
+                                Tamaño máximo: 5 MB.
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-group mt-3">
+
+                        <div class="col-md-10 my-3">
+
+                            <input type="submit"
+                                   value="Adjuntar documento"
+                                   class="btn btn-cyan" />
+
+                            @Html.ActionLink(
+                                "Regresar al expediente",
+                                "DetalleDeExpediente",
+                                "Expedientes",
+                                new { id = Model.id_expediente },
+                                new { @class = "btn btn-default" }
+                            )
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+}
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

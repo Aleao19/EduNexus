@@ -1,62 +1,327 @@
 ﻿
+@using System
+
+@{
+    var usuarioSesion = Session["UsuarioActual"]
+        as EduNexus.Abstracciones.ModelosParaUI.Usuarios.UsuarioDto;
+
+    bool estaAutenticado = usuarioSesion != null;
+
+    bool esAdministrador = estaAutenticado &&
+        string.Equals(
+            usuarioSesion.nombreRol,
+            "Administrador",
+            StringComparison.OrdinalIgnoreCase
+        );
+
+    // RMPR-08-005
+    // Identificar usuarios con rol Encargado.
+    bool esEncargado = estaAutenticado &&
+        string.Equals(
+            usuarioSesion.nombreRol,
+            "Encargado",
+            StringComparison.OrdinalIgnoreCase
+        );
+}
+
 <!DOCTYPE html>
-<html>
+<html lang="es">
+
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <meta http-equiv="Content-Type"
+          content="text/html; charset=utf-8" />
+
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
     <title>@ViewBag.Title - EduNexus</title>
+
     @Styles.Render("~/Content/css")
     @Scripts.Render("~/bundles/modernizr")
-    <link href="~/Content/DataTable/dataTables.dataTables.min.css" rel="stylesheet" />
-    <link href="~/Content/tabler.min.css" rel="stylesheet" />
+
+    <link href="@Url.Content("~/Content/DataTable/dataTables.dataTables.min.css")"
+          rel="stylesheet" />
+
+    <link href="@Url.Content("~/Content/tabler.min.css")"
+          rel="stylesheet" />
+
 </head>
+
 <body>
-    @{ var usuarioSesion = Session["UsuarioActual"] as EduNexus.Abstracciones.ModelosParaUI.Usuarios.UsuarioDto; }
 
+    <!-- MENÚ PRINCIPAL -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark d-print-none w-100 en-navbar">
-        <div class="container-xl">
-            @Html.ActionLink("EduNexus", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
 
-            <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" title="Alternar navegación" aria-controls="navbarSupportedContent"
-                    aria-expanded="false" aria-label="Toggle navigation">
+        <div class="container-xl">
+
+            @Html.ActionLink(
+                "EduNexus",
+                "Index",
+                "Home",
+                new { area = "" },
+                new { @class = "navbar-brand" }
+            )
+
+            <button type="button"
+                    class="navbar-toggler"
+                    data-bs-toggle="collapse"
+                    data-bs-target=".navbar-collapse"
+                    title="Alternar navegación"
+                    aria-expanded="false"
+                    aria-label="Toggle navigation">
+
                 <span class="navbar-toggler-icon"></span>
+
             </button>
 
-            <div class="collapse navbar-collapse align-items-center justify-content-between">
+            <div class="navbar-collapse collapse align-items-center justify-content-between">
+
                 <ul class="navbar-nav flex-grow-1 align-items-lg-center">
-                    @if (usuarioSesion != null)
+
+                    @if (estaAutenticado)
                     {
-                        <li>@Html.ActionLink("Inicio", "Index", "Home", new { area = "" }, new { @class = "nav-link" })</li>
-                        <li>@Html.ActionLink("Aula Virtual", "AulaVirtual", "AulaVirtual", new { area = "" }, new { @class = "nav-link" })</li>
-                        <li>@Html.ActionLink("Usuarios", "ListadoDeUsuarios", "Usuarios", new { area = "" }, new { @class = "nav-link" })</li>
-                        <li>@Html.ActionLink("Roles", "ListadoDeRoles", "Roles", new { area = "" }, new { @class = "nav-link" })</li>
-                        <li>@Html.ActionLink("Prematrículas", "Crear", "Prematriculas", new { area = "" }, new { @class = "nav-link" })</li>
-                        <li>@Html.ActionLink("Expediente académico", "ListadoDeEstudiantes", "ExpedienteAcademico", new { area = "" }, new { @class = "nav-link" })</li>
+                        <!-- INICIO -->
+                        <li class="nav-item">
+
+                            @Html.ActionLink(
+                                "Inicio",
+                                "Index",
+                                "Home",
+                                new { area = "" },
+                                new { @class = "nav-link" }
+                            )
+
+                        </li>
+
+                        <!-- AULA VIRTUAL -->
+                        <li class="nav-item">
+
+                            @Html.ActionLink(
+                                "Aula Virtual",
+                                "AulaVirtual",
+                                "AulaVirtual",
+                                new { area = "" },
+                                new { @class = "nav-link" }
+                            )
+
+                        </li>
+
+                        @* MENÚ DEL ADMINISTRADOR *@
+
+                        if (esAdministrador)
+                        {
+                            <!-- SOLICITUDES DE PREMATRÍCULA -->
+                            <li class="nav-item">
+
+                                @Html.ActionLink(
+                                    "Solicitudes de prematrícula",
+                                    "Listado",
+                                    "Prematriculas",
+                                    new { area = "" },
+                                    new { @class = "nav-link" }
+                                )
+
+                            </li>
+
+                            <!-- RENOVACIONES -->
+                            <li class="nav-item">
+
+                                @Html.ActionLink(
+                                    "Renovaciones",
+                                    "EstudiantesActivos",
+                                    "Prematriculas",
+                                    new { area = "" },
+                                    new { @class = "nav-link" }
+                                )
+
+                            </li>
+
+                            <!-- USUARIOS -->
+                            <li class="nav-item">
+
+                                @Html.ActionLink(
+                                    "Usuarios",
+                                    "ListadoDeUsuarios",
+                                    "Usuarios",
+                                    new { area = "" },
+                                    new { @class = "nav-link" }
+                                )
+
+                            </li>
+
+                            <!-- ROLES -->
+                            <li class="nav-item">
+
+                                @Html.ActionLink(
+                                    "Roles",
+                                    "ListadoDeRoles",
+                                    "Roles",
+                                    new { area = "" },
+                                    new { @class = "nav-link" }
+                                )
+
+                            </li>
+
+                            <!-- EXPEDIENTE ACADÉMICO -->
+                            <li class="nav-item">
+
+                                @Html.ActionLink(
+                                    "Expediente académico",
+                                    "ListadoDeEstudiantes",
+                                    "ExpedienteAcademico",
+                                    new { area = "" },
+                                    new { @class = "nav-link" }
+                                )
+
+                            </li>
+                        }
+
+                        @* MENÚ DEL ENCARGADO - RMPR-08-005 *@
+
+                        if (esEncargado)
+                        {
+                            <!-- REALIZAR PREMATRÍCULA -->
+                            <li class="nav-item">
+
+                                @Html.ActionLink(
+                                    "Realizar prematrícula",
+                                    "Crear",
+                                    "Prematriculas",
+                                    new { area = "" },
+                                    new { @class = "nav-link" }
+                                )
+
+                            </li>
+                        }
                     }
+
                 </ul>
 
+                <!-- INFORMACIÓN DE SESIÓN -->
                 <div class="navbar-nav flex-row align-items-center ms-auto">
-                    @if (usuarioSesion != null)
+
+                    @if (estaAutenticado)
                     {
-                        <span class="nav-link text-white-50">@usuarioSesion.nombre @usuarioSesion.apellido1 (@usuarioSesion.nombreRol)</span>
-                        @Html.ActionLink("Cerrar sesión", "CerrarSesion", "Home", new { area = "" }, new { @class = "nav-link" })
+                        <span class="nav-link text-white-50">
+
+                            @usuarioSesion.nombre
+                            @usuarioSesion.apellido1
+                            (@usuarioSesion.nombreRol)
+
+                        </span>
+
+                        @Html.ActionLink(
+                            "Cerrar sesión",
+                            "CerrarSesion",
+                            "Home",
+                            new { area = "" },
+                            new { @class = "nav-link" }
+                        )
                     }
                     else
                     {
-                        @Html.ActionLink("Iniciar Sesión", "Login", "Home", new { area = "" }, new { @class = "nav-link" })
+                        @Html.ActionLink(
+                            "Iniciar Sesión",
+                            "Login",
+                            "Home",
+                            new { area = "" },
+                            new { @class = "nav-link" }
+                        )
                     }
+
                 </div>
+
             </div>
+
         </div>
+
     </nav>
 
+    <!-- CONTENIDO PRINCIPAL -->
     <div class="container-xl body-content">
+
+        @* ==========================================
+           MENSAJES GENERALES DE ERROR
+           ========================================== *@
+
         @if (TempData["MensajeError"] != null)
         {
-            <div class="alert alert-danger alert-dismissible mt-3" role="alert">
+            <div class="alert alert-danger alert-dismissible mt-3"
+                 role="alert">
+
                 @TempData["MensajeError"]
-                <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Cerrar">
+                </button>
+
+            </div>
+        }
+
+        @* ==========================================
+           MENSAJES DE INICIO DE SESIÓN
+           ========================================== *@
+
+        @if (TempData["MensajeLogin"] != null)
+        {
+            <div class="alert alert-warning alert-dismissible mt-3"
+                 role="alert">
+
+                @TempData["MensajeLogin"]
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Cerrar">
+                </button>
+
+            </div>
+        }
+
+        @* ==========================================
+           RMPR-08
+           MENSAJES DE ÉXITO
+           ========================================== *@
+
+        @if (TempData["Mensaje"] != null)
+        {
+            <div class="alert alert-success alert-dismissible mt-3"
+                 role="alert">
+
+                @TempData["Mensaje"]
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Cerrar">
+                </button>
+
+            </div>
+        }
+
+        @* ==========================================
+           RMPR-08
+           MENSAJES DE ERROR
+           ========================================== *@
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible mt-3"
+                 role="alert">
+
+                @TempData["Error"]
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Cerrar">
+                </button>
+
             </div>
         }
 
@@ -64,16 +329,28 @@
 
         <hr />
 
+        <!-- PIE DE PÁGINA -->
         <footer>
-            <p>&copy; @DateTime.Now.Year - EduNexus</p>
+
+            <p>
+                &copy; @DateTime.Now.Year - EduNexus
+            </p>
+
         </footer>
+
     </div>
 
+    <!-- SCRIPTS -->
     @Scripts.Render("~/bundles/jquery")
+
     @Scripts.Render("~/bundles/bootstrap")
-    <script src="~/Scripts/DataTable/dataTables.min.js"></script>
-    <script src="~/Scripts/tabler.min.js"></script>
+
+    <script src="@Url.Content("~/Scripts/DataTable/dataTables.min.js")"></script>
+
+    <script src="@Url.Content("~/Scripts/tabler.min.js")"></script>
 
     @RenderSection("scripts", required: false)
+
 </body>
+
 </html>

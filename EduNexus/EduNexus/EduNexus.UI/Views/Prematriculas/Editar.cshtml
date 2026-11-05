@@ -1,0 +1,529 @@
+
+@model EduNexus.Abstracciones.ModelosParaUI.Prematriculas.PrematriculaDto
+
+@using System
+@using System.Collections.Generic
+@using System.Web.Mvc
+
+@{
+    ViewBag.Title = "Editar prematrícula";
+
+    var generos = new List<SelectListItem>
+    {
+        new SelectListItem
+        {
+            Value = "Femenino",
+            Text = "Femenino"
+        },
+        new SelectListItem
+        {
+            Value = "Masculino",
+            Text = "Masculino"
+        },
+        new SelectListItem
+        {
+            Value = "Otro",
+            Text = "Otro"
+        }
+    };
+
+    var grados = ViewBag.Grados as IEnumerable<SelectListItem>
+        ?? new List<SelectListItem>();
+
+    var esNuevoIngreso = Model != null && Model.esNuevoIngreso;
+}
+
+<div class="container-xl mt-4">
+
+    <!-- ENCABEZADO -->
+    <div class="row mb-4">
+        <div class="col">
+
+            <h1>Editar solicitud de prematrícula</h1>
+
+            <p class="text-secondary">
+                Modifique los datos necesarios antes de aprobar
+                la solicitud.
+            </p>
+
+            <span class="badge bg-blue-lt">
+                Solicitud #@Model.id_prematricula
+            </span>
+
+            <span class="badge bg-yellow-lt">
+                @Model.estado
+            </span>
+
+        </div>
+    </div>
+
+    <!-- FORMULARIO -->
+    <div class="card shadow-sm">
+
+        <div class="card-header">
+            <h3 class="card-title">
+                Información del estudiante
+            </h3>
+        </div>
+
+        <div class="card-body">
+
+            @using (Html.BeginForm(
+                "Editar",
+                "Prematriculas",
+                FormMethod.Post,
+                new { id = "formEditarPrematricula" }))
+            {
+                @Html.AntiForgeryToken()
+
+                <!-- IDENTIFICADOR DE LA SOLICITUD -->
+                @Html.HiddenFor(m => m.id_prematricula)
+
+                <!-- ERRORES GENERALES -->
+                @Html.ValidationSummary(
+                    true,
+                    "",
+                    new { @class = "alert alert-danger" }
+                )
+
+                <div class="row">
+
+                    <!-- IDENTIFICACIÓN -->
+                    <div class="col-md-6 mb-3">
+
+                        @Html.LabelFor(
+                            m => m.identificacion,
+                            new { @class = "form-label" }
+                        )
+
+                        @Html.TextBoxFor(
+                            m => m.identificacion,
+                            new
+                            {
+                                @class = "form-control",
+                                required = "required",
+                                maxlength = "50"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.identificacion,
+                            "",
+                            new { @class = "text-danger" }
+                        )
+
+                    </div>
+
+                    <!-- NOMBRE -->
+                    <div class="col-md-6 mb-3">
+
+                        @Html.LabelFor(
+                            m => m.nombre,
+                            new { @class = "form-label" }
+                        )
+
+                        @Html.TextBoxFor(
+                            m => m.nombre,
+                            new
+                            {
+                                @class = "form-control",
+                                required = "required",
+                                maxlength = "100"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.nombre,
+                            "",
+                            new { @class = "text-danger" }
+                        )
+
+                    </div>
+
+                    <!-- PRIMER APELLIDO -->
+                    <div class="col-md-6 mb-3">
+
+                        @Html.LabelFor(
+                            m => m.apellido1,
+                            new { @class = "form-label" }
+                        )
+
+                        @Html.TextBoxFor(
+                            m => m.apellido1,
+                            new
+                            {
+                                @class = "form-control",
+                                required = "required",
+                                maxlength = "100"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.apellido1,
+                            "",
+                            new { @class = "text-danger" }
+                        )
+
+                    </div>
+
+                    <!-- SEGUNDO APELLIDO -->
+                    <div class="col-md-6 mb-3">
+
+                        @Html.LabelFor(
+                            m => m.apellido2,
+                            new { @class = "form-label" }
+                        )
+
+                        @Html.TextBoxFor(
+                            m => m.apellido2,
+                            new
+                            {
+                                @class = "form-control",
+                                maxlength = "100"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.apellido2,
+                            "",
+                            new { @class = "text-danger" }
+                        )
+
+                    </div>
+
+                    <!-- GÉNERO -->
+                    <div class="col-md-6 mb-3">
+
+                        @Html.LabelFor(
+                            m => m.genero,
+                            new { @class = "form-label" }
+                        )
+
+                        @Html.DropDownListFor(
+                            m => m.genero,
+                            generos,
+                            "Seleccione un género",
+                            new
+                            {
+                                @class = "form-select",
+                                required = "required"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.genero,
+                            "",
+                            new { @class = "text-danger" }
+                        )
+
+                    </div>
+
+                    <!-- GRADO -->
+                    <div class="col-md-6 mb-3">
+
+                        @Html.LabelFor(
+                            m => m.grado,
+                            new { @class = "form-label" }
+                        )
+
+                        @Html.DropDownListFor(
+                            m => m.grado,
+                            grados,
+                            "Seleccione un grado",
+                            new
+                            {
+                                @class = "form-select",
+                                required = "required"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.grado,
+                            "",
+                            new { @class = "text-danger" }
+                        )
+
+                    </div>
+
+                    <!-- TELÉFONO -->
+                    <div class="col-md-6 mb-3">
+
+                        @Html.LabelFor(
+                            m => m.telefono,
+                            new { @class = "form-label" }
+                        )
+
+                        @Html.TextBoxFor(
+                            m => m.telefono,
+                            new
+                            {
+                                @class = "form-control",
+                                type = "tel",
+                                maxlength = "8",
+                                minlength = "8",
+                                pattern = "[0-9]{8}",
+                                inputmode = "numeric",
+                                placeholder = "Ejemplo: 88888888",
+                                title = "Ingrese un número de 8 dígitos"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.telefono,
+                            "",
+                            new { @class = "text-danger" }
+                        )
+
+                        <small class="text-secondary">
+                            Campo opcional. Si ingresa un teléfono,
+                            debe contener exactamente 8 dígitos.
+                        </small>
+
+                    </div>
+
+                    <!-- FECHA DE NACIMIENTO -->
+                    <div class="col-md-6 mb-3">
+
+                        @Html.LabelFor(
+                            m => m.fecha_nacimiento,
+                            new { @class = "form-label" }
+                        )
+
+                        @Html.TextBoxFor(
+                            m => m.fecha_nacimiento,
+                            "{0:yyyy-MM-dd}",
+                            new
+                            {
+                                @class = "form-control",
+                                type = "date",
+                                required = "required",
+                                max = DateTime.Today.ToString("yyyy-MM-dd")
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.fecha_nacimiento,
+                            "",
+                            new { @class = "text-danger" }
+                        )
+
+                    </div>
+
+                    <!-- CONTACTO DE EMERGENCIA -->
+                    <div class="col-md-6 mb-3">
+
+                        @Html.LabelFor(
+                            m => m.contactoEmergencia,
+                            new { @class = "form-label" }
+                        )
+
+                        @Html.TextBoxFor(
+                            m => m.contactoEmergencia,
+                            new
+                            {
+                                @class = "form-control",
+                                maxlength = "150"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.contactoEmergencia,
+                            "",
+                            new { @class = "text-danger" }
+                        )
+
+                    </div>
+
+                    <!-- DIRECCIÓN -->
+                    <div class="col-md-6 mb-3">
+
+                        @Html.LabelFor(
+                            m => m.direccion,
+                            new { @class = "form-label" }
+                        )
+
+                        @Html.TextAreaFor(
+                            m => m.direccion,
+                            new
+                            {
+                                @class = "form-control",
+                                rows = "3",
+                                maxlength = "500"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.direccion,
+                            "",
+                            new { @class = "text-danger" }
+                        )
+
+                    </div>
+
+                </div>
+
+                <!-- INFORMACIÓN ADICIONAL -->
+                <hr />
+
+                <h3 class="mb-3">
+                    Información adicional
+                </h3>
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+
+                        <div class="form-check mb-3">
+
+                            @Html.CheckBoxFor(
+                                m => m.tiene_adecuacion,
+                                new { @class = "form-check-input" }
+                            )
+
+                            @Html.LabelFor(
+                                m => m.tiene_adecuacion,
+                                new { @class = "form-check-label" }
+                            )
+
+                        </div>
+
+                        <div class="form-check mb-3">
+
+                            @Html.CheckBoxFor(
+                                m => m.tiene_discapacidad,
+                                new { @class = "form-check-input" }
+                            )
+
+                            @Html.LabelFor(
+                                m => m.tiene_discapacidad,
+                                new { @class = "form-check-label" }
+                            )
+
+                        </div>
+
+                    </div>
+
+                    <!-- TIPO DE INGRESO: SOLO LECTURA -->
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            Tipo de ingreso
+                        </label>
+
+                        <div class="form-control bg-light">
+                            @if (esNuevoIngreso)
+                            {
+                                <span>Nuevo ingreso</span>
+                            }
+                            else
+                            {
+                                <span>Renovación de matrícula</span>
+                            }
+                        </div>
+
+                        <small class="text-secondary">
+                            El tipo de ingreso se conserva
+                            automáticamente y no puede
+                            modificarse desde este formulario.
+                        </small>
+
+                    </div>
+
+                </div>
+
+                <!-- BOTONES -->
+                <hr />
+
+                <div class="d-flex gap-2">
+
+                    <button type="submit"
+                            class="btn btn-primary"
+                            id="btnGuardarCambios">
+
+                        Guardar cambios
+
+                    </button>
+
+                    @Html.ActionLink(
+                        "Cancelar",
+                        "Listado",
+                        "Prematriculas",
+                        null,
+                        new { @class = "btn btn-outline-secondary" }
+                    )
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>
+
+@section scripts
+{
+    @Scripts.Render("~/bundles/jqueryval")
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            var formulario =
+                document.getElementById("formEditarPrematricula");
+
+            var boton =
+                document.getElementById("btnGuardarCambios");
+
+            if (!formulario || !boton) {
+                return;
+            }
+
+            var enviando = false;
+
+            formulario.addEventListener("submit", function (evento) {
+
+                // Impedir un segundo envío.
+                if (enviando) {
+                    evento.preventDefault();
+                    return;
+                }
+
+                // Validar los campos HTML.
+                if (!formulario.checkValidity()) {
+                    evento.preventDefault();
+                    formulario.reportValidity();
+                    return;
+                }
+
+                // Respetar la validación de jQuery
+                // si está disponible.
+                if (window.jQuery &&
+                    typeof window.jQuery.fn.valid === "function" &&
+                    !window.jQuery(formulario).valid()) {
+                    evento.preventDefault();
+                    return;
+                }
+
+                // Confirmar la modificación.
+                var confirmar = confirm(
+                    "¿Desea guardar los cambios realizados en esta solicitud?"
+                );
+
+                if (!confirmar) {
+                    evento.preventDefault();
+                    return;
+                }
+
+                enviando = true;
+
+                // Bloquear el botón después de iniciar el envío.
+                setTimeout(function () {
+                    boton.disabled = true;
+                    boton.textContent = "Guardando...";
+                }, 0);
+
+            });
+
+        });
+    </script>
+}

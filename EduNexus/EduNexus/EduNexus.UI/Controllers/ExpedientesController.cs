@@ -1,5 +1,6 @@
 ﻿
 using EduNexus.Abstracciones.ModelosParaUI.Expedientes;
+using EduNexus.UI.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,9 +8,13 @@ using System.Web.Mvc;
 
 namespace EduNexus.UI.Controllers
 {
+    [AutorizarAdministrador]
     public class ExpedientesController : Controller
     {
-        // GET: Expedientes
+        // =========================================
+        // LISTADO DE EXPEDIENTES
+        // =========================================
+
         public ActionResult ListadoDeExpedientes()
         {
             List<ExpedienteDto> expedientes = ObtenerExpedientes();
@@ -17,17 +22,18 @@ namespace EduNexus.UI.Controllers
             return View(expedientes);
         }
 
-        // GET: Expedientes/Details/5
+        // =========================================
+        // DETALLE DE EXPEDIENTE
+        // =========================================
+
         public ActionResult DetalleDeExpediente(int? id)
         {
-            if (!id.HasValue)
+            if (!id.HasValue || id.Value <= 0)
             {
                 return new HttpStatusCodeResult(400);
             }
 
-            List<ExpedienteDto> expedientes = ObtenerExpedientes();
-
-            ExpedienteDto expediente = expedientes
+            ExpedienteDto expediente = ObtenerExpedientes()
                 .FirstOrDefault(x => x.id_expediente == id.Value);
 
             if (expediente == null)
@@ -43,57 +49,92 @@ namespace EduNexus.UI.Controllers
         // CREAR EXPEDIENTE ESTUDIANTIL
         // =========================================
 
-        // GET: Expedientes/CrearExpediente
+        [HttpGet]
         public ActionResult CrearExpediente()
         {
+            CargarPrematriculas();
+
             return View();
         }
 
-        // POST: Expedientes/CrearExpediente
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult CrearExpediente(ExpedienteDto expediente)
         {
-            // Validar los datos ingresados
+            if (expediente == null)
+            {
+                return new HttpStatusCodeResult(400);
+            }
+
+            if (expediente.id_matricula <= 0)
+            {
+                ModelState.AddModelError(
+                    "id_matricula",
+                    "Debe seleccionar una matricula valida."
+                );
+            }
+
             if (!ModelState.IsValid)
             {
+                CargarPrematriculas();
+
                 return View(expediente);
             }
 
-            // Los datos del formulario se reciben
-            // mediante ExpedienteDto.
-            //
-            // Pendiente:
-            // 1. Validar la matricula del estudiante.
-            // 2. Obtener el usuario relacionado.
-            // 3. Conectar con EduNexusContext.
-            // 4. Guardar los datos en MySQL.
+            // =========================================
+            // PENDIENTE DE BASE DE DATOS
+            // =========================================
+
+            // 1. Buscar usuario estudiante.
+            // 2. Verificar prematricula.
+            // 3. Validar relaciones.
+            // 4. Convertir DTO a entidad.
+            // 5. Guardar en MySQL.
 
             ModelState.AddModelError(
                 "",
-                "Los datos son validos, pero el expediente " +
-                "aun no se ha guardado. Esta pendiente " +
-                "la conexion con la base de datos."
+                "Los datos del formulario fueron validados, " +
+                "pero el expediente no se ha guardado. " +
+                "Esta pendiente verificar la matricula, " +
+                "el usuario estudiante y la conexion a MySQL."
             );
+
+            CargarPrematriculas();
 
             return View(expediente);
         }
 
         // =========================================
-        // EDITAR EXPEDIENTE
+        // CARGAR PREMATRICULAS
         // =========================================
 
-        // GET: Expedientes/Edit/5
+        private void CargarPrematriculas()
+        {
+            // Pendiente de MySQL.
+            // No se agregan matriculas ficticias.
+
+            ViewBag.Matriculas = new SelectList(
+                new List<SelectListItem>(),
+                "Value",
+                "Text"
+            );
+        }
+
+        // =========================================
+        // REXP-03-006
+        // MODIFICAR EXPEDIENTE ESTUDIANTIL
+        // =========================================
+
+        // GET: Expedientes/EditarExpediente/5
+        [HttpGet]
         public ActionResult EditarExpediente(int? id)
         {
-            if (!id.HasValue)
+            if (!id.HasValue || id.Value <= 0)
             {
                 return new HttpStatusCodeResult(400);
             }
 
-            List<ExpedienteDto> expedientes = ObtenerExpedientes();
-
-            ExpedienteDto expediente = expedientes
+            ExpedienteDto expediente = ObtenerExpedientes()
                 .FirstOrDefault(x => x.id_expediente == id.Value);
 
             if (expediente == null)
@@ -104,20 +145,229 @@ namespace EduNexus.UI.Controllers
             return View(expediente);
         }
 
-        // POST: Expedientes/Edit/5
+        // POST: Expedientes/EditarExpediente
         [HttpPost]
-        public ActionResult Edit(int id, FormCollection collection)
+        [ValidateAntiForgeryToken]
+        public ActionResult EditarExpediente(
+            [Bind(Include =
+                "id_expediente,nombre,apellido1,apellido2," +
+                "identificacion,genero,grupo_sanguineo," +
+                "alergias,correo,contactoEmergencia")]
+            ExpedienteDto modelo)
         {
-            try
+            if (modelo == null || modelo.id_expediente <= 0)
             {
-                // TODO: Add update logic here
+                return new HttpStatusCodeResult(400);
+            }
 
-                return RedirectToAction("ListadoDeExpedientes");
-            }
-            catch
+            // =========================================
+            // VERIFICAR EXPEDIENTE DE EJEMPLO
+            // =========================================
+
+            ExpedienteDto expedienteExistente =
+                ObtenerExpedientes().FirstOrDefault(
+                    x => x.id_expediente == modelo.id_expediente
+                );
+
+            if (expedienteExistente == null)
             {
-                return View();
+                return HttpNotFound();
             }
+
+            // =========================================
+            // VALIDAR SOLO LOS CAMPOS EDITABLES
+            // =========================================
+
+            // ExpedienteDto tambien se utiliza para crear.
+            // En esta pantalla no se editan los demas campos.
+
+            string[] camposEditables =
+            {
+                "id_expediente",
+                "nombre",
+                "apellido1",
+                "apellido2",
+                "identificacion",
+                "genero",
+                "grupo_sanguineo",
+                "alergias",
+                "correo",
+                "contactoEmergencia"
+            };
+
+            foreach (string campo in ModelState.Keys.ToList())
+            {
+                if (!camposEditables.Contains(campo))
+                {
+                    ModelState.Remove(campo);
+                }
+            }
+
+            // =========================================
+            // VALIDAR NOMBRE
+            // =========================================
+
+            if (string.IsNullOrWhiteSpace(modelo.nombre))
+            {
+                ModelState.AddModelError(
+                    "nombre",
+                    "Debe ingresar el nombre del estudiante."
+                );
+            }
+
+            // =========================================
+            // VALIDAR PRIMER APELLIDO
+            // =========================================
+
+            if (string.IsNullOrWhiteSpace(modelo.apellido1))
+            {
+                ModelState.AddModelError(
+                    "apellido1",
+                    "Debe ingresar el primer apellido."
+                );
+            }
+
+            // =========================================
+            // VALIDAR IDENTIFICACION
+            // =========================================
+
+            if (string.IsNullOrWhiteSpace(modelo.identificacion))
+            {
+                ModelState.AddModelError(
+                    "identificacion",
+                    "Debe ingresar la cedula del estudiante."
+                );
+            }
+
+            // =========================================
+            // VALIDAR SEXO
+            // =========================================
+
+            if (string.IsNullOrWhiteSpace(modelo.genero))
+            {
+                ModelState.AddModelError(
+                    "genero",
+                    "Debe seleccionar el sexo."
+                );
+            }
+            else if (modelo.genero != "Masculino" &&
+                     modelo.genero != "Femenino")
+            {
+                ModelState.AddModelError(
+                    "genero",
+                    "Debe seleccionar una opcion valida."
+                );
+            }
+
+            // =========================================
+            // VALIDAR GRUPO SANGUINEO
+            // =========================================
+
+            if (string.IsNullOrWhiteSpace(modelo.grupo_sanguineo))
+            {
+                ModelState.AddModelError(
+                    "grupo_sanguineo",
+                    "Debe seleccionar el grupo sanguineo."
+                );
+            }
+            else
+            {
+                string[] gruposPermitidos =
+                {
+                    "O+", "O-", "A+", "A-",
+                    "B+", "B-", "AB+", "AB-"
+                };
+
+                if (!gruposPermitidos.Contains(modelo.grupo_sanguineo))
+                {
+                    ModelState.AddModelError(
+                        "grupo_sanguineo",
+                        "Debe seleccionar un grupo sanguineo valido."
+                    );
+                }
+            }
+
+            // =========================================
+            // VALIDAR ALERGIAS
+            // =========================================
+
+            if (string.IsNullOrWhiteSpace(modelo.alergias))
+            {
+                ModelState.AddModelError(
+                    "alergias",
+                    "Debe indicar las alergias o escribir Ninguna."
+                );
+            }
+
+            // =========================================
+            // VALIDAR CORREO
+            // =========================================
+
+            if (string.IsNullOrWhiteSpace(modelo.correo))
+            {
+                ModelState.AddModelError(
+                    "correo",
+                    "Debe ingresar el correo electronico."
+                );
+            }
+
+            // El atributo EmailAddress del DTO
+            // valida el formato del correo.
+
+            // =========================================
+            // VALIDAR CONTACTO DE EMERGENCIA
+            // =========================================
+
+            if (string.IsNullOrWhiteSpace(modelo.contactoEmergencia))
+            {
+                ModelState.AddModelError(
+                    "contactoEmergencia",
+                    "Debe ingresar el contacto de emergencia."
+                );
+            }
+
+            // =========================================
+            // COMPROBAR VALIDACIONES
+            // =========================================
+
+            if (!ModelState.IsValid)
+            {
+                return View(modelo);
+            }
+
+            // =========================================
+            // PENDIENTE DE MYSQL
+            // =========================================
+
+            // Cuando exista acceso a la base de datos:
+            //
+            // 1. Buscar el expediente real por ID.
+            //
+            // 2. Actualizar exclusivamente:
+            //    nombre
+            //    apellido1
+            //    apellido2
+            //    identificacion
+            //    genero
+            //    grupo_sanguineo
+            //    alergias
+            //    correo
+            //    contactoEmergencia
+            //
+            // 3. Conservar los demas datos.
+            //
+            // 4. Guardar cambios en MySQL.
+            //
+            // Actualmente NO se modifica el expediente.
+
+            ModelState.AddModelError(
+                "",
+                "Los datos del expediente fueron validados, " +
+                "pero los cambios no se han guardado. " +
+                "Esta pendiente la conexion con MySQL."
+            );
+
+            return View(modelo);
         }
 
         // =========================================
@@ -143,7 +393,10 @@ namespace EduNexus.UI.Controllers
                     tiene_adecuacion = false,
                     tiene_discapacidad = false,
                     contactoEmergencia = "Marta Mora - 8888-1001",
-                    direccion = "San José, San Isidro"
+                    direccion = "San José, San Isidro",
+                    correo = "sofia@example.com",
+                    grupo_sanguineo = "O+",
+                    alergias = "Ninguna"
                 },
                 new ExpedienteDto
                 {
@@ -160,7 +413,10 @@ namespace EduNexus.UI.Controllers
                     tiene_adecuacion = true,
                     tiene_discapacidad = false,
                     contactoEmergencia = "Pedro Fernández - 8888-1002",
-                    direccion = "Cartago, Centro"
+                    direccion = "Cartago, Centro",
+                    correo = "diego@example.com",
+                    grupo_sanguineo = "A+",
+                    alergias = "Ninguna"
                 },
                 new ExpedienteDto
                 {
@@ -177,7 +433,10 @@ namespace EduNexus.UI.Controllers
                     tiene_adecuacion = false,
                     tiene_discapacidad = true,
                     contactoEmergencia = "Laura Vindas - 8888-1003",
-                    direccion = "Heredia, San Francisco"
+                    direccion = "Heredia, San Francisco",
+                    correo = "valeria@example.com",
+                    grupo_sanguineo = "B+",
+                    alergias = "Ninguna"
                 }
             };
         }
