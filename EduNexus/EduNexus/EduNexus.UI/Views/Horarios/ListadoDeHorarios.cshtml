@@ -2,12 +2,26 @@
 
 @{
     ViewBag.Title = "Horarios";
+
+    // Ventana de hasta 5 números de página alrededor de la actual
+    int hasta = Math.Min(Model.totalPaginas, Math.Max(1, Model.pagina - 2) + 4);
+    int desde = Math.Max(1, hasta - 4);
+    int primero = Model.totalRegistros == 0 ? 0 : (Model.pagina - 1) * Model.tamanoPagina + 1;
+    int ultimo = Math.Min(Model.pagina * Model.tamanoPagina, Model.totalRegistros);
+
+    // Enlaces de paginación que conservan la búsqueda y los filtros
+    Func<int, string> enlacePagina = p =>
+        Url.Content("~/Horarios/ListadoDeHorarios")
+        + "?id=" + Model.id_seccion
+        + "&docente=" + Url.Encode(Model.id_docente)
+        + "&q=" + Url.Encode(Model.q)
+        + "&pagina=" + p;
 }
 
 <div class="row align-items-center mb-3">
     <div class="col">
         <h1 class="mb-0">Horarios</h1>
-        <p class="text-secondary mb-0">Consulte el horario por sección o por docente.</p>
+        <p class="text-secondary mb-0">Busque o filtre los horarios por sección y por docente.</p>
     </div>
     @if (Model.id_seccion.HasValue)
     {
@@ -19,27 +33,31 @@
     }
 </div>
 
-@using (Html.BeginForm("ListadoDeHorarios", "Horarios", FormMethod.Get, new { @class = "row g-2 align-items-end mb-3" }))
-{
+<form method="get" action="@Url.Content("~/Horarios/ListadoDeHorarios")" class="row g-2 align-items-end mb-3">
     <div class="col-md-4">
+        <label class="form-label" for="buscarHorario">Buscar</label>
+        <div class="hs-buscador">
+            <input type="text" id="buscarHorario" name="q" value="@Model.q" class="form-control" autocomplete="off"
+                   placeholder="Materia, docente, sección o día..."
+                   data-url="@Url.Content("~/Horarios/SugerenciasHorarios")" />
+            <div id="sugerenciasHorario" class="list-group hs-sugerencias"></div>
+        </div>
+    </div>
+    <div class="col-md-3">
         <label class="form-label" for="id">Sección</label>
         @Html.DropDownList("id", (SelectList)ViewBag.Secciones, "Todas las secciones", new { @class = "form-select" })
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label" for="docente">Docente</label>
         @Html.DropDownList("docente", (SelectList)ViewBag.Docentes, "Todos los docentes", new { @class = "form-select" })
     </div>
     <div class="col-auto">
         <button type="submit" class="btn btn-cyan">Consultar</button>
-        @Html.ActionLink("Limpiar", "ListadoDeHorarios", null, new { @class = "btn btn-outline-secondary" })
+        <a href="@Url.Content("~/Horarios/ListadoDeHorarios")" class="btn btn-outline-secondary">Limpiar</a>
     </div>
-}
+</form>
 
-@if (!Model.consultado)
-{
-    <div class="alert alert-info">Seleccione una sección o un docente y presione Consultar.</div>
-}
-else if (!string.IsNullOrEmpty(Model.mensaje))
+@if (!string.IsNullOrEmpty(Model.mensaje))
 {
     <div class="alert alert-warning">@Model.mensaje</div>
 }
@@ -75,5 +93,35 @@ else
                 </tbody>
             </table>
         </div>
+
+        <div class="card-footer d-flex align-items-center">
+            <p class="m-0 text-secondary">
+                Mostrando <strong>@primero</strong> a <strong>@ultimo</strong> de <strong>@Model.totalRegistros</strong> horarios
+            </p>
+
+            @if (Model.totalPaginas > 1)
+            {
+                <ul class="pagination m-0 ms-auto">
+                    <li class="page-item @(Model.pagina == 1 ? "disabled" : "")">
+                        <a class="page-link" href="@enlacePagina(Model.pagina - 1)">Anterior</a>
+                    </li>
+
+                    @for (int p = desde; p <= hasta; p++)
+                    {
+                        <li class="page-item @(p == Model.pagina ? "active" : "")">
+                            <a class="page-link" href="@enlacePagina(p)">@p</a>
+                        </li>
+                    }
+
+                    <li class="page-item @(Model.pagina == Model.totalPaginas ? "disabled" : "")">
+                        <a class="page-link" href="@enlacePagina(Model.pagina + 1)">Siguiente</a>
+                    </li>
+                </ul>
+            }
+        </div>
     </div>
+}
+
+@section Scripts {
+    <script src="@Url.Content("~/Scripts/Horarios/ListadoDeHorarios.js")"></script>
 }

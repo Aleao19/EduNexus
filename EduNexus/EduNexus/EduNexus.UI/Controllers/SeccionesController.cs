@@ -53,6 +53,7 @@ namespace EduNexus.UI.Controllers
         }
 
         // GET: Secciones/AsignarEstudiantes/5
+        [PermitirCoordinador]
         public ActionResult AsignarEstudiantes(int? id)
         {
             if (!id.HasValue)
@@ -75,6 +76,7 @@ namespace EduNexus.UI.Controllers
         }
 
         // POST: Secciones/AsignarEstudiantes
+        [PermitirCoordinador]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult AsignarEstudiantes(int id, string idUsuario)

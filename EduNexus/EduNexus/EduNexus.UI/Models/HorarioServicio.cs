@@ -3,6 +3,8 @@ using EduNexus.UI.Models.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
+using System.Text;
 
 namespace EduNexus.UI.Models
 {
@@ -22,7 +24,26 @@ namespace EduNexus.UI.Models
             int posicion = Array.IndexOf(OrdenDias, d);
             return posicion < 0 ? 99 : posicion;
         }
+        public static string SinTildes(string texto)
+        {
+            if (string.IsNullOrEmpty(texto))
+            {
+                return "";
+            }
 
+            string descompuesto = texto.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder();
+
+            foreach (char c in descompuesto)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return sb.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant().Trim();
+        }
         public static string NombreCompleto(UsuarioEntity u)
         {
             return string.Join(" ", new[] { u.nombre, u.apellido1, u.apellido2 }

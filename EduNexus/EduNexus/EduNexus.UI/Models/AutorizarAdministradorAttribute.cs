@@ -43,14 +43,24 @@ namespace EduNexus.UI.Models
                 return;
             }
 
-            // 4. Validar que tenga el rol Administrador.
+            // 4. Validar que tenga el rol Administrador
+            //    (o Coordinador Academico en las acciones marcadas con [PermitirCoordinador]).
             bool esAdministrador = string.Equals(
                 usuario.nombreRol,
                 "Administrador",
                 StringComparison.OrdinalIgnoreCase
             );
 
-            if (!esAdministrador)
+            bool esCoordinador = string.Equals(
+                usuario.nombreRol,
+                "Coordinador Academico",
+                StringComparison.OrdinalIgnoreCase
+            );
+
+            bool accionPermiteCoordinador = filterContext.ActionDescriptor
+                .IsDefined(typeof(PermitirCoordinadorAttribute), true);
+
+            if (!esAdministrador && !(esCoordinador && accionPermiteCoordinador))
             {
                 filterContext.Controller.TempData["MensajeError"] =
                     "No tiene permisos para acceder a este módulo. " +

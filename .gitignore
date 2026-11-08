@@ -1,2 +1,7 @@
 ﻿.vs/
 /EduNexus/EduNexus/EduNexus.UI/obj/Debug
+*.cache
+*.cache
+*.txt
+*.pdb
+*.dll

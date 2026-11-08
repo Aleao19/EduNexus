@@ -9,15 +9,24 @@
 }
 
 <div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-1">Asignar estudiantes</h1>
-        <p class="text-secondary mb-0">
-            Administra la distribución de estudiantes por sección.
-        </p>
-    </div>
     <div class="col-auto">
-        @Html.ActionLink("Volver a secciones", "ListadoDeSecciones", null,
-            new { @class = "btn btn-outline-secondary" })
+        @{
+            var usuarioActual = Session[EduNexus.UI.Models.AutorizarAdministradorAttribute.ClaveSesion]
+                as EduNexus.Abstracciones.ModelosParaUI.Usuarios.UsuarioDto;
+            bool esAdminActual = usuarioActual != null &&
+                string.Equals(usuarioActual.nombreRol, "Administrador", StringComparison.OrdinalIgnoreCase);
+        }
+
+        @if (esAdminActual)
+        {
+            @Html.ActionLink("Volver a secciones", "ListadoDeSecciones", null,
+                new { @class = "btn btn-outline-secondary" })
+        }
+        else
+        {
+            @Html.ActionLink("Volver al horario", "HorarioParaAsignacion", "Horarios",
+                new { id = Model.id_seccion }, new { @class = "btn btn-outline-secondary" })
+        }
     </div>
 </div>
 

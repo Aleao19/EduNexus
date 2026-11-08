@@ -26,6 +26,11 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Horarios
         public string titulo { get; set; }
         public string mensaje { get; set; }
         public bool consultado { get; set; }
+        public string q { get; set; }
+        public int pagina { get; set; } = 1;
+        public int totalPaginas { get; set; } = 1;
+        public int totalRegistros { get; set; }
+        public int tamanoPagina { get; set; }
         public List<HorarioItemDto> items { get; set; } = new List<HorarioItemDto>();
     }
 

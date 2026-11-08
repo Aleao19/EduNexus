@@ -15,9 +15,10 @@ namespace EduNexus.UI.Controllers
     public class HorariosController : Controller
     {
         private static readonly string[] Dias = { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes" };
+        private const int TamanoPagina = 10;
 
-        // RHOR-09-002: consulta por seccion y/o docente (id = id_seccion)
-        public ActionResult ListadoDeHorarios(int? id, string docente)
+        // RHOR-09-002: consulta por sección, docente o texto, con paginación (id = id_seccion)
+        public ActionResult ListadoDeHorarios(int? id, string docente, string q, int pagina = 1)
         {
             using (var db = new EduNexusDbContext())
             {
@@ -28,38 +29,90 @@ namespace EduNexus.UI.Controllers
                         .Select(u => new { u.id_usuario, nombre = HorarioServicio.NombreCompleto(u) }).ToList(),
                     "id_usuario", "nombre", docente);
 
-                var modelo = new HorarioConsultaDto { id_seccion = id, id_docente = docente };
+                IQueryable<HorarioEntity> consulta = db.Horarios;
 
-                if (id.HasValue || !string.IsNullOrEmpty(docente))
+                if (id.HasValue)
                 {
-                    IQueryable<HorarioEntity> consulta = db.Horarios;
+                    int idSeccion = id.Value;
+                    consulta = consulta.Where(h => h.fk_seccion == idSeccion);
+                }
 
-                    if (id.HasValue)
-                    {
-                        int idSeccion = id.Value;
-                        consulta = consulta.Where(h => h.fk_seccion == idSeccion);
-                    }
+                if (!string.IsNullOrEmpty(docente))
+                {
+                    List<int> idsMaterias = db.Materias
+                        .Where(m => m.profesor == docente)
+                        .Select(m => m.id_materia).ToList();
+                    consulta = consulta.Where(h => idsMaterias.Contains(h.fk_materia));
+                }
 
-                    if (!string.IsNullOrEmpty(docente))
-                    {
-                        List<int> idsMaterias = db.Materias
-                            .Where(m => m.profesor == docente)
-                            .Select(m => m.id_materia).ToList();
-                        consulta = consulta.Where(h => idsMaterias.Contains(h.fk_materia));
-                    }
+                List<HorarioItemDto> items = HorarioServicio.ConstruirItems(db, consulta.ToList());
 
-                    modelo.items = HorarioServicio.ConstruirItems(db, consulta.ToList());
-                    modelo.consultado = true;
+                // Búsqueda por texto: materia, docente, sección o día
+                if (!string.IsNullOrWhiteSpace(q))
+                {
+                    string buscado = HorarioServicio.SinTildes(q);
+                    items = items.Where(x => HorarioServicio.SinTildes(
+                        x.materia + " " + x.profesor + " " + x.seccion + " " + x.dia_semana).Contains(buscado)).ToList();
+                }
 
-                    // Escenario 2: consulta sin horarios registrados
-                    if (!modelo.items.Any())
-                    {
-                        modelo.mensaje = "No hay horario registrado para la seleccion realizada.";
-                    }
+                int total = items.Count;
+                int totalPaginas = Math.Max(1, (int)Math.Ceiling(total / (double)TamanoPagina));
+                pagina = Math.Min(Math.Max(1, pagina), totalPaginas);
+
+                var modelo = new HorarioConsultaDto
+                {
+                    id_seccion = id,
+                    id_docente = docente,
+                    q = q,
+                    consultado = true,
+                    pagina = pagina,
+                    totalPaginas = totalPaginas,
+                    totalRegistros = total,
+                    tamanoPagina = TamanoPagina,
+                    items = items.Skip((pagina - 1) * TamanoPagina).Take(TamanoPagina).ToList()
+                };
+
+                if (total == 0)
+                {
+                    modelo.mensaje = (id.HasValue || !string.IsNullOrEmpty(docente) || !string.IsNullOrWhiteSpace(q))
+                        ? "No hay horario registrado para la selección realizada."
+                        : "Aún no hay horarios registrados.";
                 }
 
                 return View(modelo);
             }
+        }
+
+        // AJAX: sugerencias para el buscador del listado
+        [HttpGet]
+        public JsonResult SugerenciasHorarios(string term)
+        {
+            var sugerencias = new List<object>();
+            string buscado = HorarioServicio.SinTildes(term);
+
+            if (buscado.Length < 2)
+            {
+                return Json(sugerencias, JsonRequestBehavior.AllowGet);
+            }
+
+            using (var db = new EduNexusDbContext())
+            {
+                List<HorarioItemDto> items = HorarioServicio.ConstruirItems(db, db.Horarios.ToList());
+
+                sugerencias.AddRange(items.Select(x => x.materia).Distinct()
+                    .Where(t => HorarioServicio.SinTildes(t).Contains(buscado))
+                    .Take(4).Select(t => new { texto = t, tipo = "Materia" }));
+
+                sugerencias.AddRange(items.Select(x => x.profesor).Where(t => !string.IsNullOrEmpty(t)).Distinct()
+                    .Where(t => HorarioServicio.SinTildes(t).Contains(buscado))
+                    .Take(4).Select(t => new { texto = t, tipo = "Docente" }));
+
+                sugerencias.AddRange(items.Select(x => x.seccion).Where(t => !string.IsNullOrEmpty(t)).Distinct()
+                    .Where(t => HorarioServicio.SinTildes(t).Contains(buscado))
+                    .Take(4).Select(t => new { texto = t, tipo = "Sección" }));
+            }
+
+            return Json(sugerencias, JsonRequestBehavior.AllowGet);
         }
 
         // Horario semanal de una seccion (id = id_seccion)
