@@ -1,61 +1,79 @@
-﻿@{
-    ViewBag.Title = "Listado de horarios";
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Horarios.HorarioConsultaDto
+
+@{
+    ViewBag.Title = "Horarios";
 }
 
 <div class="row align-items-center mb-3">
     <div class="col">
         <h1 class="mb-0">Horarios</h1>
-        <p class="text-secondary mb-0">Planificación de horarios por sección.</p>
+        <p class="text-secondary mb-0">Consulte el horario por sección o por docente.</p>
+    </div>
+    @if (Model.id_seccion.HasValue)
+    {
+        <div class="col-auto">
+            @Html.ActionLink("Ver semana", "VisualizarHorario", new { id = Model.id_seccion }, new { @class = "btn btn-outline-secondary me-1" })
+            @Html.ActionLink("Asignar estudiantes", "HorarioParaAsignacion", new { id = Model.id_seccion }, new { @class = "btn btn-outline-secondary me-1" })
+            @Html.ActionLink("+ Nuevo horario", "CrearHorario", new { id = Model.id_seccion }, new { @class = "btn btn-primary" })
+        </div>
+    }
+</div>
+
+@using (Html.BeginForm("ListadoDeHorarios", "Horarios", FormMethod.Get, new { @class = "row g-2 align-items-end mb-3" }))
+{
+    <div class="col-md-4">
+        <label class="form-label" for="id">Sección</label>
+        @Html.DropDownList("id", (SelectList)ViewBag.Secciones, "Todas las secciones", new { @class = "form-select" })
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="docente">Docente</label>
+        @Html.DropDownList("docente", (SelectList)ViewBag.Docentes, "Todos los docentes", new { @class = "form-select" })
     </div>
     <div class="col-auto">
-        @Html.ActionLink("+ Nuevo horario", "CrearHorario", null, new { @class = "btn btn-primary" })
+        <button type="submit" class="btn btn-cyan">Consultar</button>
+        @Html.ActionLink("Limpiar", "ListadoDeHorarios", null, new { @class = "btn btn-outline-secondary" })
     </div>
-</div>
+}
 
-<div class="card shadow-sm">
-    <div class="card-header">
-        <h3 class="card-title mb-0">Horarios por sección</h3>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-vcenter card-table" id="myTable">
-            <thead>
-                <tr>
-                    <th>Sección</th>
-                    <th>Grado</th>
-                    <th class="w-1">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><span class="badge bg-blue-lt">1-A</span></td>
-                    <td>1</td>
-                    <td class="text-nowrap">
-                        @Html.ActionLink("Editar", "EditarHorario", new { id = 1 }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
-                        @Html.ActionLink("Ver horario", "VisualizarHorario", new { id = 1 }, new { @class = "btn btn-sm btn-primary" })
-                    </td>
-                </tr>
-                <tr>
-                    <td><span class="badge bg-blue-lt">1-B</span></td>
-                    <td>1</td>
-                    <td class="text-nowrap">
-                        @Html.ActionLink("Editar", "EditarHorario", new { id = 2 }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
-                        @Html.ActionLink("Ver horario", "VisualizarHorario", new { id = 2 }, new { @class = "btn btn-sm btn-primary" })
-                    </td>
-                </tr>
-                <tr>
-                    <td><span class="badge bg-blue-lt">2-A</span></td>
-                    <td>2</td>
-                    <td class="text-nowrap">
-                        @Html.ActionLink("Editar", "EditarHorario", new { id = 3 }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
-                        @Html.ActionLink("Ver horario", "VisualizarHorario", new { id = 3 }, new { @class = "btn btn-sm btn-primary" })
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-@section scripts
+@if (!Model.consultado)
 {
-    <script src="~/Scripts/General/General.js"></script>
+    <div class="alert alert-info">Seleccione una sección o un docente y presione Consultar.</div>
+}
+else if (!string.IsNullOrEmpty(Model.mensaje))
+{
+    <div class="alert alert-warning">@Model.mensaje</div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Día</th>
+                        <th>Hora</th>
+                        <th>Materia</th>
+                        <th>Docente</th>
+                        <th>Sección</th>
+                        <th class="w-1">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.items)
+                    {
+                        <tr>
+                            <td>@item.dia_semana</td>
+                            <td>@item.inicio - @item.fin</td>
+                            <td>@item.materia</td>
+                            <td>@item.profesor</td>
+                            <td>@item.seccion</td>
+                            <td class="text-nowrap">
+                                @Html.ActionLink("Editar", "EditarHorario", new { id = item.id_horario }, new { @class = "btn btn-sm btn-outline-secondary" })
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 }

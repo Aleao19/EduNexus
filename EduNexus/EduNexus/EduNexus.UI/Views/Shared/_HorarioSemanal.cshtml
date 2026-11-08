@@ -1,0 +1,55 @@
+﻿@using EduNexus.UI.Models
+@model List<EduNexus.Abstracciones.ModelosParaUI.Horarios.HorarioItemDto>
+
+@{
+    string[] dias = { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes" };
+    bool mostrarProfesor = ViewData["mostrarProfesor"] as bool? ?? false;
+    bool mostrarSeccion = ViewData["mostrarSeccion"] as bool? ?? false;
+    var bloques = Model.GroupBy(x => new { x.inicio, x.fin })
+                       .Select(g => g.Key)
+                       .OrderBy(b => b.inicio).ThenBy(b => b.fin)
+                       .ToList();
+}
+
+<div class="table-responsive">
+    <table class="table table-bordered hs-grid">
+        <thead>
+            <tr>
+                <th class="hs-hora">Hora</th>
+                @foreach (string d in dias)
+                {
+                    <th>@d</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var b in bloques)
+            {
+                <tr>
+                    <td class="hs-hora">@b.inicio - @b.fin</td>
+                    @foreach (string d in dias)
+                    {
+                        var item = Model.FirstOrDefault(x => x.inicio == b.inicio && x.fin == b.fin
+                            && HorarioServicio.OrdenDia(x.dia_semana) == HorarioServicio.OrdenDia(d));
+                        <td>
+                            @if (item != null)
+                            {
+                                <div class="hs-bloque">
+                                    <strong>@item.materia</strong>
+                                    @if (mostrarProfesor)
+                                    {
+                                        <div class="hs-detalle">@item.profesor</div>
+                                    }
+                                    @if (mostrarSeccion)
+                                    {
+                                        <div class="hs-detalle">@item.seccion</div>
+                                    }
+                                </div>
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
