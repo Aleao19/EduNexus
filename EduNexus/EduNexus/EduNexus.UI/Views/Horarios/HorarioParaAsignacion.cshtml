@@ -1,0 +1,75 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Horarios.HorarioAsignacionDto
+
+@{
+    ViewBag.Title = "Horario para asignar estudiantes";
+}
+
+<h2>Asignación de estudiantes - @Model.seccion</h2>
+
+@if (!Model.items.Any())
+{
+    @* Escenario 2: la sección no tiene horario configurado *@
+    <div class="alert alert-warning">
+        La sección no tiene horario configurado y no es posible asignar estudiantes.
+        @Html.ActionLink("Crear horario", "CrearHorario", new { id = Model.id_seccion }, new { @class = "btn btn-primary btn-sm ms-2" })
+    </div>
+}
+else
+{
+    @* Escenario 1: horario, cupos disponibles y estudiantes ya asignados *@
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-secondary">Cupo total</div>
+                    <h3 class="mb-0">@Model.cupo</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-secondary">Estudiantes asignados</div>
+                    <h3 class="mb-0">@Model.matriculados</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-secondary">Cupos disponibles</div>
+                    <h3 class="mb-0">@Model.cupos_disponibles</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @Html.Partial("_HorarioSemanal", Model.items, new ViewDataDictionary { { "mostrarProfesor", true } })
+
+    <div class="card shadow-sm mt-3">
+        <div class="card-header"><h3 class="card-title mb-0">Estudiantes asignados</h3></div>
+        <div class="card-body">
+            @if (!Model.estudiantes.Any())
+            {
+                <p class="text-secondary mb-0">Aún no hay estudiantes asignados a esta sección.</p>
+            }
+            else
+            {
+                <ul class="mb-0">
+                    @foreach (string nombre in Model.estudiantes)
+                    {
+                        <li>@nombre</li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+
+    <div class="mt-3">
+        @Html.ActionLink("Asignar estudiantes", "AsignarEstudiantes", "Secciones", new { id = Model.id_seccion }, new { @class = "btn btn-primary" })
+    </div>
+}
+
+<div class="mt-3">
+    @Html.ActionLink("Regresar", "ListadoDeHorarios", new { id = Model.id_seccion })
+</div>
