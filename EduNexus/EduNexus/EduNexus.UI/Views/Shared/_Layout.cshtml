@@ -22,6 +22,10 @@
             "Encargado",
             StringComparison.OrdinalIgnoreCase
         );
+    // RHOR-09-006 y 007: Mi horario
+    bool esDocenteOEstudiante = estaAutenticado &&
+        (string.Equals(usuarioSesion.nombreRol, "Docente", StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(usuarioSesion.nombreRol, "Estudiante", StringComparison.OrdinalIgnoreCase));
 }
 
 <!DOCTYPE html>
@@ -108,6 +112,40 @@
                             )
 
                         </li>
+                        bool esDocente = estaAutenticado &&
+                        string.Equals(usuarioSesion.nombreRol, "Docente", StringComparison.OrdinalIgnoreCase);
+
+                        if (esDocenteOEstudiante)
+                        {
+                            <!-- MI HORARIO -->
+                            <li class="nav-item">
+
+                                @Html.ActionLink(
+                                    "Mi horario",
+                                    "MiHorario",
+                                    "MiHorario",
+                                    new { area = "" },
+                                    new { @class = "nav-link" }
+                                )
+
+                            </li>
+                        }
+
+                        if (esDocente)
+                        {
+                            <!-- ASISTENCIA -->
+                            <li class="nav-item">
+
+                                @Html.ActionLink(
+                                    "Asistencia",
+                                    "Registrar",
+                                    "Asistencia",
+                                    new { area = "" },
+                                    new { @class = "nav-link" }
+                                )
+
+                            </li>
+                        }
 
                         @* MENÚ DEL ADMINISTRADOR *@
 
