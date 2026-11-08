@@ -220,6 +220,10 @@
                 </div>
             </div>
             <div class="alert alert-danger hz-error" id="errorBox"></div>
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mt-3">@Html.ValidationSummary(false)</div>
+            }
         </div>
     }
 </div>
