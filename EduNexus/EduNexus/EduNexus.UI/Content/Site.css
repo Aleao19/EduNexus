@@ -59,3 +59,41 @@ html, body {
 .en-navbar .navbar-nav li {
     list-style: none;
 }
+/* Horarios: cuadrícula semanal */
+    .hs-grid {
+    table-layout: fixed;
+    min-width: 760px;
+    }
+
+    .hs-grid th {
+        text-align: center;
+        background-color: #17a2b8;
+        color: #fff;
+    }
+
+    .hs-grid .hs-hora {
+        width: 110px;
+        text-align: center;
+        vertical-align: middle;
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #212529;
+    }
+
+    .hs-grid td {
+        height: 64px;
+        vertical-align: middle;
+    }
+
+    .hs-bloque {
+        background-color: #cfe8ff;
+        color: #084298;
+        border-radius: 4px;
+        padding: 6px;
+        text-align: center;
+    }
+
+    .hs-detalle {
+        font-size: .75rem;
+        font-weight: 400;
+    }
