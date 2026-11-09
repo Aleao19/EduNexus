@@ -1,6 +1,6 @@
-﻿
-using EduNexus.Abstracciones.ModelosParaUI.Expedientes;
+﻿using EduNexus.Abstracciones.ModelosParaUI.Expedientes;
 using EduNexus.UI.Models;
+using EduNexus.UI.Models.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,18 +8,39 @@ using System.Web.Mvc;
 
 namespace EduNexus.UI.Controllers
 {
+    // REXP-03-001 / REXP-03-003 / REXP-03-004 / REXP-03-006
+    // Expediente estudiantil: tabla expediente_estudiantes ligada a la
+    // prematrícula (datos personales) y al usuario estudiante (correo).
     [AutorizarAdministrador]
     public class ExpedientesController : Controller
     {
+        private const string EstadoAprobada = "Aprobada";
+
+        private readonly EduNexusDbContext db = new EduNexusDbContext();
+
+        // Campos del DTO que vienen de la prematrícula o que no se editan:
+        // no se validan al crear el expediente.
+        private static readonly string[] CamposNoEditablesAlCrear =
+        {
+            "id_expediente", "id_usuario", "identificacion", "nombre",
+            "apellido1", "apellido2", "genero", "grado", "nombre_grado",
+            "telefono", "fecha_nacimiento", "tiene_adecuacion",
+            "tiene_discapacidad", "direccion"
+        };
+
+        private static readonly string[] CamposEditables =
+        {
+            "id_expediente", "nombre", "apellido1", "apellido2", "genero",
+            "grupo_sanguineo", "alergias", "correo", "contactoEmergencia"
+        };
+
         // =========================================
         // LISTADO DE EXPEDIENTES
         // =========================================
 
         public ActionResult ListadoDeExpedientes()
         {
-            List<ExpedienteDto> expedientes = ObtenerExpedientes();
-
-            return View(expedientes);
+            return View(Consultar(null));
         }
 
         // =========================================
@@ -33,8 +54,7 @@ namespace EduNexus.UI.Controllers
                 return new HttpStatusCodeResult(400);
             }
 
-            ExpedienteDto expediente = ObtenerExpedientes()
-                .FirstOrDefault(x => x.id_expediente == id.Value);
+            ExpedienteDto expediente = Consultar(id.Value).FirstOrDefault();
 
             if (expediente == null)
             {
@@ -50,74 +70,153 @@ namespace EduNexus.UI.Controllers
         // =========================================
 
         [HttpGet]
-        public ActionResult CrearExpediente()
+        public ActionResult CrearExpediente(int? id_matricula)
         {
-            CargarPrematriculas();
+            var modelo = new ExpedienteDto();
 
-            return View();
+            if (id_matricula.HasValue && id_matricula.Value > 0)
+            {
+                modelo.id_matricula = id_matricula.Value;
+
+                PrematriculaEntity prematricula = db.Prematriculas
+                    .FirstOrDefault(p => p.id_prematricula == modelo.id_matricula);
+
+                CompletarDatosPersonales(modelo, prematricula);
+
+                if (prematricula != null)
+                {
+                    UsuarioEntity usuario = ValidacionExpediente
+                        .BuscarUsuarioEstudiante(db, prematricula.identificacion);
+
+                    if (usuario != null)
+                    {
+                        modelo.correo = usuario.email;
+                    }
+
+                    modelo.contactoEmergencia = prematricula.contactoEmergencia;
+                }
+            }
+
+            CargarPrematriculas(modelo.id_matricula);
+
+            return View(modelo);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult CrearExpediente(ExpedienteDto expediente)
+        public ActionResult CrearExpediente(
+            [Bind(Include =
+                "id_matricula,correo,grupo_sanguineo," +
+                "alergias,contactoEmergencia")]
+            ExpedienteDto expediente)
         {
             if (expediente == null)
             {
                 return new HttpStatusCodeResult(400);
             }
 
-            if (expediente.id_matricula <= 0)
+            // Los datos personales salen de la prematrícula: no se piden ni se validan aquí.
+            foreach (string campo in CamposNoEditablesAlCrear)
             {
-                ModelState.AddModelError(
-                    "id_matricula",
-                    "Debe seleccionar una matricula valida."
-                );
+                ModelState.Remove(campo);
+            }
+
+            ValidarDatosDelExpediente(expediente);
+
+            PrematriculaEntity prematricula = expediente.id_matricula > 0
+                ? db.Prematriculas.FirstOrDefault(p => p.id_prematricula == expediente.id_matricula)
+                : null;
+
+            if (prematricula == null)
+            {
+                ModelState.AddModelError("id_matricula", "Debe seleccionar una matrícula válida.");
+            }
+            else if (prematricula.estado != EstadoAprobada)
+            {
+                ModelState.AddModelError("id_matricula", "Solo se puede crear el expediente de una matrícula aprobada.");
             }
 
             if (!ModelState.IsValid)
             {
-                CargarPrematriculas();
-
-                return View(expediente);
+                return VistaCrear(expediente, prematricula);
             }
 
-            // =========================================
-            // PENDIENTE DE BASE DE DATOS
-            // =========================================
+            try
+            {
+                ExpedienteEntity entidad;
 
-            // 1. Buscar usuario estudiante.
-            // 2. Verificar prematricula.
-            // 3. Validar relaciones.
-            // 4. Convertir DTO a entidad.
-            // 5. Guardar en MySQL.
+                using (var transaccion = db.Database.BeginTransaction())
+                {
+                    // Bloquea las prematrículas del estudiante para que dos
+                    // solicitudes simultáneas no creen dos expedientes.
+                    db.Database.ExecuteSqlCommand(
+                        "SELECT id_matricula FROM prematricula WHERE identificacion_estudiante = @p0 FOR UPDATE",
+                        prematricula.identificacion);
 
-            ModelState.AddModelError(
-                "",
-                "Los datos del formulario fueron validados, " +
-                "pero el expediente no se ha guardado. " +
-                "Esta pendiente verificar la matricula, " +
-                "el usuario estudiante y la conexion a MySQL."
-            );
+                    UsuarioEntity usuario = ValidacionExpediente
+                        .BuscarUsuarioEstudiante(db, prematricula.identificacion);
 
-            CargarPrematriculas();
+                    List<string> errores = ValidacionExpediente.ValidarRelacion(
+                        db,
+                        expediente.id_matricula,
+                        usuario != null ? usuario.id_usuario : null);
 
-            return View(expediente);
+                    if (errores.Any())
+                    {
+                        transaccion.Rollback();
+
+                        foreach (string error in errores)
+                        {
+                            ModelState.AddModelError("", error);
+                        }
+
+                        return VistaCrear(expediente, prematricula);
+                    }
+
+                    if (string.IsNullOrWhiteSpace(expediente.correo))
+                    {
+                        expediente.correo = usuario.email;
+                    }
+
+                    entidad = ExpedienteMapper.ConvertirAEntidad(expediente, usuario.id_usuario);
+                    db.Expedientes.Add(entidad);
+
+                    Auditoria.Registrar(
+                        db,
+                        "Crear expediente",
+                        "Se creó el expediente del estudiante " + prematricula.identificacion + ".",
+                        null,
+                        new
+                        {
+                            matricula = entidad.fk_id_matricula,
+                            usuario = entidad.fk_id_usuario,
+                            identificacion = prematricula.identificacion,
+                            entidad.correo,
+                            entidad.grupo_sanguineo,
+                            entidad.alergias,
+                            contacto_emergencia = entidad.contactoEmergencia
+                        });
+
+                    db.SaveChanges();
+                    transaccion.Commit();
+                }
+
+                TempData["Mensaje"] = "El expediente se creó correctamente.";
+                return RedirectToAction("DetalleDeExpediente", new { id = entidad.id_expediente });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError("Error creando expediente: " + ex);
+                ModelState.AddModelError("", "No fue posible guardar el expediente. Intente de nuevo.");
+                return VistaCrear(expediente, prematricula);
+            }
         }
 
-        // =========================================
-        // CARGAR PREMATRICULAS
-        // =========================================
-
-        private void CargarPrematriculas()
+        private ActionResult VistaCrear(ExpedienteDto expediente, PrematriculaEntity prematricula)
         {
-            // Pendiente de MySQL.
-            // No se agregan matriculas ficticias.
-
-            ViewBag.Matriculas = new SelectList(
-                new List<SelectListItem>(),
-                "Value",
-                "Text"
-            );
+            CompletarDatosPersonales(expediente, prematricula);
+            CargarPrematriculas(expediente.id_matricula);
+            return View("CrearExpediente", expediente);
         }
 
         // =========================================
@@ -134,25 +233,32 @@ namespace EduNexus.UI.Controllers
                 return new HttpStatusCodeResult(400);
             }
 
-            ExpedienteDto expediente = ObtenerExpedientes()
-                .FirstOrDefault(x => x.id_expediente == id.Value);
+            ExpedienteDto expediente = Consultar(id.Value).FirstOrDefault();
 
             if (expediente == null)
             {
                 return HttpNotFound();
             }
 
+            if (string.IsNullOrEmpty(expediente.identificacion))
+            {
+                TempData["Error"] = "La prematrícula ligada a este expediente no existe; no se pueden editar los datos personales.";
+                return RedirectToAction("DetalleDeExpediente", new { id = id.Value });
+            }
+
             return View(expediente);
         }
 
         // POST: Expedientes/EditarExpediente
+        // La identificación no se edita. Los datos personales se guardan en la
+        // prematrícula (todas las del estudiante) y en su usuario; los datos médicos,
+        // el correo y el contacto de emergencia se guardan en el expediente.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult EditarExpediente(
             [Bind(Include =
-                "id_expediente,nombre,apellido1,apellido2," +
-                "identificacion,genero,grupo_sanguineo," +
-                "alergias,correo,contactoEmergencia")]
+                "id_expediente,nombre,apellido1,apellido2,genero," +
+                "grupo_sanguineo,alergias,correo,contactoEmergencia")]
             ExpedienteDto modelo)
         {
             if (modelo == null || modelo.id_expediente <= 0)
@@ -160,285 +266,325 @@ namespace EduNexus.UI.Controllers
                 return new HttpStatusCodeResult(400);
             }
 
-            // =========================================
-            // VERIFICAR EXPEDIENTE DE EJEMPLO
-            // =========================================
+            ExpedienteEntity entidad = db.Expedientes
+                .FirstOrDefault(e => e.id_expediente == modelo.id_expediente);
 
-            ExpedienteDto expedienteExistente =
-                ObtenerExpedientes().FirstOrDefault(
-                    x => x.id_expediente == modelo.id_expediente
-                );
-
-            if (expedienteExistente == null)
+            if (entidad == null)
             {
                 return HttpNotFound();
             }
 
-            // =========================================
-            // VALIDAR SOLO LOS CAMPOS EDITABLES
-            // =========================================
+            PrematriculaEntity prematricula = db.Prematriculas
+                .FirstOrDefault(p => p.id_prematricula == entidad.fk_id_matricula);
 
-            // ExpedienteDto tambien se utiliza para crear.
-            // En esta pantalla no se editan los demas campos.
-
-            string[] camposEditables =
+            if (prematricula == null)
             {
-                "id_expediente",
-                "nombre",
-                "apellido1",
-                "apellido2",
-                "identificacion",
-                "genero",
-                "grupo_sanguineo",
-                "alergias",
-                "correo",
-                "contactoEmergencia"
-            };
+                TempData["Error"] = "La prematrícula ligada a este expediente no existe; no se pueden editar los datos personales.";
+                return RedirectToAction("DetalleDeExpediente", new { id = entidad.id_expediente });
+            }
+
+            // La identificación se muestra siempre desde la base de datos.
+            modelo.identificacion = prematricula.identificacion;
+            modelo.id_matricula = entidad.fk_id_matricula;
 
             foreach (string campo in ModelState.Keys.ToList())
             {
-                if (!camposEditables.Contains(campo))
+                if (!CamposEditables.Contains(campo))
                 {
                     ModelState.Remove(campo);
                 }
             }
 
-            // =========================================
-            // VALIDAR NOMBRE
-            // =========================================
-
-            if (string.IsNullOrWhiteSpace(modelo.nombre))
+            // Género: mismas opciones que la prematrícula
+            if (!string.IsNullOrWhiteSpace(modelo.genero))
             {
-                ModelState.AddModelError(
-                    "nombre",
-                    "Debe ingresar el nombre del estudiante."
-                );
-            }
+                string genero = ValidacionExpediente.Generos.FirstOrDefault(g =>
+                    string.Equals(g, modelo.genero.Trim(), StringComparison.OrdinalIgnoreCase));
 
-            // =========================================
-            // VALIDAR PRIMER APELLIDO
-            // =========================================
-
-            if (string.IsNullOrWhiteSpace(modelo.apellido1))
-            {
-                ModelState.AddModelError(
-                    "apellido1",
-                    "Debe ingresar el primer apellido."
-                );
-            }
-
-            // =========================================
-            // VALIDAR IDENTIFICACION
-            // =========================================
-
-            if (string.IsNullOrWhiteSpace(modelo.identificacion))
-            {
-                ModelState.AddModelError(
-                    "identificacion",
-                    "Debe ingresar la cedula del estudiante."
-                );
-            }
-
-            // =========================================
-            // VALIDAR SEXO
-            // =========================================
-
-            if (string.IsNullOrWhiteSpace(modelo.genero))
-            {
-                ModelState.AddModelError(
-                    "genero",
-                    "Debe seleccionar el sexo."
-                );
-            }
-            else if (modelo.genero != "Masculino" &&
-                     modelo.genero != "Femenino")
-            {
-                ModelState.AddModelError(
-                    "genero",
-                    "Debe seleccionar una opcion valida."
-                );
-            }
-
-            // =========================================
-            // VALIDAR GRUPO SANGUINEO
-            // =========================================
-
-            if (string.IsNullOrWhiteSpace(modelo.grupo_sanguineo))
-            {
-                ModelState.AddModelError(
-                    "grupo_sanguineo",
-                    "Debe seleccionar el grupo sanguineo."
-                );
-            }
-            else
-            {
-                string[] gruposPermitidos =
+                if (genero == null)
                 {
-                    "O+", "O-", "A+", "A-",
-                    "B+", "B-", "AB+", "AB-"
-                };
-
-                if (!gruposPermitidos.Contains(modelo.grupo_sanguineo))
+                    ModelState.AddModelError("genero", "Seleccione un género válido.");
+                }
+                else
                 {
-                    ModelState.AddModelError(
-                        "grupo_sanguineo",
-                        "Debe seleccionar un grupo sanguineo valido."
-                    );
+                    modelo.genero = genero;
                 }
             }
 
-            // =========================================
-            // VALIDAR ALERGIAS
-            // =========================================
-
-            if (string.IsNullOrWhiteSpace(modelo.alergias))
-            {
-                ModelState.AddModelError(
-                    "alergias",
-                    "Debe indicar las alergias o escribir Ninguna."
-                );
-            }
-
-            // =========================================
-            // VALIDAR CORREO
-            // =========================================
-
-            if (string.IsNullOrWhiteSpace(modelo.correo))
-            {
-                ModelState.AddModelError(
-                    "correo",
-                    "Debe ingresar el correo electronico."
-                );
-            }
-
-            // El atributo EmailAddress del DTO
-            // valida el formato del correo.
-
-            // =========================================
-            // VALIDAR CONTACTO DE EMERGENCIA
-            // =========================================
-
-            if (string.IsNullOrWhiteSpace(modelo.contactoEmergencia))
-            {
-                ModelState.AddModelError(
-                    "contactoEmergencia",
-                    "Debe ingresar el contacto de emergencia."
-                );
-            }
-
-            // =========================================
-            // COMPROBAR VALIDACIONES
-            // =========================================
+            ValidarDatosDelExpediente(modelo);
 
             if (!ModelState.IsValid)
             {
                 return View(modelo);
             }
 
-            // =========================================
-            // PENDIENTE DE MYSQL
-            // =========================================
+            try
+            {
+                string identificacion = prematricula.identificacion;
 
-            // Cuando exista acceso a la base de datos:
-            //
-            // 1. Buscar el expediente real por ID.
-            //
-            // 2. Actualizar exclusivamente:
-            //    nombre
-            //    apellido1
-            //    apellido2
-            //    identificacion
-            //    genero
-            //    grupo_sanguineo
-            //    alergias
-            //    correo
-            //    contactoEmergencia
-            //
-            // 3. Conservar los demas datos.
-            //
-            // 4. Guardar cambios en MySQL.
-            //
-            // Actualmente NO se modifica el expediente.
+                List<PrematriculaEntity> prematriculas = db.Prematriculas
+                    .Where(p => p.identificacion == identificacion)
+                    .ToList();
 
-            ModelState.AddModelError(
-                "",
-                "Los datos del expediente fueron validados, " +
-                "pero los cambios no se han guardado. " +
-                "Esta pendiente la conexion con MySQL."
-            );
+                UsuarioEntity usuario = string.IsNullOrEmpty(entidad.fk_id_usuario)
+                    ? null
+                    : db.Usuarios.FirstOrDefault(u => u.id_usuario == entidad.fk_id_usuario);
 
-            return View(modelo);
+                var antes = new
+                {
+                    prematricula.nombre,
+                    prematricula.apellido1,
+                    prematricula.apellido2,
+                    prematricula.genero,
+                    entidad.correo,
+                    entidad.grupo_sanguineo,
+                    entidad.alergias,
+                    contacto_emergencia = entidad.contactoEmergencia
+                };
+
+                string nombre = modelo.nombre.Trim();
+                string apellido1 = modelo.apellido1.Trim();
+                string apellido2 = ExpedienteMapper.Limpiar(modelo.apellido2);
+
+                foreach (PrematriculaEntity p in prematriculas)
+                {
+                    p.nombre = nombre;
+                    p.apellido1 = apellido1;
+                    p.apellido2 = apellido2;
+                    p.genero = modelo.genero;
+                }
+
+                if (usuario != null)
+                {
+                    usuario.nombre = nombre;
+                    usuario.apellido1 = apellido1;
+                    usuario.apellido2 = apellido2;
+                }
+
+                ExpedienteMapper.ActualizarEntidad(entidad, modelo);
+
+                Auditoria.Registrar(
+                    db,
+                    "Editar expediente",
+                    "Se modificó el expediente #" + entidad.id_expediente + " del estudiante " + identificacion + ".",
+                    antes,
+                    new
+                    {
+                        nombre,
+                        apellido1,
+                        apellido2,
+                        modelo.genero,
+                        entidad.correo,
+                        entidad.grupo_sanguineo,
+                        entidad.alergias,
+                        contacto_emergencia = entidad.contactoEmergencia
+                    });
+
+                db.SaveChanges();
+
+                TempData["Mensaje"] = "Los cambios del expediente se guardaron correctamente.";
+                return RedirectToAction("DetalleDeExpediente", new { id = entidad.id_expediente });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError("Error editando expediente: " + ex);
+                ModelState.AddModelError("", "No fue posible guardar los cambios del expediente. Intente de nuevo.");
+                return View(modelo);
+            }
         }
 
         // =========================================
-        // EXPEDIENTES DE EJEMPLO
+        // CONSULTA DE EXPEDIENTES DESDE LA BASE DE DATOS
+        // expediente_estudiantes + prematricula (datos personales)
+        // + usuarios (correo del estudiante si el expediente no tiene uno)
         // =========================================
 
-        private List<ExpedienteDto> ObtenerExpedientes()
+        private List<ExpedienteDto> Consultar(int? idExpediente)
         {
-            return new List<ExpedienteDto>
+            var consulta = from e in db.Expedientes
+                           join p in db.Prematriculas on e.fk_id_matricula equals p.id_prematricula into ps
+                           from p in ps.DefaultIfEmpty()
+                           join u in db.Usuarios on e.fk_id_usuario equals u.id_usuario into us
+                           from u in us.DefaultIfEmpty()
+                           select new { e, p, email = u != null ? u.email : null };
+
+            if (idExpediente.HasValue)
             {
-                new ExpedienteDto
+                int id = idExpediente.Value;
+                consulta = consulta.Where(x => x.e.id_expediente == id);
+            }
+
+            var filas = consulta.ToList();
+
+            // El grado y los datos más recientes salen de la última matrícula aprobada del estudiante.
+            List<string> identificaciones = filas
+                .Where(x => x.p != null)
+                .Select(x => x.p.identificacion)
+                .Distinct()
+                .ToList();
+
+            List<PrematriculaEntity> aprobadas = identificaciones.Any()
+                ? db.Prematriculas
+                    .Where(p => identificaciones.Contains(p.identificacion) && p.estado == EstadoAprobada)
+                    .ToList()
+                : new List<PrematriculaEntity>();
+
+            Dictionary<int, string> grados = db.Grados.ToList()
+                .ToDictionary(g => g.id_grado, g => g.nombre);
+
+            return filas
+                .Select(x =>
                 {
-                    id_expediente = 1,
-                    id_matricula = 101,
-                    identificacion = "1-1234-5678",
-                    nombre = "Sofía",
-                    apellido1 = "Castro",
-                    apellido2 = "Mora",
-                    genero = "Femenino",
-                    grado = 1,
-                    telefono = "8888-0001",
-                    fecha_nacimiento = new DateTime(2019, 3, 12),
-                    tiene_adecuacion = false,
-                    tiene_discapacidad = false,
-                    contactoEmergencia = "Marta Mora - 8888-1001",
-                    direccion = "San José, San Isidro",
-                    correo = "sofia@example.com",
-                    grupo_sanguineo = "O+",
-                    alergias = "Ninguna"
-                },
-                new ExpedienteDto
+                    PrematriculaEntity datos = x.p == null
+                        ? null
+                        : aprobadas
+                            .Where(a => a.identificacion == x.p.identificacion)
+                            .OrderByDescending(a => a.fecha_prematricula)
+                            .FirstOrDefault() ?? x.p;
+
+                    var dto = new ExpedienteDto
+                    {
+                        id_expediente = x.e.id_expediente,
+                        id_matricula = x.e.fk_id_matricula,
+                        id_usuario = x.e.fk_id_usuario,
+                        correo = !string.IsNullOrWhiteSpace(x.e.correo) ? x.e.correo : x.email,
+                        grupo_sanguineo = x.e.grupo_sanguineo,
+                        alergias = x.e.alergias,
+                        contactoEmergencia = x.e.contactoEmergencia
+                    };
+
+                    CompletarDatosPersonales(dto, datos, grados);
+                    return dto;
+                })
+                .OrderBy(d => d.nombre)
+                .ThenBy(d => d.apellido1)
+                .ToList();
+        }
+
+        private void CompletarDatosPersonales(ExpedienteDto dto, PrematriculaEntity p)
+        {
+            CompletarDatosPersonales(dto, p, null);
+        }
+
+        private void CompletarDatosPersonales(ExpedienteDto dto, PrematriculaEntity p, Dictionary<int, string> grados)
+        {
+            if (p == null)
+            {
+                return;
+            }
+
+            if (grados == null)
+            {
+                int idGrado = p.fk_id_grado;
+                grados = db.Grados.Where(g => g.id_grado == idGrado).ToList()
+                    .ToDictionary(g => g.id_grado, g => g.nombre);
+            }
+
+            dto.identificacion = p.identificacion;
+            dto.nombre = p.nombre;
+            dto.apellido1 = p.apellido1;
+            dto.apellido2 = p.apellido2;
+            dto.genero = p.genero;
+            dto.grado = p.fk_id_grado;
+            dto.nombre_grado = grados.ContainsKey(p.fk_id_grado) ? grados[p.fk_id_grado] : "Sin grado";
+            dto.telefono = p.telefono;
+            dto.fecha_nacimiento = p.fecha_nacimiento;
+            dto.tiene_adecuacion = p.tiene_adecuacion;
+            dto.tiene_discapacidad = p.tiene_discapacidad;
+            dto.direccion = p.direccion;
+        }
+
+        // Validaciones de los campos propios del expediente (crear y editar)
+        private void ValidarDatosDelExpediente(ExpedienteDto modelo)
+        {
+            if (!string.IsNullOrWhiteSpace(modelo.grupo_sanguineo))
+            {
+                string grupo = modelo.grupo_sanguineo.Trim().ToUpperInvariant();
+
+                if (!ValidacionExpediente.GruposSanguineos.Contains(grupo))
                 {
-                    id_expediente = 2,
-                    id_matricula = 102,
-                    identificacion = "2-2345-6789",
-                    nombre = "Diego",
-                    apellido1 = "Fernández",
-                    apellido2 = "Rojas",
-                    genero = "Masculino",
-                    grado = 2,
-                    telefono = "8888-0002",
-                    fecha_nacimiento = new DateTime(2018, 7, 25),
-                    tiene_adecuacion = true,
-                    tiene_discapacidad = false,
-                    contactoEmergencia = "Pedro Fernández - 8888-1002",
-                    direccion = "Cartago, Centro",
-                    correo = "diego@example.com",
-                    grupo_sanguineo = "A+",
-                    alergias = "Ninguna"
-                },
-                new ExpedienteDto
-                {
-                    id_expediente = 3,
-                    id_matricula = 103,
-                    identificacion = "3-3456-7890",
-                    nombre = "Valeria",
-                    apellido1 = "Gómez",
-                    apellido2 = "Vindas",
-                    genero = "Femenino",
-                    grado = 3,
-                    telefono = "8888-0003",
-                    fecha_nacimiento = new DateTime(2017, 11, 5),
-                    tiene_adecuacion = false,
-                    tiene_discapacidad = true,
-                    contactoEmergencia = "Laura Vindas - 8888-1003",
-                    direccion = "Heredia, San Francisco",
-                    correo = "valeria@example.com",
-                    grupo_sanguineo = "B+",
-                    alergias = "Ninguna"
+                    ModelState.AddModelError("grupo_sanguineo", "Debe seleccionar un grupo sanguíneo válido.");
                 }
-            };
+                else
+                {
+                    modelo.grupo_sanguineo = grupo;
+                }
+            }
+
+            if (modelo.correo != null && modelo.correo.Trim().Length == 0)
+            {
+                modelo.correo = null;
+            }
+        }
+
+        // =========================================
+        // CARGAR PREMATRÍCULAS
+        // Matrículas aprobadas de estudiantes que todavía no tienen
+        // expediente (ni por matrícula ni por usuario). Una por estudiante.
+        // =========================================
+
+        private void CargarPrematriculas(int seleccionada)
+        {
+            List<string> identificacionesConExpediente =
+                (from e in db.Expedientes
+                 join p in db.Prematriculas on e.fk_id_matricula equals p.id_prematricula
+                 select p.identificacion)
+                .Distinct()
+                .ToList();
+
+            List<string> usuariosConExpediente = db.Expedientes
+                .Where(e => e.fk_id_usuario != null)
+                .Select(e => e.fk_id_usuario)
+                .Distinct()
+                .ToList();
+
+            if (usuariosConExpediente.Any())
+            {
+                identificacionesConExpediente.AddRange(db.Usuarios
+                    .Where(u => usuariosConExpediente.Contains(u.id_usuario) && u.identificacion != null)
+                    .Select(u => u.identificacion)
+                    .ToList());
+            }
+
+            var excluidas = new HashSet<string>(identificacionesConExpediente);
+
+            Dictionary<int, string> grados = db.Grados.ToList()
+                .ToDictionary(g => g.id_grado, g => g.nombre);
+
+            var opciones = db.Prematriculas
+                .Where(p => p.estado == EstadoAprobada)
+                .ToList()
+                .Where(p => !excluidas.Contains(p.identificacion))
+                .GroupBy(p => p.identificacion)
+                .Select(g => g.OrderByDescending(p => p.fecha_prematricula).First())
+                .OrderBy(p => p.nombre)
+                .ThenBy(p => p.apellido1)
+                .Select(p => new SelectListItem
+                {
+                    Value = p.id_prematricula.ToString(),
+                    Text = p.identificacion + " - " +
+                           string.Join(" ", new[] { p.nombre, p.apellido1, p.apellido2 }
+                               .Where(x => !string.IsNullOrWhiteSpace(x))) +
+                           (grados.ContainsKey(p.fk_id_grado) ? " (" + grados[p.fk_id_grado] + ")" : "")
+                })
+                .ToList();
+
+            ViewBag.Matriculas = new SelectList(
+                opciones,
+                "Value",
+                "Text",
+                seleccionada > 0 ? seleccionada.ToString() : null
+            );
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                db.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
     }
 }

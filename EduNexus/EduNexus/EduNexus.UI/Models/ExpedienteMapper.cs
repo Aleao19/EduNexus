@@ -30,25 +30,33 @@ namespace EduNexus.UI.Models
                 );
             }
 
-            // Crear entidad respetando los nombres
-            // definidos en ExpedienteEntity.cs
-
-            ExpedienteEntity entidad = new ExpedienteEntity
+            // Solo se guardan los datos propios del expediente;
+            // los datos personales quedan en la prematrícula.
+            return new ExpedienteEntity
             {
                 fk_id_matricula = expediente.id_matricula,
-
                 fk_id_usuario = id_usuario,
-
-                correo = expediente.correo,
-
-                grupo_sanguineo = expediente.grupo_sanguineo,
-
-                alergias = expediente.alergias,
-
-                contactoEmergencia = expediente.contactoEmergencia
+                correo = Limpiar(expediente.correo),
+                grupo_sanguineo = Limpiar(expediente.grupo_sanguineo),
+                alergias = Limpiar(expediente.alergias),
+                contactoEmergencia = Limpiar(expediente.contactoEmergencia)
             };
+        }
 
-            return entidad;
+        // Copia al expediente existente los campos editables propios del expediente.
+        public static void ActualizarEntidad(
+            ExpedienteEntity entidad,
+            ExpedienteDto expediente)
+        {
+            entidad.correo = Limpiar(expediente.correo);
+            entidad.grupo_sanguineo = Limpiar(expediente.grupo_sanguineo);
+            entidad.alergias = Limpiar(expediente.alergias);
+            entidad.contactoEmergencia = Limpiar(expediente.contactoEmergencia);
+        }
+
+        public static string Limpiar(string texto)
+        {
+            return string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
         }
     }
 }

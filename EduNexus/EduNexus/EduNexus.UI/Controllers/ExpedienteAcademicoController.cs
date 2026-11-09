@@ -44,10 +44,10 @@ namespace EduNexus.UI.Controllers
                     .OrderBy(u => u.nombre).ThenBy(u => u.apellido1)
                     .ToList();
 
-                var adecuaciones = db.AdecuacionesEstudiantes.Where(a => a.estado == Activa)
+                var adecuaciones = db.AdecuacionesEstudiantes.Where(a => a.estado == Activa && a.fk_id_usuario != null)
                     .GroupBy(a => a.fk_id_usuario).Select(g => new { g.Key, n = g.Count() }).ToList()
                     .ToDictionary(x => x.Key, x => x.n);
-                var ayudas = db.AyudasEstudiantes.Where(a => a.estado == Activa)
+                var ayudas = db.AyudasEstudiantes.Where(a => a.estado == Activa && a.fk_id_usuario != null)
                     .GroupBy(a => a.fk_id_usuario).Select(g => new { g.Key, n = g.Count() }).ToList()
                     .ToDictionary(x => x.Key, x => x.n);
                 Dictionary<string, string> secciones = SeccionActualPorEstudiante(db);
@@ -173,11 +173,14 @@ namespace EduNexus.UI.Controllers
                     return View(modelo);
                 }
 
-                db.Adecuaciones.Add(new AdecuacionEntity
+                var tipo = new AdecuacionEntity
                 {
                     nombre = nombre,
                     descripcion = string.IsNullOrWhiteSpace(modelo.descripcion) ? null : modelo.descripcion.Trim()
-                });
+                };
+                db.Adecuaciones.Add(tipo);
+                Auditoria.Registrar(db, "Crear tipo de adecuación", "Se registró el tipo de adecuación \"" + nombre + "\".",
+                    null, new { tipo.nombre, tipo.descripcion });
                 db.SaveChanges();
             }
 
@@ -218,8 +221,12 @@ namespace EduNexus.UI.Controllers
                 }
                 modelo.estudiante = NombreCompleto(estudiante);
 
+                if (modelo.id_tipo.HasValue && !TipoAdecuacionExiste(db, modelo.id_tipo.Value))
+                {
+                    ModelState.AddModelError("id_tipo", "El tipo de adecuación seleccionado no existe.");
+                }
                 // Escenario 2: el estudiante ya tiene una adecuación activa del mismo tipo
-                if (modelo.id_tipo.HasValue && TieneAdecuacionActiva(db, estudiante.id_usuario, modelo.id_tipo.Value, 0))
+                else if (modelo.id_tipo.HasValue && TieneAdecuacionActiva(db, estudiante.id_usuario, modelo.id_tipo.Value, 0))
                 {
                     ModelState.AddModelError("id_tipo", "El estudiante ya tiene asignada una adecuación activa de este tipo. No se puede duplicar.");
                 }
@@ -231,14 +238,18 @@ namespace EduNexus.UI.Controllers
                 }
 
                 // Si no se elige tipo, el caso queda registrado "sin clasificar"
-                db.AdecuacionesEstudiantes.Add(new AdecuacionEstudianteEntity
+                var caso = new AdecuacionEstudianteEntity
                 {
                     fk_id_usuario = estudiante.id_usuario,
                     fk_id_adecuacion = modelo.id_tipo,
                     descripcion = modelo.descripcion.Trim(),
                     estado = Activa,
                     fecha_registro = DateTime.Now
-                });
+                };
+                db.AdecuacionesEstudiantes.Add(caso);
+                Auditoria.Registrar(db, "Registrar adecuación",
+                    "Se registró un caso de adecuación para el estudiante " + estudiante.identificacion + ".",
+                    null, new { estudiante = estudiante.id_usuario, tipo = NombreTipoAdecuacion(db, modelo.id_tipo), caso.descripcion, caso.estado });
                 db.SaveChanges();
             }
 
@@ -257,6 +268,11 @@ namespace EduNexus.UI.Controllers
                 if (caso == null)
                 {
                     return HttpNotFound();
+                }
+                if (caso.estado == Finalizada)
+                {
+                    TempData["Error"] = "No se puede clasificar un caso de adecuación finalizado.";
+                    return RedirectToAction("Expediente", new { id = caso.id_usuario });
                 }
                 CargarTiposAdecuacion(db, caso.id_tipo);
                 return View(caso);
@@ -277,10 +293,24 @@ namespace EduNexus.UI.Controllers
                     return HttpNotFound();
                 }
 
+                if (caso.estado == Finalizada)
+                {
+                    TempData["Error"] = "No se puede clasificar un caso de adecuación finalizado.";
+                    return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
+                }
+
                 CasoApoyoDto vista = CasosDeAdecuacion(db, null, id).First();
                 if (!id_tipo.HasValue)
                 {
                     ModelState.AddModelError("id_tipo", "Seleccione un tipo de adecuación.");
+                }
+                else if (!TipoAdecuacionExiste(db, id_tipo.Value))
+                {
+                    ModelState.AddModelError("id_tipo", "El tipo de adecuación seleccionado no existe.");
+                }
+                else if (caso.fk_id_adecuacion == id_tipo)
+                {
+                    ModelState.AddModelError("id_tipo", "El caso ya tiene asignado ese tipo de adecuación.");
                 }
                 // Escenario 2: intento de asignar una adecuación duplicada
                 else if (TieneAdecuacionActiva(db, caso.fk_id_usuario, id_tipo.Value, caso.id_adecuacion_estudiante))
@@ -317,7 +347,15 @@ namespace EduNexus.UI.Controllers
                 {
                     return HttpNotFound();
                 }
+                if (caso.estado == Finalizada)
+                {
+                    TempData["Error"] = "La adecuación ya estaba finalizada.";
+                    return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
+                }
+                string estadoAnterior = caso.estado;
                 caso.estado = Finalizada;
+                Auditoria.Registrar(db, "Finalizar adecuación", "Adecuación #" + caso.id_adecuacion_estudiante + " finalizada.",
+                    new { estado = estadoAnterior }, new { estado = Finalizada });
                 db.SaveChanges();
                 TempData["Mensaje"] = "La adecuación se marcó como finalizada.";
                 return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
@@ -357,8 +395,12 @@ namespace EduNexus.UI.Controllers
                 }
                 modelo.estudiante = NombreCompleto(estudiante);
 
+                if (modelo.id_tipo.HasValue && !TipoAyudaExiste(db, modelo.id_tipo.Value))
+                {
+                    ModelState.AddModelError("id_tipo", "El tipo de ayuda seleccionado no existe.");
+                }
                 // Escenario 2: intento de asignar un beneficio duplicado
-                if (modelo.id_tipo.HasValue && TieneAyudaActiva(db, estudiante.id_usuario, modelo.id_tipo.Value, 0))
+                else if (modelo.id_tipo.HasValue && TieneAyudaActiva(db, estudiante.id_usuario, modelo.id_tipo.Value, 0))
                 {
                     ModelState.AddModelError("id_tipo", "Posible duplicación: el estudiante ya tiene un beneficio activo de este tipo. El registro fue rechazado.");
                 }
@@ -369,14 +411,18 @@ namespace EduNexus.UI.Controllers
                     return View(modelo);
                 }
 
-                db.AyudasEstudiantes.Add(new AyudaEstudianteEntity
+                var caso = new AyudaEstudianteEntity
                 {
                     fk_id_usuario = estudiante.id_usuario,
                     fk_id_tipo_ayuda = modelo.id_tipo,
                     descripcion = modelo.descripcion.Trim(),
                     estado = Activa,
                     fecha_registro = DateTime.Now
-                });
+                };
+                db.AyudasEstudiantes.Add(caso);
+                Auditoria.Registrar(db, "Registrar ayuda",
+                    "Se registró un caso de ayuda para el estudiante " + estudiante.identificacion + ".",
+                    null, new { estudiante = estudiante.id_usuario, tipo = NombreTipoAyuda(db, modelo.id_tipo), caso.descripcion, caso.estado });
                 db.SaveChanges();
             }
 
@@ -395,6 +441,11 @@ namespace EduNexus.UI.Controllers
                 if (caso == null)
                 {
                     return HttpNotFound();
+                }
+                if (caso.estado == Finalizada)
+                {
+                    TempData["Error"] = "No se puede clasificar ni reclasificar un caso de ayuda finalizado.";
+                    return RedirectToAction("Expediente", new { id = caso.id_usuario });
                 }
                 CargarTiposAyuda(db, caso.id_tipo);
                 ViewBag.Cambios = CambiosDeAyuda(db, caso.id_caso);
@@ -417,10 +468,20 @@ namespace EduNexus.UI.Controllers
                     return HttpNotFound();
                 }
 
+                if (caso.estado == Finalizada)
+                {
+                    TempData["Error"] = "No se puede clasificar ni reclasificar un caso de ayuda finalizado.";
+                    return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
+                }
+
                 CasoApoyoDto vista = CasosDeAyuda(db, null, id).First();
                 if (!id_tipo.HasValue)
                 {
                     ModelState.AddModelError("id_tipo", "Seleccione un tipo de ayuda.");
+                }
+                else if (!TipoAyudaExiste(db, id_tipo.Value))
+                {
+                    ModelState.AddModelError("id_tipo", "El tipo de ayuda seleccionado no existe.");
                 }
                 else if (caso.fk_id_tipo_ayuda == id_tipo)
                 {
@@ -465,7 +526,15 @@ namespace EduNexus.UI.Controllers
                 {
                     return HttpNotFound();
                 }
+                if (caso.estado == Finalizada)
+                {
+                    TempData["Error"] = "La ayuda ya estaba finalizada.";
+                    return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
+                }
+                string estadoAnterior = caso.estado;
                 caso.estado = Finalizada;
+                Auditoria.Registrar(db, "Finalizar ayuda", "Ayuda #" + caso.id_ayuda_estudiante + " finalizada.",
+                    new { estado = estadoAnterior }, new { estado = Finalizada });
                 db.SaveChanges();
                 TempData["Mensaje"] = "La ayuda se marcó como finalizada.";
                 return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
@@ -613,11 +682,42 @@ namespace EduNexus.UI.Controllers
                         grado = s.grado,
                         seccion = s.nombre,
                         calificaciones = calificaciones,
-                        promedio = calificaciones.Any() ? (decimal?)Math.Round(calificaciones.Average(c => c.calificacion), 2) : null
+                        promedio = Promedio(calificaciones),
+                        promedio_ponderado = calificaciones.Any(c => c.porcentaje > 0)
                     };
                 })
                 .OrderByDescending(h => h.anio)
                 .ToList();
+        }
+
+        // Promedio ponderado por porcentaje_nota si las evaluaciones tienen porcentaje;
+        // si ninguna lo tiene, promedio simple.
+        private static decimal? Promedio(List<CalificacionDto> calificaciones)
+        {
+            if (!calificaciones.Any())
+            {
+                return null;
+            }
+
+            List<CalificacionDto> conPorcentaje = calificaciones.Where(c => c.porcentaje > 0).ToList();
+            decimal sumaPorcentajes = conPorcentaje.Sum(c => c.porcentaje);
+
+            if (sumaPorcentajes > 0)
+            {
+                return Math.Round(conPorcentaje.Sum(c => c.calificacion * c.porcentaje) / sumaPorcentajes, 2);
+            }
+
+            return Math.Round(calificaciones.Average(c => c.calificacion), 2);
+        }
+
+        private static bool TipoAdecuacionExiste(EduNexusDbContext db, int idTipo)
+        {
+            return db.Adecuaciones.Any(a => a.id_adecuacion == idTipo);
+        }
+
+        private static bool TipoAyudaExiste(EduNexusDbContext db, int idTipo)
+        {
+            return db.TiposAyuda.Any(t => t.id_tipo_ayuda == idTipo);
         }
 
         private static bool TieneAdecuacionActiva(EduNexusDbContext db, string idUsuario, int idTipo, int idExcluido)
@@ -729,22 +829,11 @@ namespace EduNexus.UI.Controllers
             }
         }
 
-        private void RegistrarBitacora(EduNexusDbContext db, string evento, string prefijo, string tipoAnterior, string tipoNuevo)
+        // Se guarda { tipo } en datos anteriores/posteriores: CambiosDeAyuda lo lee para el historial.
+        private static void RegistrarBitacora(EduNexusDbContext db, string evento, string prefijo, string tipoAnterior, string tipoNuevo)
         {
-            var usuario = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
-            if (usuario == null)
-            {
-                return;
-            }
-            db.Bitacora.Add(new BitacoraEntity
-            {
-                tipo_de_evento = evento,
-                descripcion_evento = prefijo + " " + tipoAnterior + " -> " + tipoNuevo,
-                fecha = DateTime.Now,
-                datos_anteriores = JsonConvert.SerializeObject(new { tipo = tipoAnterior }),
-                datos_posteriores = JsonConvert.SerializeObject(new { tipo = tipoNuevo }),
-                fk_id_usuario = usuario.id_usuario
-            });
+            Auditoria.Registrar(db, evento, prefijo + " " + tipoAnterior + " -> " + tipoNuevo,
+                new { tipo = tipoAnterior }, new { tipo = tipoNuevo });
         }
 
         private void CargarTiposAdecuacion(EduNexusDbContext db, int? seleccionado)

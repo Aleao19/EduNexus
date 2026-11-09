@@ -32,6 +32,14 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Dashboard
 
         // ---- Próximas clases / recordatorios rápidos ----
         public List<ProximaClaseDto> ProximasClases { get; set; } = new List<ProximaClaseDto>();
+
+        // ---- Permisos del usuario actual (qué tarjetas y enlaces se muestran) ----
+        // Bitácora / actividad reciente: solo Administrador.
+        public bool PuedeVerBitacora { get; set; }
+        // Grados, secciones, materias, docentes y expedientes: solo Administrador.
+        public bool PuedeGestionarAcademico { get; set; }
+        // Horarios: Administrador y Coordinador Académico.
+        public bool PuedeVerHorarios { get; set; }
     }
 
     public class ProximaClaseDto

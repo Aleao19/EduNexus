@@ -8,6 +8,8 @@ using System.Web.Mvc;
 
 namespace EduNexus.UI.Controllers
 {
+    // Materias (tabla materia: nombre, descripcion NULL, profesor NULL = docente responsable)
+    [AutorizarAdministrador]
     public class MateriasController : Controller
     {
         // GET: Materias
@@ -43,13 +45,17 @@ namespace EduNexus.UI.Controllers
                 {
                     string nombre = materiaDto.nombre.Trim();
 
-                    // Validar que la materia no exista
-                    bool existe = db.Materias
-                        .Any(m => m.nombre.ToLower() == nombre.ToLower());
-
-                    if (existe)
+                    // Validar que la materia no exista (sin importar mayúsculas ni tildes)
+                    if (ExisteNombre(db, nombre, 0))
                     {
                         ModelState.AddModelError("nombre", "Una materia con este nombre ya existe.");
+                    }
+
+                    // El profesor, si se indica, debe ser un usuario con rol Docente
+                    string idProfesor = ValidarProfesor(db, materiaDto.id_profesor);
+
+                    if (!ModelState.IsValid)
+                    {
                         CargarProfesores(materiaDto.id_profesor);
                         return View(materiaDto);
                     }
@@ -57,13 +63,17 @@ namespace EduNexus.UI.Controllers
                     var nuevaMateria = new MateriaEntity
                     {
                         nombre = nombre,
-                        profesor = string.IsNullOrEmpty(materiaDto.id_profesor) ? null : materiaDto.id_profesor,
-                        descripcion = (materiaDto.descripcion ?? string.Empty).Trim()
+                        profesor = idProfesor,
+                        descripcion = string.IsNullOrWhiteSpace(materiaDto.descripcion) ? null : materiaDto.descripcion.Trim()
                     };
 
                     db.Materias.Add(nuevaMateria);
+                    Auditoria.Registrar(db, "Crear materia", "Se registró la materia " + nombre + ".",
+                        null, new { nuevaMateria.nombre, nuevaMateria.descripcion, nuevaMateria.profesor });
                     db.SaveChanges();
                 }
+
+                TempData["Mensaje"] = "La materia se registró correctamente.";
 
                 return RedirectToAction("ListadoDeMaterias");
             }
@@ -115,23 +125,31 @@ namespace EduNexus.UI.Controllers
                     string nombre = materiaDto.nombre.Trim();
 
                     // Validar nombre duplicado en otra materia
-                    bool duplicada = db.Materias
-                        .Any(m => m.id_materia != materiaDto.id_materia
-                               && m.nombre.ToLower() == nombre.ToLower());
-
-                    if (duplicada)
+                    if (ExisteNombre(db, nombre, materiaDto.id_materia))
                     {
                         ModelState.AddModelError("nombre", "Una materia con este nombre ya existe.");
+                    }
+
+                    string idProfesor = ValidarProfesor(db, materiaDto.id_profesor);
+
+                    if (!ModelState.IsValid)
+                    {
                         CargarProfesores(materiaDto.id_profesor);
                         return View(materiaDto);
                     }
 
-                    materia.nombre = nombre;
-                    materia.profesor = string.IsNullOrEmpty(materiaDto.id_profesor) ? null : materiaDto.id_profesor;
-                    materia.descripcion = (materiaDto.descripcion ?? string.Empty).Trim();
+                    var antes = new { materia.nombre, materia.descripcion, materia.profesor };
 
+                    materia.nombre = nombre;
+                    materia.profesor = idProfesor;
+                    materia.descripcion = string.IsNullOrWhiteSpace(materiaDto.descripcion) ? null : materiaDto.descripcion.Trim();
+
+                    Auditoria.Registrar(db, "Editar materia", "Se modificó la materia #" + materia.id_materia + " " + nombre + ".",
+                        antes, new { materia.nombre, materia.descripcion, materia.profesor });
                     db.SaveChanges();
                 }
+
+                TempData["Mensaje"] = "La materia se actualizó correctamente.";
 
                 return RedirectToAction("ListadoDeMaterias");
             }
@@ -141,6 +159,37 @@ namespace EduNexus.UI.Controllers
                 CargarProfesores(materiaDto.id_profesor);
                 return View(materiaDto);
             }
+        }
+
+        private static bool ExisteNombre(EduNexusDbContext db, string nombre, int idExcluido)
+        {
+            string buscado = HorarioServicio.SinTildes(nombre);
+            return db.Materias.Where(m => m.id_materia != idExcluido)
+                .Select(m => m.nombre).ToList()
+                .Any(n => HorarioServicio.SinTildes(n) == buscado);
+        }
+
+        // Devuelve el id del profesor (o null si no se eligió). Si no es un docente válido agrega el error.
+        private string ValidarProfesor(EduNexusDbContext db, string idProfesor)
+        {
+            if (string.IsNullOrWhiteSpace(idProfesor))
+            {
+                return null;
+            }
+
+            string idRolDocente = db.Roles.ToList()
+                .Where(r => RolesSistema.Es(r.nombre, RolesSistema.Docente))
+                .Select(r => r.id_rol).FirstOrDefault();
+
+            bool esDocente = idRolDocente != null &&
+                db.Usuarios.Any(u => u.id_usuario == idProfesor && u.rol == idRolDocente);
+
+            if (!esDocente)
+            {
+                ModelState.AddModelError("id_profesor", "El profesor seleccionado no es un docente registrado.");
+                return null;
+            }
+            return idProfesor;
         }
 
         // Carga la lista de docentes para el DropDownList (ViewBag.Profesores).

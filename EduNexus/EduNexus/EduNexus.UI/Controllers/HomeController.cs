@@ -1,5 +1,6 @@
 ﻿using EduNexus.Abstracciones.ModelosParaUI.Bitacora;
 using EduNexus.Abstracciones.ModelosParaUI.Dashboard;
+using EduNexus.Abstracciones.ModelosParaUI.Usuarios;
 using EduNexus.UI.Models;
 using EduNexus.UI.Models.Identity;
 using System;
@@ -15,12 +16,23 @@ namespace EduNexus.UI.Controllers
         public ActionResult Index()
         {
             // Dashboard: todos los datos salen de la base de datos (sin datos quemados).
-            var model = new DashboardViewModel();
+            var usuarioActual = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
+            bool esAdministrador = RolesSistema.Es(usuarioActual, RolesSistema.Administrador);
+
+            var model = new DashboardViewModel
+            {
+                // La bitácora y la gestión académica son exclusivas del Administrador;
+                // los horarios también los gestiona el Coordinador Académico.
+                PuedeVerBitacora = esAdministrador,
+                PuedeGestionarAcademico = esAdministrador,
+                PuedeVerHorarios = RolesSistema.Es(usuarioActual, RolesSistema.Administrador, RolesSistema.CoordinadorAcademico)
+            };
 
             using (var db = new EduNexusDbContext())
             {
-                string idRolEstudiante = db.Roles.Where(r => r.nombre == "Estudiante").Select(r => r.id_rol).FirstOrDefault();
-                string idRolDocente = db.Roles.Where(r => r.nombre == "Docente").Select(r => r.id_rol).FirstOrDefault();
+                var roles = db.Roles.ToList();
+                string idRolEstudiante = roles.Where(r => RolesSistema.Es(r.nombre, RolesSistema.Estudiante)).Select(r => r.id_rol).FirstOrDefault();
+                string idRolDocente = roles.Where(r => RolesSistema.Es(r.nombre, RolesSistema.Docente)).Select(r => r.id_rol).FirstOrDefault();
 
                 // ---- KPIs ----
                 model.TotalEstudiantes = idRolEstudiante == null ? 0 : db.Usuarios.Count(u => u.rol == idRolEstudiante && u.estado);
@@ -70,8 +82,11 @@ namespace EduNexus.UI.Controllers
                 model.NombresMaterias = docentesPorMateria.Select(x => x.Materia).ToList();
                 model.DocentesPorMateria = docentesPorMateria.Select(x => x.Total).ToList();
 
-                // ---- Actividad reciente (bitácora) ----
-                model.ActividadReciente = ObtenerBitacora(db, 5);
+                // ---- Actividad reciente (bitácora): solo para el Administrador ----
+                if (model.PuedeVerBitacora)
+                {
+                    model.ActividadReciente = ObtenerBitacora(db, 5);
+                }
 
                 // ---- Próximas clases de hoy (horarios del día que aún no terminan) ----
                 string hoy = NormalizarDia(DateTime.Now.ToString("dddd", new System.Globalization.CultureInfo("es-ES")));
@@ -136,7 +151,8 @@ namespace EduNexus.UI.Controllers
                 .Replace("á", "a").Replace("é", "e").Replace("í", "i").Replace("ó", "o").Replace("ú", "u");
         }
 
-        [AllowAnonymous]
+        // Diagnóstico de la conexión a la BD: solo Administrador y sin exponer detalles técnicos.
+        [AutorizarAdministrador]
         public ActionResult ProbarConexion()
         {
             try
@@ -147,9 +163,9 @@ namespace EduNexus.UI.Controllers
                     return Content("Conexión exitosa. Usuarios en la BD: " + db.Usuarios.Count());
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return Content("Error: " + ex.ToString());
+                return Content("Error de conexión.");
             }
         }
 
@@ -202,9 +218,20 @@ namespace EduNexus.UI.Controllers
                     return View(model);
                 }
 
-                RolEntity rol = db.Roles.FirstOrDefault(r => r.id_rol == usuario.rol);
-                Session[AutorizarAdministradorAttribute.ClaveSesion] =
-                    UsuariosController.AUsuarioDto(usuario, rol != null ? rol.nombre : "");
+                // El usuario debe tener un rol existente; sin rol no tiene permisos en el sistema.
+                RolEntity rol = usuario.rol == null ? null : db.Roles.FirstOrDefault(r => r.id_rol == usuario.rol);
+                if (rol == null)
+                {
+                    ModelState.AddModelError("", "Su usuario no tiene un rol válido asignado. Contacte al administrador del sistema.");
+                    return View(model);
+                }
+
+                Session[AutorizarAdministradorAttribute.ClaveSesion] = UsuariosController.AUsuarioDto(usuario, rol.nombre);
+
+                Auditoria.Registrar(db, "Inicio de sesión",
+                    "El usuario " + usuario.nombre + " " + usuario.apellido1 + " (" + usuario.email + ") inició sesión.",
+                    null, null, usuario.id_usuario);
+                db.SaveChanges();
             }
 
             return RedirectToAction("Index");
@@ -213,11 +240,33 @@ namespace EduNexus.UI.Controllers
         [AllowAnonymous]
         public ActionResult CerrarSesion()
         {
+            var actual = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
+            if (actual != null)
+            {
+                // Se registra antes de abandonar la sesión para conservar quién la cerró.
+                // Si el registro falla, la sesión se cierra igualmente.
+                try
+                {
+                    using (var db = new EduNexusDbContext())
+                    {
+                        Auditoria.Registrar(db, "Cierre de sesión",
+                            "El usuario " + actual.nombre + " " + actual.apellido1 + " (" + actual.correo + ") cerró sesión.",
+                            null, null, actual.id_usuario);
+                        db.SaveChanges();
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
             Session.Remove(AutorizarAdministradorAttribute.ClaveSesion);
             Session.Abandon();
             return RedirectToAction("Login");
         }
 
+        // Bitácora completa: solo Administrador.
+        [AutorizarAdministrador]
         public ActionResult Bitacora()
         {
             using (var db = new EduNexusDbContext())

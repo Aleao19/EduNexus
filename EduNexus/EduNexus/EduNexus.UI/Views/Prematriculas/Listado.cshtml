@@ -1,4 +1,4 @@
-
+﻿
 @model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Prematriculas.PrematriculaDto>
 
 @using System
@@ -32,21 +32,6 @@
         </div>
 
     </div>
-
-    <!-- MENSAJES -->
-    @if (TempData["Mensaje"] != null)
-    {
-        <div class="alert alert-success" role="alert">
-            @TempData["Mensaje"]
-        </div>
-    }
-
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger" role="alert">
-            @TempData["Error"]
-        </div>
-    }
 
     <!-- TABLA -->
     <div class="card shadow-sm">

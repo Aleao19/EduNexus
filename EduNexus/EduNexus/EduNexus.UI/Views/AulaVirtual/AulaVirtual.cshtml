@@ -8,7 +8,7 @@
 <div class="row align-items-center mb-3">
     <div class="col">
         <h1 class="mb-0">Aula Virtual</h1>
-        <p class="text-secondary mb-0">Selecciona una materia para gestionar asignaciones, notas y asistencia.</p>
+        <p class="text-secondary mb-0">Selecciona una clase para ver sus asignaciones, estudiantes y asistencia.</p>
     </div>
     <div class="col-auto">
         <input type="text" id="buscarMateria" class="form-control" placeholder="Buscar materia..." onkeyup="filtrarMaterias()" />
@@ -25,7 +25,7 @@
                 string color = colores[i % colores.Length];
                 bool sinProfesor = string.IsNullOrEmpty(materia.profesor);
                 i++;
-                <div class="col-sm-6 col-lg-4 col-xl-3 tarjeta-materia" data-nombre="@materia.nombre.ToLower()">
+                <div class="col-sm-6 col-lg-4 col-xl-3 tarjeta-materia" data-nombre="@((materia.nombre ?? "").ToLower())">
                     <div class="card d-flex flex-column h-100 shadow-sm" style="border-top: 3px solid var(--tblr-@(color))">
                         <div class="card-body d-flex flex-column">
                             <div class="d-flex align-items-center justify-content-between">
@@ -50,7 +50,7 @@
 
                             <div class="d-flex align-items-center pt-2 mt-auto border-top">
                                 <span class="avatar avatar-sm rounded-circle @(sinProfesor ? "bg-red-lt" : "bg-" + color + "-lt") fw-bold">
-                                    @(sinProfesor ? "?" : materia.profesor.Substring(0, 1).ToUpper())
+                                    @(sinProfesor || string.IsNullOrWhiteSpace(materia.profesor) ? "?" : materia.profesor.Trim().Substring(0, 1).ToUpper())
                                 </span>
 
                                 <div class="ms-2 flex-fill">
@@ -91,4 +91,20 @@
         <div class="alert alert-info">No se encontraron materias con ese nombre.</div>
     </div>
 </div>
+
+@section scripts {
+    <script>
+        function filtrarMaterias() {
+            var texto = (document.getElementById('buscarMateria').value || '').toLowerCase().trim();
+            var visibles = 0;
+            document.querySelectorAll('.tarjeta-materia').forEach(function (t) {
+                var mostrar = (t.getAttribute('data-nombre') || '').indexOf(texto) !== -1;
+                t.style.display = mostrar ? '' : 'none';
+                if (mostrar) { visibles++; }
+            });
+            var aviso = document.getElementById('sinResultados');
+            if (aviso) { aviso.style.display = (visibles === 0 && document.querySelectorAll('.tarjeta-materia').length > 0) ? '' : 'none'; }
+        }
+    </script>
+}
 

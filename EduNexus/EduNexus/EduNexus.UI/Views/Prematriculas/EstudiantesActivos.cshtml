@@ -1,10 +1,18 @@
-
+﻿
 @model IEnumerable<EduNexus.UI.Models.Identity.UsuarioEntity>
 
 @using System.Linq
 
 @{
     ViewBag.Title = "Estudiantes activos";
+
+    string periodoDestino = ViewBag.PeriodoDestino as string ?? "No configurado";
+
+    var estadosRenovacion = ViewBag.EstadosRenovacion as System.Collections.Generic.Dictionary<string, string>
+                            ?? new System.Collections.Generic.Dictionary<string, string>();
+
+    // Sin calendario del próximo período no se puede renovar.
+    bool hayPeriodoDestino = ViewBag.HayPeriodoDestino == true;
 }
 
 <div class="container-xl mt-4">
@@ -36,20 +44,11 @@
 
     </div>
 
-    <!-- MENSAJES -->
-    @if (TempData["Mensaje"] != null)
-    {
-        <div class="alert alert-success" role="alert">
-            @TempData["Mensaje"]
-        </div>
-    }
-
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger" role="alert">
-            @TempData["Error"]
-        </div>
-    }
+    <!-- PERÍODO DE DESTINO -->
+    <div class="alert @(hayPeriodoDestino ? "alert-secondary" : "alert-warning") mb-3">
+        Período lectivo de destino de la renovación:
+        <strong>@periodoDestino</strong>
+    </div>
 
     <!-- TABLA DE ESTUDIANTES -->
     <div class="card shadow-sm">
@@ -70,6 +69,7 @@
                         <th>Identificación</th>
                         <th>Nombre completo</th>
                         <th>Teléfono</th>
+                        <th>Renovación</th>
                         <th>Acción</th>
                     </tr>
                 </thead>
@@ -101,23 +101,60 @@
                                         : estudiante.telefono)
                                 </td>
 
+                                @{
+                                    string estadoRenovacion;
+                                    bool conEstado = estadosRenovacion.TryGetValue(estudiante.id_usuario, out estadoRenovacion);
+                                    bool sinSolicitud = conEstado && estadoRenovacion == "Sin renovación";
+                                }
+
+                                <!-- ESTADO DE LA RENOVACIÓN -->
+                                <td>
+                                    @if (!conEstado)
+                                    {
+                                        <span class="badge bg-secondary-lt">No disponible</span>
+                                    }
+                                    else if (estadoRenovacion == "Aprobada")
+                                    {
+                                        <span class="badge bg-success-lt">Aprobada</span>
+                                    }
+                                    else if (estadoRenovacion == "Pendiente")
+                                    {
+                                        <span class="badge bg-warning-lt">Pendiente</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-lt">@estadoRenovacion</span>
+                                    }
+                                </td>
+
                                 <!-- ACCIONES -->
                                 <td>
 
-                                    @Html.ActionLink(
-                                        "Renovar matrícula",
-                                        "Renovar",
-                                        "Prematriculas",
-                                        new
-                                        {
-                                            id = estudiante.id_usuario
-                                        },
-                                        new
-                                        {
-                                            @class = "btn btn-sm btn-primary",
-                                            title = "Registrar renovación de matrícula"
-                                        }
-                                    )
+                                    @if (sinSolicitud)
+                                    {
+                                        @Html.ActionLink(
+                                            "Renovar matrícula",
+                                            "Renovar",
+                                            "Prematriculas",
+                                            new
+                                            {
+                                                id = estudiante.id_usuario
+                                            },
+                                            new
+                                            {
+                                                @class = "btn btn-sm btn-primary",
+                                                title = "Registrar renovación de matrícula"
+                                            }
+                                        )
+                                    }
+                                    else if (conEstado)
+                                    {
+                                        <span class="text-secondary">Ya tiene solicitud</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-secondary">Sin período de destino</span>
+                                    }
 
                                 </td>
 
@@ -127,7 +164,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="4"
+                            <td colspan="5"
                                 class="text-center text-secondary py-4">
 
                                 No existen estudiantes activos registrados.

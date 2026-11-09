@@ -15,7 +15,7 @@ namespace EduNexus.UI.Controllers
         // Dominio institucional del MEP exigido para roles administrativos/docentes (RSEG-01-002 #5).
         private const string DominioInstitucional = "@mep.go.cr";
 
-        private static readonly string[] RolesQueRequierenCorreoInstitucional = { "Administrador", "Director", "Docente" };
+        private static readonly string[] RolesQueRequierenCorreoInstitucional = { RolesSistema.Administrador, RolesSistema.Director, RolesSistema.Docente };
 
         // GET: Usuarios
         public ActionResult ListadoDeUsuarios()
@@ -60,7 +60,7 @@ namespace EduNexus.UI.Controllers
                 }
 
                 // Escenario 1: registro exitoso del usuario
-                db.Usuarios.Add(new UsuarioEntity
+                var nuevo = new UsuarioEntity
                 {
                     id_usuario = Guid.NewGuid().ToString(),
                     identificacion = usuario.cedula.Trim(),
@@ -73,11 +73,28 @@ namespace EduNexus.UI.Controllers
                     password_hash = ContrasennaHasher.Cifrar(usuario.contrasenna),
                     security_stamp = Guid.NewGuid().ToString(),
                     email_confirmado = false
-                });
+                };
+                db.Usuarios.Add(nuevo);
+
+                string nombreRol = db.Roles.Where(r => r.id_rol == nuevo.rol).Select(r => r.nombre).FirstOrDefault();
+                Auditoria.Registrar(db, "Creación de usuario",
+                    "Se registró el usuario " + nuevo.nombre + " " + nuevo.apellido1 + " (" + nuevo.email + ").",
+                    null,
+                    new
+                    {
+                        nuevo.id_usuario,
+                        cedula = nuevo.identificacion,
+                        nuevo.nombre,
+                        nuevo.apellido1,
+                        nuevo.apellido2,
+                        correo = nuevo.email,
+                        rol = nombreRol,
+                        estado = nuevo.estado ? "Activo" : "Inactivo"
+                    });
                 db.SaveChanges();
             }
 
-            TempData["MensajeExito"] = "El usuario \"" + usuario.nombre + " " + usuario.apellido1 + "\" se registró correctamente.";
+            TempData["Mensaje"] = "El usuario \"" + usuario.nombre + " " + usuario.apellido1 + "\" se registró correctamente.";
             return RedirectToAction("ListadoDeUsuarios");
         }
 
@@ -90,7 +107,7 @@ namespace EduNexus.UI.Controllers
             var actual = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
             if (actual != null && actual.id_usuario == id)
             {
-                TempData["MensajeError"] = "No puede bloquear su propio usuario mientras tiene la sesión iniciada.";
+                TempData["Error"] = "No puede bloquear su propio usuario mientras tiene la sesión iniciada.";
                 return RedirectToAction("ListadoDeUsuarios");
             }
 
@@ -115,13 +132,19 @@ namespace EduNexus.UI.Controllers
                 var usuario = db.Usuarios.FirstOrDefault(u => u.id_usuario == id);
                 if (usuario == null)
                 {
-                    TempData["MensajeError"] = "El usuario no existe.";
+                    TempData["Error"] = "El usuario no existe.";
                     return;
                 }
 
+                string estadoAnterior = usuario.estado ? "Activo" : "Inactivo";
                 usuario.estado = activo;
+
+                Auditoria.Registrar(db, activo ? "Activación de usuario" : "Bloqueo de usuario",
+                    "El usuario " + usuario.nombre + " " + usuario.apellido1 + " (" + usuario.email + ") " + accion + ".",
+                    new { usuario.id_usuario, correo = usuario.email, estado = estadoAnterior },
+                    new { usuario.id_usuario, correo = usuario.email, estado = activo ? "Activo" : "Inactivo" });
                 db.SaveChanges();
-                TempData["MensajeExito"] = "El usuario \"" + usuario.nombre + " " + usuario.apellido1 + "\" " + accion + ".";
+                TempData["Mensaje"] = "El usuario \"" + usuario.nombre + " " + usuario.apellido1 + "\" " + accion + ".";
             }
         }
 
@@ -169,7 +192,7 @@ namespace EduNexus.UI.Controllers
 
             // Escenario 5: correo no institucional del MEP para Administrador, Director o Docente
             if (rol != null && !string.IsNullOrWhiteSpace(usuario.correo) &&
-                RolesQueRequierenCorreoInstitucional.Contains(rol.nombre, StringComparer.OrdinalIgnoreCase) &&
+                RolesQueRequierenCorreoInstitucional.Any(r => RolesSistema.Es(rol.nombre, r)) &&
                 !usuario.correo.Trim().EndsWith(DominioInstitucional, StringComparison.OrdinalIgnoreCase))
             {
                 ModelState.AddModelError("correo", "Debe usarse un correo institucional del MEP (" + DominioInstitucional + ") para el rol " + rol.nombre + ".");

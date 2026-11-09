@@ -16,7 +16,14 @@
     @* Escenario 2: docente registrado sin horario asignado *@
     <div class="alert alert-info">
         El docente no tiene horario asignado.
-        @Html.ActionLink("Asignar horario", "CrearHorario", "Horarios", null, new { @class = "btn btn-primary btn-sm ms-2" })
+        @if (ViewBag.TieneClases == true)
+        {
+            @Html.ActionLink("Asignar horario", "ListadoDeHorarios", "Horarios", null, new { @class = "btn btn-primary btn-sm ms-2" })
+        }
+        else
+        {
+            @Html.ActionLink("Asignar materia y sección", "AsignarDocente", "Docentes", new { id = Model.id_usuario }, new { @class = "btn btn-primary btn-sm ms-2" })
+        }
     </div>
 }
 else

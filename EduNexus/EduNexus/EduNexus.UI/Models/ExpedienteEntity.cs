@@ -1,30 +1,18 @@
-using EduNexus.UI.Models.Identity;
-using System;
-
 namespace EduNexus.UI.Models.Identity
 {
+    // Tabla: expediente_estudiantes
+    // Los datos personales del estudiante (nombre, identificación, género, etc.)
+    // se leen de la prematrícula ligada (fk_id_matricula); no se duplican aquí.
     public class ExpedienteEntity
     {
         public int id_expediente { get; set; }
-        public int fk_id_prematricula { get; set; }
-        public string identificacion { get; set; }
-        public string nombre { get; set; }
-        public string apellido1 { get; set; }
-        public string apellido2 { get; set; }
-        public string genero { get; set; }
-        public int fk_id_grado { get; set; }
-        public string telefono { get; set; }
-        public DateTime fecha_nacimiento { get; set; }
-        public bool tiene_adecuacion { get; set; }
-        public bool tiene_discapacidad { get; set; }
-        public string contactoEmergencia { get; set; }
-        public string direccion { get; set; }
-
-        // Propiedades utilizadas por otros modulos
         public int fk_id_matricula { get; set; }
         public string fk_id_usuario { get; set; }
         public string correo { get; set; }
         public string grupo_sanguineo { get; set; }
         public string alergias { get; set; }
+
+        // Columna contacto_emergencia
+        public string contactoEmergencia { get; set; }
     }
 }

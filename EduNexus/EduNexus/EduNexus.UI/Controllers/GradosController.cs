@@ -64,6 +64,8 @@ namespace EduNexus.UI.Controllers
 
                 // Escenario 1: creación exitosa del grado
                 db.Grados.Add(new GradoEntity { nivel = modelo.grado, nombre = nombre });
+                Auditoria.Registrar(db, "Crear grado", "Se registró el grado " + nombre + ".",
+                    null, new { nivel = modelo.grado, nombre = nombre });
                 db.SaveChanges();
             }
 
@@ -107,8 +109,11 @@ namespace EduNexus.UI.Controllers
 
                 // Escenario 4: las secciones guardan el id del grado (fk_id_grado),
                 // por lo que el cambio se refleja en todas las secciones asociadas
+                var antes = new { existente.id_grado, existente.nivel, existente.nombre };
                 existente.nivel = modelo.grado;
                 existente.nombre = nombre;
+                Auditoria.Registrar(db, "Editar grado", "Se modificó el grado " + nombre + ".",
+                    antes, new { existente.id_grado, existente.nivel, existente.nombre });
                 db.SaveChanges();
             }
 
@@ -160,6 +165,8 @@ namespace EduNexus.UI.Controllers
 
                 // Escenario 5: eliminación de grado sin secciones asignadas
                 db.Grados.Remove(grado);
+                Auditoria.Registrar(db, "Eliminar grado", "Se eliminó el grado " + grado.nombre + ".",
+                    new { grado.id_grado, grado.nivel, grado.nombre }, null);
                 db.SaveChanges();
             }
 

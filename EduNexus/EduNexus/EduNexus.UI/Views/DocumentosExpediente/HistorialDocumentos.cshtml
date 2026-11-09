@@ -1,97 +1,68 @@
-
-@using System.Linq
+﻿@using System.Linq
 @model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Expedientes.DocumentoExpedienteDto>
 
 @{
     ViewBag.Title = "Historial de documentos";
     int idExpediente = (int)ViewBag.IdExpediente;
+    string estudiante = ViewBag.Estudiante as string;
 }
 
-<h2>Historial de documentos</h2>
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Historial de documentos</h1>
+        <p class="text-secondary mb-0">
+            Expediente #@idExpediente
+            @if (!string.IsNullOrWhiteSpace(estudiante))
+            {
+                <span>· @estudiante</span>
+            }
+        </p>
+    </div>
+    <div class="col-auto">
+        @Html.ActionLink("+ Adjuntar documento", "AdjuntarDocumento", "DocumentosExpediente", new { id_expediente = idExpediente }, new { @class = "btn btn-primary me-1" })
+        @Html.ActionLink("Regresar al expediente", "DetalleDeExpediente", "Expedientes", new { id = idExpediente }, new { @class = "btn btn-outline-secondary" })
+    </div>
+</div>
 
-<hr />
-
-<div class="container">
-
-    <h4>Expediente N.º @idExpediente</h4>
-
-    <p>
-        En esta sección se mostrarán los documentos
-        asociados al expediente estudiantil.
-    </p>
-
-    <div class="table-responsive">
-
-        <table class="table table-bordered table-striped">
-
-            <thead>
-                <tr>
-                    <th>Nombre del documento</th>
-                    <th>Descripción</th>
-                    <th>Nombre del archivo</th>
-                    <th>Fecha de registro</th>
-                </tr>
-            </thead>
-
-            <tbody>
-
-                @if (Model != null && Model.Any())
-                {
-                    foreach (var documento in Model)
+<div class="card shadow-sm">
+    @if (Model == null || !Model.Any())
+    {
+        <div class="card-body text-secondary">
+            No hay documentos registrados para este expediente.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Nombre del documento</th>
+                        <th>Descripción</th>
+                        <th>Archivo</th>
+                        <th>Tamaño</th>
+                        <th>Fecha de registro</th>
+                        <th>Registrado por</th>
+                        <th class="w-1">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var documento in Model)
                     {
                         <tr>
+                            <td class="fw-medium">@documento.nombre_documento</td>
+                            <td>@(string.IsNullOrWhiteSpace(documento.descripcion) ? "Sin descripción" : documento.descripcion)</td>
+                            <td>@documento.nombre_archivo</td>
+                            <td class="text-nowrap">@((documento.tamano_bytes / 1024.0).ToString("0.#")) KB</td>
+                            <td class="text-nowrap">@documento.fecha_registro.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@(string.IsNullOrWhiteSpace(documento.registrado_por) ? "No disponible" : documento.registrado_por)</td>
                             <td>
-                                @documento.nombre_documento
-                            </td>
-
-                            <td>
-                                @documento.descripcion
-                            </td>
-
-                            <td>
-                                @documento.nombre_archivo
-                            </td>
-
-                            <td>
-                                @documento.fecha_registro.ToString("dd/MM/yyyy HH:mm")
+                                @Html.ActionLink("Descargar", "Descargar", "DocumentosExpediente", new { id = documento.id_documento }, new { @class = "btn btn-sm btn-outline-primary" })
                             </td>
                         </tr>
                     }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="4" class="text-center">
-                            No hay documentos registrados
-                            para este expediente.
-                        </td>
-                    </tr>
-                }
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-    <div class="my-3">
-
-        @Html.ActionLink(
-            "Adjuntar documento",
-            "AdjuntarDocumento",
-            "DocumentosExpediente",
-            new { id_expediente = idExpediente },
-            new { @class = "btn btn-cyan" }
-        )
-
-        @Html.ActionLink(
-            "Regresar al expediente",
-            "DetalleDeExpediente",
-            "Expedientes",
-            new { id = idExpediente },
-            new { @class = "btn btn-default" }
-        )
-
-    </div>
-
+                </tbody>
+            </table>
+        </div>
+    }
 </div>

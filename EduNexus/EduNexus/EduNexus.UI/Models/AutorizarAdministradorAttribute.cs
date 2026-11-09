@@ -45,17 +45,9 @@ namespace EduNexus.UI.Models
 
             // 4. Validar que tenga el rol Administrador
             //    (o Coordinador Academico en las acciones marcadas con [PermitirCoordinador]).
-            bool esAdministrador = string.Equals(
-                usuario.nombreRol,
-                "Administrador",
-                StringComparison.OrdinalIgnoreCase
-            );
-
-            bool esCoordinador = string.Equals(
-                usuario.nombreRol,
-                "Coordinador Academico",
-                StringComparison.OrdinalIgnoreCase
-            );
+            //    Se compara con RolesSistema (sin importar tildes ni mayúsculas).
+            bool esAdministrador = RolesSistema.Es(usuario, RolesSistema.Administrador);
+            bool esCoordinador = RolesSistema.Es(usuario, RolesSistema.CoordinadorAcademico);
 
             bool accionPermiteCoordinador = filterContext.ActionDescriptor
                 .IsDefined(typeof(PermitirCoordinadorAttribute), true);

@@ -121,6 +121,22 @@ namespace EduNexus.UI.Controllers
                     return RedirectToAction("AsignarEstudiantes", new { id = id });
                 }
 
+                // Un estudiante solo puede pertenecer a una sección por periodo lectivo
+                int idCalendario = seccion.fk_id_calendario;
+                int? otraSeccion = (from e in db.SeccionesEstudiantes
+                                    join s in db.Secciones on e.fk_id_seccion equals s.id_seccion
+                                    where e.fk_id_usuario == idUsuario && s.fk_id_calendario == idCalendario
+                                    select (int?)s.id_seccion).FirstOrDefault();
+
+                if (otraSeccion.HasValue)
+                {
+                    var etiquetasOtra = HorarioServicio.EtiquetasDeSecciones(db);
+                    TempData["Error"] = "El estudiante ya está asignado a la sección "
+                        + (etiquetasOtra.ContainsKey(otraSeccion.Value) ? etiquetasOtra[otraSeccion.Value] : otraSeccion.Value.ToString())
+                        + " en este periodo lectivo. Use la opción \"Mover\" desde esa sección.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
                 int cantidadActual = db.SeccionesEstudiantes.Count(e => e.fk_id_seccion == id);
 
                 if (cantidadActual >= seccion.cupo)
@@ -135,6 +151,12 @@ namespace EduNexus.UI.Controllers
                     fk_id_usuario = idUsuario,
                     fecha_asignacion = DateTime.Now
                 });
+
+                var etiquetas = HorarioServicio.EtiquetasDeSecciones(db);
+                string etiqueta = etiquetas.ContainsKey(id) ? etiquetas[id] : seccion.nombre;
+                Auditoria.Registrar(db, "Asignación de estudiante a sección",
+                    "Estudiante " + HorarioServicio.NombreCompleto(estudiante) + " (" + estudiante.identificacion + ") asignado a " + etiqueta + ".",
+                    null, new { id_seccion = id, seccion = etiqueta, id_usuario = idUsuario });
 
                 db.SaveChanges();
             }
@@ -211,19 +233,10 @@ namespace EduNexus.UI.Controllers
                 asignacion.fk_id_seccion = destino.id_seccion;
                 asignacion.fecha_asignacion = DateTime.Now;
 
-                var usuario = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
-                if (usuario != null)
-                {
-                    db.Bitacora.Add(new BitacoraEntity
-                    {
-                        tipo_de_evento = "Cambio de sección de estudiante",
-                        descripcion_evento = "Estudiante " + idUsuario + " movido a " + etiquetaDestino,
-                        fecha = DateTime.Now,
-                        datos_anteriores = JsonConvert.SerializeObject(new { id_seccion = origen.id_seccion, seccion = etiquetaOrigen }),
-                        datos_posteriores = JsonConvert.SerializeObject(new { id_seccion = destino.id_seccion, seccion = etiquetaDestino }),
-                        fk_id_usuario = usuario.id_usuario
-                    });
-                }
+                Auditoria.Registrar(db, "Cambio de sección de estudiante",
+                    "Estudiante " + idUsuario + " movido a " + etiquetaDestino,
+                    new { id_seccion = origen.id_seccion, seccion = etiquetaOrigen },
+                    new { id_seccion = destino.id_seccion, seccion = etiquetaDestino });
 
                 db.SaveChanges();
 
@@ -241,12 +254,23 @@ namespace EduNexus.UI.Controllers
                  r.nombre.Trim().Equals("Estudiantes", StringComparison.OrdinalIgnoreCase)));
 
             var estudiantes = new List<object>();
+            var seccionActual = db.Secciones.FirstOrDefault(s => s.id_seccion == idSeccion);
 
             if (rolEstudiante != null)
             {
+                // Se excluyen los estudiantes que ya tienen sección en el mismo periodo lectivo
+                int idCalendario = seccionActual != null ? seccionActual.fk_id_calendario : 0;
+                List<string> yaAsignados = (from e in db.SeccionesEstudiantes
+                                            join s in db.Secciones on e.fk_id_seccion equals s.id_seccion
+                                            where s.fk_id_calendario == idCalendario
+                                            select e.fk_id_usuario).Distinct().ToList();
+                var asignadosSet = new HashSet<string>(yaAsignados);
+
                 estudiantes = db.Usuarios
                     .Where(u => u.estado && u.rol == rolEstudiante.id_rol)
+                    .OrderBy(u => u.nombre).ThenBy(u => u.apellido1)
                     .ToList()
+                    .Where(u => !asignadosSet.Contains(u.id_usuario))
                     .Select(u => (object)new
                     {
                         id_usuario = u.id_usuario,
@@ -280,7 +304,7 @@ namespace EduNexus.UI.Controllers
                     fecha_asignacion = e.fecha_asignacion
                 }).ToList();
 
-            var seccionActual = db.Secciones.FirstOrDefault(s => s.id_seccion == idSeccion);
+            var etiquetasSecciones = HorarioServicio.EtiquetasDeSecciones(db);
 
             // Secciones a las que se puede mover un estudiante: mismo grado y mismo año lectivo.
             // Para permitir cualquier sección, quita la condición del .Where.
@@ -291,13 +315,11 @@ namespace EduNexus.UI.Controllers
                     .Select(s => new SeccionDestinoVm
                     {
                         id_seccion = s.id_seccion,
-                        texto = s.nombre_grado + " - " + s.nombre,
+                        texto = etiquetasSecciones.ContainsKey(s.id_seccion) ? etiquetasSecciones[s.id_seccion] : s.nombre_grado + " - " + s.nombre,
                         disponibles = Math.Max(0, s.cupo - s.estudiantes_matriculados)
                     }).ToList();
 
-            var seccion = db.Secciones.FirstOrDefault(s => s.id_seccion == idSeccion);
-
-            ViewBag.CupoMaximo = seccion != null ? seccion.cupo : 0;
+            ViewBag.CupoMaximo = seccionActual != null ? seccionActual.cupo : 0;
             ViewBag.CantidadAsignada = db.SeccionesEstudiantes.Count(e =>
                 e.fk_id_seccion == idSeccion);
         }
@@ -374,6 +396,9 @@ namespace EduNexus.UI.Controllers
                     fk_id_calendario = calendario.id_calendario,
                     cupo = seccion.cupo
                 });
+                Auditoria.Registrar(db, "Crear sección",
+                    "Se registró la sección " + nombre + " de " + grado.nombre + " (" + seccion.anio.Value + ").",
+                    null, new { nombre, grado = grado.nombre, anio = seccion.anio.Value, cupo = seccion.cupo });
                 db.SaveChanges();
             }
 
@@ -430,6 +455,22 @@ namespace EduNexus.UI.Controllers
                     return View(seccion);
                 }
 
+                // El cupo no puede quedar por debajo de los estudiantes ya asignados
+                int asignados = db.SeccionesEstudiantes.Count(e => e.fk_id_seccion == existente.id_seccion);
+                seccion.estudiantes_matriculados = asignados;
+                if (seccion.cupo < asignados)
+                {
+                    ModelState.AddModelError("cupo", "El cupo no puede ser menor a los " + asignados + " estudiantes ya asignados a la sección.");
+                    return View(seccion);
+                }
+
+                // Con estudiantes asignados no se cambia el periodo lectivo (podrían quedar en dos secciones del mismo periodo)
+                if (calendario.id_calendario != existente.fk_id_calendario && asignados > 0)
+                {
+                    ModelState.AddModelError("anio", "No se puede cambiar el año lectivo de una sección que ya tiene estudiantes asignados.");
+                    return View(seccion);
+                }
+
                 CalendarioEntity calendarioAnterior = db.Calendarios.FirstOrDefault(c => c.id_calendario == existente.fk_id_calendario);
                 var antes = new
                 {
@@ -443,19 +484,9 @@ namespace EduNexus.UI.Controllers
                 existente.cupo = seccion.cupo;
 
                 // Escenario 5: edición exitosa, se registra la fecha y el usuario que realizó la modificación (bitácora)
-                var usuario = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
-                if (usuario != null)
-                {
-                    db.Bitacora.Add(new BitacoraEntity
-                    {
-                        tipo_de_evento = EventoModificacion,
-                        descripcion_evento = DescripcionEvento(existente.id_seccion) + " " + nombre,
-                        fecha = DateTime.Now,
-                        datos_anteriores = JsonConvert.SerializeObject(antes),
-                        datos_posteriores = JsonConvert.SerializeObject(new { nombre, anio = seccion.anio.Value, cupo = seccion.cupo }),
-                        fk_id_usuario = usuario.id_usuario
-                    });
-                }
+                Auditoria.Registrar(db, EventoModificacion,
+                    DescripcionEvento(existente.id_seccion) + " " + nombre,
+                    antes, new { nombre, anio = seccion.anio.Value, cupo = seccion.cupo });
                 db.SaveChanges();
             }
 
@@ -496,16 +527,25 @@ namespace EduNexus.UI.Controllers
 
                 // La sección tampoco se puede borrar si otros módulos ya la usan (horarios o asignaciones)
                 int usos = db.Database.SqlQuery<int>(
-                    "SELECT (SELECT COUNT(*) FROM horarios WHERE fk_seccion = @p0) + (SELECT COUNT(*) FROM asignaciones WHERE fk_id_seccion = @p0)",
+                    "SELECT (SELECT COUNT(*) FROM horarios WHERE fk_seccion = @p0) + (SELECT COUNT(*) FROM asignaciones WHERE fk_id_seccion = @p0) + (SELECT COUNT(*) FROM asistencia WHERE fk_id_seccion = @p0)",
                     id).First();
                 if (usos > 0)
                 {
-                    TempData["Error"] = "No se puede eliminar la sección porque tiene horarios o asignaciones asociadas.";
+                    TempData["Error"] = "No se puede eliminar la sección porque tiene horarios, asignaciones o registros de asistencia asociados.";
                     return RedirectToAction("ListadoDeSecciones");
                 }
 
+                // Las materias asignadas a la sección (secciones_materias) se quitan junto con ella
+                var materiasDeSeccion = db.SeccionesMaterias.Where(sm => sm.fk_id_seccion == id).ToList();
+
                 // Escenario 6: eliminación de sección sin estudiantes
+                var etiquetas = HorarioServicio.EtiquetasDeSecciones(db);
+                string etiqueta = etiquetas.ContainsKey(id) ? etiquetas[id] : seccion.nombre;
+                db.SeccionesMaterias.RemoveRange(materiasDeSeccion);
                 db.Secciones.Remove(seccion);
+                Auditoria.Registrar(db, "Eliminar sección", "Se eliminó la sección " + etiqueta + ".",
+                    new { seccion.id_seccion, seccion.nombre, seccion.fk_id_grado, seccion.fk_id_calendario, seccion.cupo,
+                          materias = materiasDeSeccion.Select(m => m.fk_id_materia).ToList() }, null);
                 db.SaveChanges();
             }
 

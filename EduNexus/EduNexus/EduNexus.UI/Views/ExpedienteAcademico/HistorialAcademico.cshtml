@@ -63,7 +63,7 @@ else
                     @anio.periodo
                     @if (anio.promedio.HasValue)
                     {
-                        <span class="badge bg-blue-lt ms-2">Promedio: @anio.promedio.Value.ToString("0.00")</span>
+                        <span class="badge bg-blue-lt ms-2">@(anio.promedio_ponderado ? "Promedio ponderado" : "Promedio"): @anio.promedio.Value.ToString("0.00")</span>
                     }
                 </span>
             </div>

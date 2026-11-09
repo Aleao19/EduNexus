@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Web.Mvc;
 
 using EduNexus.Abstracciones.ModelosParaUI.Prematriculas;
@@ -27,9 +28,10 @@ namespace EduNexus.UI.Controllers
         {
             if (!EsEncargado())
             {
-                return new HttpStatusCodeResult(
-                    403,
-                    "Acceso reservado al rol Encargado.");
+                TempData["Error"] =
+                    "Solo el padre o encargado del estudiante puede realizar la prematrícula.";
+
+                return RedirectToAction("Index", "Home");
             }
 
             CargarGrados();
@@ -47,9 +49,10 @@ namespace EduNexus.UI.Controllers
         {
             if (!EsEncargado())
             {
-                return new HttpStatusCodeResult(
-                    403,
-                    "Acceso reservado al rol Encargado.");
+                TempData["Error"] =
+                    "Solo el padre o encargado del estudiante puede realizar la prematrícula.";
+
+                return RedirectToAction("Index", "Home");
             }
 
             if (modelo == null)
@@ -173,6 +176,15 @@ namespace EduNexus.UI.Controllers
                         };
 
                     db.Prematriculas.Add(prematricula);
+
+                    Auditoria.Registrar(
+                        db,
+                        "Registrar prematrícula",
+                        "Se registró la prematrícula de nuevo ingreso del estudiante " +
+                            identificacion + ".",
+                        null,
+                        DatosAuditoria(prematricula));
+
                     db.SaveChanges();
 
                     transaccion.Commit();
@@ -207,11 +219,21 @@ namespace EduNexus.UI.Controllers
         [HttpGet]
         public ActionResult Listado()
         {
+            // Se precargan grados y calendarios para no
+            // consultar la base de datos por cada solicitud.
+            var grados = db.Grados
+                .ToList()
+                .ToDictionary(g => g.id_grado, g => g.nombre);
+
+            var calendarios = db.Calendarios
+                .ToList()
+                .ToDictionary(c => c.id_calendario, c => c.nombre);
+
             var solicitudes = db.Prematriculas
                 .OrderByDescending(
                     p => p.fecha_prematricula)
                 .ToList()
-                .Select(p => ConvertirDto(p))
+                .Select(p => ConvertirDto(p, grados, calendarios))
                 .ToList();
 
             return View(solicitudes);
@@ -306,11 +328,12 @@ namespace EduNexus.UI.Controllers
                 string identificacion =
                     modelo.identificacion.Trim();
 
+                int idActual = existente.id_prematricula;
+
                 bool identificacionDuplicada =
                     db.Prematriculas.Any(p =>
                         p.identificacion == identificacion &&
-                        p.id_prematricula !=
-                            existente.id_prematricula &&
+                        p.id_prematricula != idActual &&
                         p.estado == "Pendiente");
 
                 if (identificacionDuplicada)
@@ -321,6 +344,28 @@ namespace EduNexus.UI.Controllers
 
                     CargarGrados();
                     return View(modelo);
+                }
+
+                // Mismo criterio que al registrar: una solicitud de nuevo
+                // ingreso no puede usar la identificación de un estudiante
+                // que ya tiene una matrícula aprobada (debe renovar).
+                if (existente.es_nuevo_ingreso)
+                {
+                    bool yaAprobado =
+                        db.Prematriculas.Any(p =>
+                            p.identificacion == identificacion &&
+                            p.id_prematricula != idActual &&
+                            p.estado == "Aprobada");
+
+                    if (yaAprobado)
+                    {
+                        ModelState.AddModelError(
+                            "identificacion",
+                            "El estudiante ya tiene una prematrícula aprobada. Utilice el proceso de renovación.");
+
+                        CargarGrados();
+                        return View(modelo);
+                    }
                 }
 
                 if (!existente.es_nuevo_ingreso &&
@@ -353,32 +398,67 @@ namespace EduNexus.UI.Controllers
                     return View(modelo);
                 }
 
-                existente.identificacion =
-                    identificacion;
-                existente.nombre =
-                    modelo.nombre.Trim();
-                existente.apellido1 =
-                    modelo.apellido1.Trim();
-                existente.apellido2 =
-                    modelo.apellido2;
-                existente.genero =
-                    modelo.genero;
-                existente.fk_id_grado =
-                    modelo.grado;
-                existente.telefono =
-                    modelo.telefono;
-                existente.fecha_nacimiento =
-                    modelo.fecha_nacimiento.Value;
-                existente.tiene_adecuacion =
-                    modelo.tiene_adecuacion;
-                existente.tiene_discapacidad =
-                    modelo.tiene_discapacidad;
-                existente.contactoEmergencia =
-                    modelo.contactoEmergencia;
-                existente.direccion =
-                    modelo.direccion;
+                using (var transaccion =
+                    db.Database.BeginTransaction())
+                {
+                    // Bloquea la fila y vuelve a leerla: si otro usuario la
+                    // aprobó o rechazó mientras tanto, no se sobrescribe.
+                    string estadoActual = db.Database
+                        .SqlQuery<string>(
+                            "SELECT estado FROM prematricula WHERE id_matricula = @p0 FOR UPDATE",
+                            idActual)
+                        .FirstOrDefault();
 
-                db.SaveChanges();
+                    if (estadoActual != "Pendiente")
+                    {
+                        transaccion.Rollback();
+
+                        TempData["Error"] =
+                            "La solicitud ya no está pendiente; otro usuario la aprobó o rechazó.";
+
+                        return RedirectToAction("Listado");
+                    }
+
+                    db.Entry(existente).Reload();
+
+                    var antes = DatosAuditoria(existente);
+
+                    existente.identificacion =
+                        identificacion;
+                    existente.nombre =
+                        modelo.nombre.Trim();
+                    existente.apellido1 =
+                        modelo.apellido1.Trim();
+                    existente.apellido2 =
+                        modelo.apellido2;
+                    existente.genero =
+                        modelo.genero;
+                    existente.fk_id_grado =
+                        modelo.grado;
+                    existente.telefono =
+                        modelo.telefono;
+                    existente.fecha_nacimiento =
+                        modelo.fecha_nacimiento.Value;
+                    existente.tiene_adecuacion =
+                        modelo.tiene_adecuacion;
+                    existente.tiene_discapacidad =
+                        modelo.tiene_discapacidad;
+                    existente.contactoEmergencia =
+                        modelo.contactoEmergencia;
+                    existente.direccion =
+                        modelo.direccion;
+
+                    Auditoria.Registrar(
+                        db,
+                        "Editar prematrícula",
+                        "Se modificó la prematrícula #" +
+                            existente.id_prematricula + ".",
+                        antes,
+                        DatosAuditoria(existente));
+
+                    db.SaveChanges();
+                    transaccion.Commit();
+                }
 
                 TempData["Mensaje"] =
                     "La solicitud se actualizó correctamente.";
@@ -419,10 +499,18 @@ namespace EduNexus.UI.Controllers
 
             try
             {
+                bool usuarioCreado = false;
+
                 using (var transaccion =
                     db.Database.BeginTransaction(
                         IsolationLevel.Serializable))
                 {
+                    // Bloquea la solicitud para que Editar o Rechazar
+                    // no la modifiquen mientras se aprueba.
+                    db.Database.ExecuteSqlCommand(
+                        "SELECT id_matricula FROM prematricula WHERE id_matricula = @p0 FOR UPDATE",
+                        id);
+
                     var solicitud = db.Prematriculas
                         .FirstOrDefault(
                             p => p.id_prematricula == id);
@@ -472,17 +560,73 @@ namespace EduNexus.UI.Controllers
                         return RedirectToAction("Listado");
                     }
 
-                    var usuario = db.Usuarios
-                        .FirstOrDefault(u =>
+                    // El estudiante necesita un usuario con rol Estudiante.
+                    // Si no existe, se crea al aprobar la matrícula.
+                    string idRolEstudiante =
+                        ValidacionExpediente.IdRolEstudiante(db);
+
+                    if (idRolEstudiante == null)
+                    {
+                        TempData["Error"] =
+                            "No existe el rol Estudiante en el sistema; no se puede crear el usuario del estudiante.";
+
+                        return RedirectToAction("Listado");
+                    }
+
+                    string identificacionSolicitud =
+                        solicitud.identificacion;
+
+                    var usuariosConIdentificacion = db.Usuarios
+                        .Where(u =>
                             u.identificacion ==
-                            solicitud.identificacion);
+                            identificacionSolicitud)
+                        .ToList();
+
+                    var usuario = usuariosConIdentificacion
+                        .FirstOrDefault(u =>
+                            u.rol == idRolEstudiante);
 
                     if (usuario == null)
                     {
-                        TempData["Error"] =
-                            "El estudiante necesita un usuario registrado antes de aprobar su prematrícula.";
+                        if (usuariosConIdentificacion.Any())
+                        {
+                            TempData["Error"] =
+                                "La identificación " + identificacionSolicitud +
+                                " pertenece a un usuario que no tiene el rol Estudiante. Revise el usuario antes de aprobar.";
 
-                        return RedirectToAction("Listado");
+                            return RedirectToAction("Listado");
+                        }
+
+                        string email =
+                            CorreoEstudiante(identificacionSolicitud);
+
+                        if (db.Usuarios.Any(u => u.email == email))
+                        {
+                            TempData["Error"] =
+                                "Ya existe un usuario con el correo " + email +
+                                ". No se pudo crear el usuario del estudiante.";
+
+                            return RedirectToAction("Listado");
+                        }
+
+                        usuario = new UsuarioEntity
+                        {
+                            id_usuario = Guid.NewGuid().ToString(),
+                            email = email,
+                            nombre = solicitud.nombre,
+                            apellido1 = solicitud.apellido1,
+                            apellido2 = solicitud.apellido2,
+                            identificacion = identificacionSolicitud,
+                            estado = true,
+                            telefono = solicitud.telefono,
+                            rol = idRolEstudiante,
+                            password_hash =
+                                ContrasennaHasher.Cifrar(ContrasennaAleatoria()),
+                            security_stamp = Guid.NewGuid().ToString(),
+                            email_confirmado = false
+                        };
+
+                        usuarioCreado = true;
                     }
 
                     bool aprobada =
@@ -569,6 +713,11 @@ namespace EduNexus.UI.Controllers
                         return RedirectToAction("Listado");
                     }
 
+                    if (usuarioCreado)
+                    {
+                        db.Usuarios.Add(usuario);
+                    }
+
                     var asignacion =
                         new SeccionEstudianteEntity
                         {
@@ -582,10 +731,22 @@ namespace EduNexus.UI.Controllers
 
                     db.SeccionesEstudiantes.Add(asignacion);
 
+                    string idUsuarioEstudiante =
+                        usuario.id_usuario;
+
+                    var idsMatriculas = db.Prematriculas
+                        .Where(p =>
+                            p.identificacion ==
+                                identificacionSolicitud)
+                        .Select(p => p.id_prematricula)
+                        .ToList();
+
                     bool tieneExpediente =
                         db.Expedientes.Any(e =>
                             e.fk_id_usuario ==
-                                usuario.id_usuario);
+                                idUsuarioEstudiante ||
+                            idsMatriculas.Contains(
+                                e.fk_id_matricula));
 
                     if (!tieneExpediente)
                     {
@@ -606,12 +767,33 @@ namespace EduNexus.UI.Controllers
 
                     solicitud.estado = "Aprobada";
 
+                    Auditoria.Registrar(
+                        db,
+                        "Aprobar prematrícula",
+                        "Se aprobó la prematrícula #" +
+                            solicitud.id_prematricula +
+                            " del estudiante " +
+                            identificacionSolicitud + "." +
+                            (usuarioCreado
+                                ? " Se creó su usuario estudiante."
+                                : ""),
+                        new { estado = "Pendiente" },
+                        new
+                        {
+                            estado = "Aprobada",
+                            seccion = seccionDisponible.Value,
+                            usuario = usuario.id_usuario,
+                            usuario_creado = usuarioCreado,
+                            expediente_creado = !tieneExpediente
+                        });
+
                     db.SaveChanges();
                     transaccion.Commit();
                 }
 
-                TempData["Mensaje"] =
-                    "La solicitud fue aprobada y el estudiante fue asignado a una sección.";
+                TempData["Mensaje"] = usuarioCreado
+                    ? "La solicitud fue aprobada, se creó el usuario del estudiante y fue asignado a una sección."
+                    : "La solicitud fue aprobada y el estudiante fue asignado a una sección.";
             }
             catch (Exception ex)
             {
@@ -645,26 +827,48 @@ namespace EduNexus.UI.Controllers
 
             try
             {
-                var solicitud = db.Prematriculas
-                    .FirstOrDefault(
-                        p => p.id_prematricula == id);
-
-                if (solicitud == null)
+                using (var transaccion =
+                    db.Database.BeginTransaction())
                 {
-                    return HttpNotFound();
+                    // Actualización condicional: si otro usuario aprobó
+                    // la solicitud al mismo tiempo, no se sobrescribe.
+                    int filas = db.Database.ExecuteSqlCommand(
+                        "UPDATE prematricula SET estado = 'Rechazada' " +
+                        "WHERE id_matricula = @p0 AND estado = 'Pendiente'",
+                        id);
+
+                    if (filas == 0)
+                    {
+                        transaccion.Rollback();
+
+                        if (!db.Prematriculas.Any(
+                            p => p.id_prematricula == id))
+                        {
+                            return HttpNotFound();
+                        }
+
+                        TempData["Error"] =
+                            "Solo se pueden rechazar solicitudes pendientes.";
+
+                        return RedirectToAction("Listado");
+                    }
+
+                    string identificacion = db.Prematriculas
+                        .Where(p => p.id_prematricula == id)
+                        .Select(p => p.identificacion)
+                        .FirstOrDefault();
+
+                    Auditoria.Registrar(
+                        db,
+                        "Rechazar prematrícula",
+                        "Se rechazó la prematrícula #" + id +
+                            " del estudiante " + identificacion + ".",
+                        new { estado = "Pendiente" },
+                        new { estado = "Rechazada" });
+
+                    db.SaveChanges();
+                    transaccion.Commit();
                 }
-
-                if (solicitud.estado != "Pendiente")
-                {
-                    TempData["Error"] =
-                        "Solo se pueden rechazar solicitudes pendientes.";
-
-                    return RedirectToAction("Listado");
-                }
-
-                solicitud.estado = "Rechazada";
-
-                db.SaveChanges();
 
                 TempData["Mensaje"] =
                     "La solicitud fue rechazada correctamente.";
@@ -785,7 +989,7 @@ namespace EduNexus.UI.Controllers
                     "EstudiantesActivos");
             }
 
-            CargarGrados();
+            CargarGrados(NivelDeGrado(anterior.fk_id_grado));
 
             var modelo = ConvertirDto(anterior);
 
@@ -843,6 +1047,20 @@ namespace EduNexus.UI.Controllers
                         "EstudiantesActivos");
                 }
 
+                // Se toma siempre la matrícula aprobada más reciente
+                // del estudiante como base de la renovación.
+                string identificacionAnterior =
+                    anterior.identificacion;
+
+                anterior = db.Prematriculas
+                    .Where(p =>
+                        p.identificacion ==
+                            identificacionAnterior &&
+                        p.estado == "Aprobada")
+                    .OrderByDescending(
+                        p => p.fecha_prematricula)
+                    .FirstOrDefault() ?? anterior;
+
                 var usuario = db.Usuarios
                     .FirstOrDefault(u =>
                         u.identificacion ==
@@ -889,11 +1107,24 @@ namespace EduNexus.UI.Controllers
 
                 ModelState.Clear();
 
-                if (!GradoExiste(modelo.grado))
+                int? nivelAnterior =
+                    NivelDeGrado(anterior.fk_id_grado);
+
+                int? nivelNuevo =
+                    NivelDeGrado(modelo.grado);
+
+                if (!nivelNuevo.HasValue)
                 {
                     ModelState.AddModelError(
                         "grado",
                         "Seleccione un grado válido.");
+                }
+                else if (nivelAnterior.HasValue &&
+                         nivelNuevo.Value < nivelAnterior.Value)
+                {
+                    ModelState.AddModelError(
+                        "grado",
+                        "El grado de la renovación no puede ser menor al grado anterior.");
                 }
 
                 if (anterior.fecha_nacimiento.Date >
@@ -939,7 +1170,7 @@ namespace EduNexus.UI.Controllers
 
                 if (!ModelState.IsValid)
                 {
-                    CargarGrados();
+                    CargarGrados(nivelAnterior);
 
                     var vista = ConvertirDto(anterior);
 
@@ -972,7 +1203,7 @@ namespace EduNexus.UI.Controllers
                             "",
                             "Ya existe una solicitud para este período.");
 
-                        CargarGrados();
+                        CargarGrados(nivelAnterior);
 
                         var vista = ConvertirDto(anterior);
 
@@ -1013,6 +1244,20 @@ namespace EduNexus.UI.Controllers
                     };
 
                     db.Prematriculas.Add(nueva);
+
+                    Auditoria.Registrar(
+                        db,
+                        "Renovar matrícula",
+                        "Se registró la renovación de matrícula del estudiante " +
+                            nueva.identificacion + " para el período " +
+                            calendarioDestino.nombre + ".",
+                        new
+                        {
+                            matricula_anterior = anterior.id_prematricula,
+                            grado_anterior = anterior.fk_id_grado
+                        },
+                        DatosAuditoria(nueva));
+
                     db.SaveChanges();
 
                     transaccion.Commit();
@@ -1095,6 +1340,9 @@ namespace EduNexus.UI.Controllers
 
             ViewBag.EstadosRenovacion =
                 new Dictionary<string, string>();
+
+            ViewBag.HayPeriodoDestino =
+                calendarioDestino != null;
 
             if (calendarioActual == null)
             {
@@ -1182,11 +1430,9 @@ namespace EduNexus.UI.Controllers
             var usuario = Session["UsuarioActual"]
                 as UsuarioDto;
 
-            return usuario != null &&
-                string.Equals(
-                    usuario.nombreRol,
-                    "Encargado",
-                    StringComparison.OrdinalIgnoreCase);
+            return RolesSistema.Es(
+                usuario,
+                RolesSistema.Padre);
         }
 
         private bool GradoExiste(int idGrado)
@@ -1241,18 +1487,43 @@ namespace EduNexus.UI.Controllers
         private PrematriculaDto ConvertirDto(
             PrematriculaEntity p)
         {
-            var grado = db.Grados
-                .FirstOrDefault(g =>
-                    g.id_grado == p.fk_id_grado);
+            int idGrado = p.fk_id_grado;
 
-            CalendarioEntity calendario = null;
+            var grados = db.Grados
+                .Where(g => g.id_grado == idGrado)
+                .ToList()
+                .ToDictionary(g => g.id_grado, g => g.nombre);
+
+            var calendarios = new Dictionary<int, string>();
 
             if (p.fk_id_calendario.HasValue)
             {
-                calendario = db.Calendarios
-                    .FirstOrDefault(c =>
-                        c.id_calendario ==
-                            p.fk_id_calendario.Value);
+                int idCalendario = p.fk_id_calendario.Value;
+
+                calendarios = db.Calendarios
+                    .Where(c => c.id_calendario == idCalendario)
+                    .ToList()
+                    .ToDictionary(c => c.id_calendario, c => c.nombre);
+            }
+
+            return ConvertirDto(p, grados, calendarios);
+        }
+
+        private PrematriculaDto ConvertirDto(
+            PrematriculaEntity p,
+            Dictionary<int, string> grados,
+            Dictionary<int, string> calendarios)
+        {
+            string nombreGrado;
+            string nombreCalendario = null;
+
+            grados.TryGetValue(p.fk_id_grado, out nombreGrado);
+
+            if (p.fk_id_calendario.HasValue)
+            {
+                calendarios.TryGetValue(
+                    p.fk_id_calendario.Value,
+                    out nombreCalendario);
             }
 
             return new PrematriculaDto
@@ -1279,9 +1550,7 @@ namespace EduNexus.UI.Controllers
                     p.fk_id_grado,
 
                 nombre_grado =
-                    grado != null
-                        ? grado.nombre
-                        : "Sin grado",
+                    nombreGrado ?? "Sin grado",
 
                 telefono =
                     p.telefono,
@@ -1314,9 +1583,7 @@ namespace EduNexus.UI.Controllers
                     p.fk_id_calendario,
 
                 nombre_calendario =
-                    calendario != null
-                        ? calendario.nombre
-                        : "Sin período asignado"
+                    nombreCalendario ?? "Sin período asignado"
             };
         }
 
@@ -1324,17 +1591,93 @@ namespace EduNexus.UI.Controllers
         // CARGAR GRADOS
         // ==========================================
 
-        private void CargarGrados()
+        private void CargarGrados(int? nivelMinimo = null)
         {
             ViewBag.Grados = db.Grados
                 .OrderBy(g => g.nivel)
                 .ToList()
+                .Where(g =>
+                    !nivelMinimo.HasValue ||
+                    g.nivel >= nivelMinimo.Value)
                 .Select(g => new SelectListItem
                 {
                     Value = g.id_grado.ToString(),
                     Text = g.nombre
                 })
                 .ToList();
+        }
+
+        // ==========================================
+        // NIVEL DEL GRADO (grados.nivel)
+        // ==========================================
+
+        private int? NivelDeGrado(int idGrado)
+        {
+            return db.Grados
+                .Where(g => g.id_grado == idGrado)
+                .Select(g => (int?)g.nivel)
+                .FirstOrDefault();
+        }
+
+        // ==========================================
+        // USUARIO DEL ESTUDIANTE
+        // ==========================================
+
+        // La prematrícula no guarda correo: se usa
+        // identificacion@estudiantes.edunexus.local
+        private static string CorreoEstudiante(
+            string identificacion)
+        {
+            string local = new string(
+                (identificacion ?? "")
+                    .Where(c => !char.IsWhiteSpace(c))
+                    .ToArray())
+                .ToLowerInvariant();
+
+            return local + "@estudiantes.edunexus.local";
+        }
+
+        // Contraseña temporal aleatoria (el estudiante
+        // debe restablecerla). Nunca se muestra ni se registra.
+        private static string ContrasennaAleatoria()
+        {
+            byte[] bytes = new byte[24];
+
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(bytes);
+            }
+
+            return Convert.ToBase64String(bytes);
+        }
+
+        // ==========================================
+        // DATOS PARA LA BITÁCORA
+        // ==========================================
+
+        private static object DatosAuditoria(
+            PrematriculaEntity p)
+        {
+            return new
+            {
+                id = p.id_prematricula,
+                p.identificacion,
+                p.nombre,
+                p.apellido1,
+                p.apellido2,
+                p.genero,
+                grado = p.fk_id_grado,
+                p.telefono,
+                fecha_nacimiento =
+                    p.fecha_nacimiento.ToString("yyyy-MM-dd"),
+                p.tiene_adecuacion,
+                p.tiene_discapacidad,
+                contacto_emergencia = p.contactoEmergencia,
+                p.direccion,
+                p.es_nuevo_ingreso,
+                p.estado,
+                calendario = p.fk_id_calendario
+            };
         }
 
         // ==========================================

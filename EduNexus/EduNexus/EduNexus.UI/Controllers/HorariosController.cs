@@ -139,7 +139,7 @@ namespace EduNexus.UI.Controllers
 
                 if (!modelo.items.Any())
                 {
-                    modelo.mensaje = "No hay horario registrado para esta seccion.";
+                    modelo.mensaje = "No hay horario registrado para esta sección.";
                 }
                 return View(modelo);
             }
@@ -194,7 +194,7 @@ namespace EduNexus.UI.Controllers
         {
             if (!id.HasValue)
             {
-                TempData["Error"] = "Seleccione primero una seccion para registrar su horario.";
+                TempData["Error"] = "Seleccione primero una sección para registrar su horario.";
                 return RedirectToAction("ListadoDeHorarios");
             }
 
@@ -206,7 +206,7 @@ namespace EduNexus.UI.Controllers
                 }
                 if (!db.SeccionesMaterias.Any(sm => sm.fk_id_seccion == id.Value))
                 {
-                    TempData["Error"] = "Esta sección aun no tiene materias asignadas. Asignelas primero en Materias por sección.";
+                    TempData["Error"] = "Esta sección aún no tiene materias asignadas. Asígnelas primero en Materias por sección.";
                     return RedirectToAction("ListadoDeHorarios", new { id = id.Value });
                 }
 
@@ -235,7 +235,7 @@ namespace EduNexus.UI.Controllers
                     return VistaCrear(db, horario);
                 }
 
-                // Escenario 3 y RHOR-09-005: conflicto por seccion o docente
+                // Escenario 3 y RHOR-09-005: conflicto por sección o docente
                 string conflicto = HorarioServicio.BuscarConflicto(db, horario.seccion, horario.materia,
                     horario.dia_semana, horario.hora_inicio, horario.hora_fin, 0);
 
@@ -254,10 +254,24 @@ namespace EduNexus.UI.Controllers
                     fk_materia = horario.materia,
                     fk_seccion = horario.seccion
                 });
+
+                string etiqueta;
+                HorarioServicio.EtiquetasDeSecciones(db).TryGetValue(horario.seccion, out etiqueta);
+                Auditoria.Registrar(db, "Registro de horario",
+                    "Horario de la sección " + etiqueta + ": " + horario.dia_semana + " "
+                        + HorarioServicio.Hora(horario.hora_inicio) + "-" + HorarioServicio.Hora(horario.hora_fin),
+                    null, new
+                    {
+                        horario.dia_semana,
+                        hora_inicio = HorarioServicio.Hora(horario.hora_inicio),
+                        hora_fin = HorarioServicio.Hora(horario.hora_fin),
+                        id_materia = horario.materia,
+                        id_seccion = horario.seccion
+                    });
                 db.SaveChanges();
             }
 
-            TempData["Mensaje"] = "El horario se registro correctamente y quedo asociado a la seccion y al docente de la materia. No se detectaron conflictos.";
+            TempData["Mensaje"] = "El horario se registró correctamente y quedó asociado a la sección y al docente de la materia. No se detectaron conflictos.";
             return RedirectToAction("ListadoDeHorarios", new { id = horario.seccion });
         }
 
@@ -280,7 +294,8 @@ namespace EduNexus.UI.Controllers
                 var horario = new HorariosDto
                 {
                     id_horario = h.id_horario,
-                    dia_semana = h.dia_semana,
+                    // Nombre oficial del día para que el combo lo preseleccione ("Miercoles" -> "Miércoles")
+                    dia_semana = HorarioServicio.NombreDia(h.dia_semana) ?? h.dia_semana,
                     hora_inicio = h.hora_inicio,
                     hora_fin = h.hora_fin,
                     seccion = h.fk_seccion,
@@ -340,49 +355,41 @@ namespace EduNexus.UI.Controllers
                 existente.fk_materia = horario.materia;
                 existente.fk_seccion = horario.seccion;
 
-                // Escenario 1: se registra la fecha y el usuario que modifico (bitacora)
-                var usuario = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
-                if (usuario != null)
-                {
-                    db.Bitacora.Add(new BitacoraEntity
+                // Escenario 1: se registra la fecha y el usuario que modificó (bitácora)
+                Auditoria.Registrar(db, "Modificación de horario", "Horario #" + existente.id_horario,
+                    antes, new
                     {
-                        tipo_de_evento = "Modificacion de horario",
-                        descripcion_evento = "Horario #" + existente.id_horario,
-                        fecha = DateTime.Now,
-                        datos_anteriores = JsonConvert.SerializeObject(antes),
-                        datos_posteriores = JsonConvert.SerializeObject(new
-                        {
-                            existente.dia_semana,
-                            hora_inicio = HorarioServicio.Hora(existente.hora_inicio),
-                            hora_fin = HorarioServicio.Hora(existente.hora_fin),
-                            id_materia = existente.fk_materia,
-                            id_seccion = existente.fk_seccion
-                        }),
-                        fk_id_usuario = usuario.id_usuario
+                        existente.dia_semana,
+                        hora_inicio = HorarioServicio.Hora(existente.hora_inicio),
+                        hora_fin = HorarioServicio.Hora(existente.hora_fin),
+                        id_materia = existente.fk_materia,
+                        id_seccion = existente.fk_seccion
                     });
-                }
 
                 db.SaveChanges();
             }
 
-            TempData["Mensaje"] = "El horario se actualizo correctamente.";
+            TempData["Mensaje"] = "El horario se actualizó correctamente.";
             return RedirectToAction("ListadoDeHorarios", new { id = horario.seccion });
         }
 
         // Validaciones comunes de Create y Edit
         private static string ValidarDatos(EduNexusDbContext db, HorariosDto horario)
         {
-            if (!Dias.Contains(horario.dia_semana))
+            // Se acepta el día con o sin tilde y se guarda con su nombre oficial ("Miércoles")
+            string dia = Dias.FirstOrDefault(d => HorarioServicio.MismoDia(d, horario.dia_semana));
+            if (dia == null)
             {
-                return "El día seleccionado no es valido.";
+                return "El día seleccionado no es válido.";
             }
+            horario.dia_semana = dia;
             if (horario.hora_fin <= horario.hora_inicio)
             {
                 return "La hora de fin debe ser posterior a la hora de inicio.";
             }
             if (!db.Secciones.Any(s => s.id_seccion == horario.seccion))
             {
-                return "La seccion especificada no existe.";
+                return "La sección especificada no existe.";
             }
             if (!db.Materias.Any(m => m.id_materia == horario.materia))
             {
@@ -425,7 +432,7 @@ namespace EduNexus.UI.Controllers
                 .Where(m => idsMaterias.Contains(m.id_materia)).ToList()
                 .ToDictionary(m => m.id_materia, m => m.nombre);
 
-            List<string> idsDocentes = clases.Select(c => c.fk_id_profesor).Distinct().ToList();
+            List<string> idsDocentes = clases.Select(c => c.fk_id_profesor).Where(x => x != null).Distinct().ToList();
             Dictionary<string, UsuarioEntity> docentes = db.Usuarios
                 .Where(u => idsDocentes.Contains(u.id_usuario)).ToList()
                 .ToDictionary(u => u.id_usuario);
@@ -433,7 +440,9 @@ namespace EduNexus.UI.Controllers
             var opciones = clases.Select(c => new
             {
                 id_materia = c.fk_id_materia,
-                texto = nombres[c.fk_id_materia] + " - " + HorarioServicio.NombreCompleto(docentes[c.fk_id_profesor])
+                texto = (nombres.ContainsKey(c.fk_id_materia) ? nombres[c.fk_id_materia] : "Materia " + c.fk_id_materia)
+                    + " - " + (c.fk_id_profesor != null && docentes.ContainsKey(c.fk_id_profesor)
+                        ? HorarioServicio.NombreCompleto(docentes[c.fk_id_profesor]) : "Sin docente")
             }).OrderBy(o => o.texto).ToList();
 
             return new SelectList(opciones, "id_materia", "texto");

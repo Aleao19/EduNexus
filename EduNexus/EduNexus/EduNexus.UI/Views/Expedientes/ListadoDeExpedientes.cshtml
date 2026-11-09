@@ -29,7 +29,6 @@
 <div class="card shadow-sm">
     <div class="card-header d-flex align-items-center justify-content-between">
         <h3 class="card-title mb-0">Listado</h3>
-        <input type="text" id="filtroExpedientes" class="form-control form-control-sm w-auto" placeholder="Buscar por nombre..." onkeyup="filtrarExpedientes()" />
     </div>
 
     @if (!Model.Any())
@@ -51,28 +50,31 @@
                     <tr>
                         <th>Estudiante</th>
                         <th>@Html.DisplayNameFor(model => model.identificacion)</th>
-                        <th>Id expediente</th>
-                        <th>Id matrícula</th>
+                        <th>Grado</th>
+                        <th>Expediente</th>
                         <th class="w-1">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var item in Model)
                     {
-                        string inicial = (item.nombre ?? "?").Substring(0, 1).ToUpper();
+                        string inicial = string.IsNullOrEmpty(item.nombre) ? "?" : item.nombre.Substring(0, 1).ToUpper();
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center">
                                     <span class="avatar avatar-sm rounded-circle bg-teal-lt fw-bold me-2">@inicial</span>
-                                    <div class="fw-medium">@item.nombre @item.apellido1 @item.apellido2</div>
+                                    <div class="fw-medium">@(string.IsNullOrEmpty(item.nombre) ? "Prematrícula no encontrada" : (item.nombre + " " + item.apellido1 + " " + item.apellido2).Trim())</div>
                                 </div>
                             </td>
                             <td>@Html.DisplayFor(modelItem => item.identificacion)</td>
+                            <td>@(string.IsNullOrEmpty(item.nombre_grado) ? "No disponible" : item.nombre_grado)</td>
                             <td><span class="text-secondary">#@item.id_expediente</span></td>
-                            <td><span class="text-secondary">#@item.id_matricula</span></td>
                             <td class="text-nowrap">
                                 @Html.ActionLink("Ver detalle", "DetalleDeExpediente", new { id = item.id_expediente }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
-                                @Html.ActionLink("Editar", "EditarExpediente", new { id = item.id_expediente }, new { @class = "btn btn-sm btn-primary" })
+                                @if (!string.IsNullOrEmpty(item.identificacion))
+                                {
+                                    @Html.ActionLink("Editar", "EditarExpediente", new { id = item.id_expediente }, new { @class = "btn btn-sm btn-primary" })
+                                }
                             </td>
                         </tr>
                     }

@@ -1,5 +1,5 @@
-﻿
-@using System
+﻿@using System
+@using EduNexus.UI.Models
 
 @{
     var usuarioSesion = Session["UsuarioActual"]
@@ -7,25 +7,19 @@
 
     bool estaAutenticado = usuarioSesion != null;
 
-    bool esAdministrador = estaAutenticado &&
-        string.Equals(
-            usuarioSesion.nombreRol,
-            "Administrador",
-            StringComparison.OrdinalIgnoreCase
-        );
+    // Matriz de permisos fija (ver RolesSistema). Los roles se comparan sin tildes ni mayúsculas.
+    bool esAdministrador = RolesSistema.Es(usuarioSesion, RolesSistema.Administrador);
+    bool esCoordinador = RolesSistema.Es(usuarioSesion, RolesSistema.CoordinadorAcademico);
+    bool esDirector = RolesSistema.Es(usuarioSesion, RolesSistema.Director);
+    bool esDocente = RolesSistema.Es(usuarioSesion, RolesSistema.Docente);
+    bool esEstudiante = RolesSistema.Es(usuarioSesion, RolesSistema.Estudiante);
+    // RMPR-08-005: el Padre (encargado del estudiante) realiza la prematrícula.
+    bool esEncargado = RolesSistema.Es(usuarioSesion, RolesSistema.Padre);
 
-    // RMPR-08-005
-    // Identificar usuarios con rol Encargado.
-    bool esEncargado = estaAutenticado &&
-        string.Equals(
-            usuarioSesion.nombreRol,
-            "Encargado",
-            StringComparison.OrdinalIgnoreCase
-        );
-    // RHOR-09-006 y 007: Mi horario
-    bool esDocenteOEstudiante = estaAutenticado &&
-        (string.Equals(usuarioSesion.nombreRol, "Docente", StringComparison.OrdinalIgnoreCase) ||
-         string.Equals(usuarioSesion.nombreRol, "Estudiante", StringComparison.OrdinalIgnoreCase));
+    // Aula virtual: Administrador y Director (consulta), Docente y Estudiante (sus clases).
+    bool veAulaVirtual = esAdministrador || esDirector || esDocente || esEstudiante;
+    // RHOR-09-006 y 007: Mi horario (Docente y Estudiante).
+    bool veMiHorario = esDocente || esEstudiante;
 }
 
 <!DOCTYPE html>
@@ -87,151 +81,77 @@
 
                     @if (estaAutenticado)
                     {
-                        <!-- INICIO -->
+                        <!-- INICIO (todos los roles) -->
                         <li class="nav-item">
-
-                            @Html.ActionLink(
-                                "Inicio",
-                                "Index",
-                                "Home",
-                                new { area = "" },
-                                new { @class = "nav-link" }
-                            )
-
+                            @Html.ActionLink("Inicio", "Index", "Home", new { area = "" }, new { @class = "nav-link" })
                         </li>
 
-                        <!-- AULA VIRTUAL -->
-                        <li class="nav-item">
-
-                            @Html.ActionLink(
-                                "Aula Virtual",
-                                "AulaVirtual",
-                                "AulaVirtual",
-                                new { area = "" },
-                                new { @class = "nav-link" }
-                            )
-
-                        </li>
-                        bool esDocente = estaAutenticado &&
-                        string.Equals(usuarioSesion.nombreRol, "Docente", StringComparison.OrdinalIgnoreCase);
-
-                        if (esDocenteOEstudiante)
+                        if (veAulaVirtual)
                         {
-                            <!-- MI HORARIO -->
                             <li class="nav-item">
+                                @Html.ActionLink("Aula Virtual", "AulaVirtual", "AulaVirtual", new { area = "" }, new { @class = "nav-link" })
+                            </li>
+                        }
 
-                                @Html.ActionLink(
-                                    "Mi horario",
-                                    "MiHorario",
-                                    "MiHorario",
-                                    new { area = "" },
-                                    new { @class = "nav-link" }
-                                )
-
+                        if (veMiHorario)
+                        {
+                            <li class="nav-item">
+                                @Html.ActionLink("Mi horario", "MiHorario", "MiHorario", new { area = "" }, new { @class = "nav-link" })
                             </li>
                         }
 
                         if (esDocente)
                         {
-                            <!-- ASISTENCIA -->
                             <li class="nav-item">
-
-                                @Html.ActionLink(
-                                    "Asistencia",
-                                    "Registrar",
-                                    "Asistencia",
-                                    new { area = "" },
-                                    new { @class = "nav-link" }
-                                )
-
+                                @Html.ActionLink("Asistencia", "Registrar", "Asistencia", new { area = "" }, new { @class = "nav-link" })
                             </li>
                         }
 
-                        @* MENÚ DEL ADMINISTRADOR *@
-
+                        @* MENÚ DEL ADMINISTRADOR (agrupado en menús desplegables) *@
                         if (esAdministrador)
                         {
-                            <!-- SOLICITUDES DE PREMATRÍCULA -->
-                            <li class="nav-item">
-
-                                @Html.ActionLink(
-                                    "Solicitudes de prematrícula",
-                                    "Listado",
-                                    "Prematriculas",
-                                    new { area = "" },
-                                    new { @class = "nav-link" }
-                                )
-
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Académico</a>
+                                <ul class="dropdown-menu">
+                                    <li>@Html.ActionLink("Grados", "ListadoDeGrados", "Grados", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                    <li>@Html.ActionLink("Secciones", "ListadoDeSecciones", "Secciones", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                    <li>@Html.ActionLink("Materias", "ListadoDeMaterias", "Materias", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                    <li>@Html.ActionLink("Docentes", "ListadoDeDocentes", "Docentes", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                    <li>@Html.ActionLink("Horarios", "ListadoDeHorarios", "Horarios", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                </ul>
                             </li>
-
-                            <!-- RENOVACIONES -->
-                            <li class="nav-item">
-
-                                @Html.ActionLink(
-                                    "Renovaciones",
-                                    "EstudiantesActivos",
-                                    "Prematriculas",
-                                    new { area = "" },
-                                    new { @class = "nav-link" }
-                                )
-
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Estudiantes</a>
+                                <ul class="dropdown-menu">
+                                    <li>@Html.ActionLink("Solicitudes de prematrícula", "Listado", "Prematriculas", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                    <li>@Html.ActionLink("Renovaciones", "EstudiantesActivos", "Prematriculas", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                    <li>@Html.ActionLink("Expedientes", "ListadoDeExpedientes", "Expedientes", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                    <li>@Html.ActionLink("Expediente académico", "ListadoDeEstudiantes", "ExpedienteAcademico", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                </ul>
                             </li>
-
-                            <!-- USUARIOS -->
-                            <li class="nav-item">
-
-                                @Html.ActionLink(
-                                    "Usuarios",
-                                    "ListadoDeUsuarios",
-                                    "Usuarios",
-                                    new { area = "" },
-                                    new { @class = "nav-link" }
-                                )
-
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Seguridad</a>
+                                <ul class="dropdown-menu">
+                                    <li>@Html.ActionLink("Usuarios", "ListadoDeUsuarios", "Usuarios", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                    <li>@Html.ActionLink("Roles", "ListadoDeRoles", "Roles", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                    <li>@Html.ActionLink("Bitácora", "Bitacora", "Home", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                </ul>
                             </li>
+                        }
 
-                            <!-- ROLES -->
+                        @* MENÚ DEL COORDINADOR ACADÉMICO *@
+                        if (esCoordinador)
+                        {
                             <li class="nav-item">
-
-                                @Html.ActionLink(
-                                    "Roles",
-                                    "ListadoDeRoles",
-                                    "Roles",
-                                    new { area = "" },
-                                    new { @class = "nav-link" }
-                                )
-
-                            </li>
-
-                            <!-- EXPEDIENTE ACADÉMICO -->
-                            <li class="nav-item">
-
-                                @Html.ActionLink(
-                                    "Expediente académico",
-                                    "ListadoDeEstudiantes",
-                                    "ExpedienteAcademico",
-                                    new { area = "" },
-                                    new { @class = "nav-link" }
-                                )
-
+                                @Html.ActionLink("Horarios", "ListadoDeHorarios", "Horarios", new { area = "" }, new { @class = "nav-link" })
                             </li>
                         }
 
                         @* MENÚ DEL ENCARGADO - RMPR-08-005 *@
-
                         if (esEncargado)
                         {
-                            <!-- REALIZAR PREMATRÍCULA -->
                             <li class="nav-item">
-
-                                @Html.ActionLink(
-                                    "Realizar prematrícula",
-                                    "Crear",
-                                    "Prematriculas",
-                                    new { area = "" },
-                                    new { @class = "nav-link" }
-                                )
-
+                                @Html.ActionLink("Realizar prematrícula", "Crear", "Prematriculas", new { area = "" }, new { @class = "nav-link" })
                             </li>
                         }
                     }
@@ -301,25 +221,7 @@
             </div>
         }
 
-        @* ==========================================
-           MENSAJES DE INICIO DE SESIÓN
-           ========================================== *@
-
-        @if (TempData["MensajeLogin"] != null)
-        {
-            <div class="alert alert-warning alert-dismissible mt-3"
-                 role="alert">
-
-                @TempData["MensajeLogin"]
-
-                <button type="button"
-                        class="btn-close"
-                        data-bs-dismiss="alert"
-                        aria-label="Cerrar">
-                </button>
-
-            </div>
-        }
+        @* Los mensajes de inicio de sesión (TempData["MensajeLogin"]) los muestra la vista Login. *@
 
         @* ==========================================
            RMPR-08

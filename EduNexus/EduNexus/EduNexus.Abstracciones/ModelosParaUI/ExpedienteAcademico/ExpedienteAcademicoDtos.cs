@@ -33,6 +33,8 @@ namespace EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico
         public string grado { get; set; }
         public string seccion { get; set; }
         public decimal? promedio { get; set; }
+        // true si el promedio se calculó ponderado por porcentaje_nota
+        public bool promedio_ponderado { get; set; }
         public List<CalificacionDto> calificaciones { get; set; } = new List<CalificacionDto>();
     }
 

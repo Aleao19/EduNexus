@@ -9,7 +9,9 @@ using System.Web.Mvc;
 
 namespace EduNexus.UI.Controllers
 {
-    // RHOR-09-006 (docente) y RHOR-09-007 (estudiante): consultar mi horario
+    // RHOR-09-006 (docente) y RHOR-09-007 (estudiante): consultar mi horario.
+    // Según la matriz de permisos, solo Docente y Estudiante tienen "Mi horario".
+    [AutorizarRoles(RolesSistema.Docente, RolesSistema.Estudiante)]
     public class MiHorarioController : Controller
     {
         public ActionResult MiHorario()
@@ -20,8 +22,8 @@ namespace EduNexus.UI.Controllers
                 return RedirectToAction("Login", "Home");
             }
 
-            bool esDocente = string.Equals(usuario.nombreRol, "Docente", StringComparison.OrdinalIgnoreCase);
-            bool esEstudiante = string.Equals(usuario.nombreRol, "Estudiante", StringComparison.OrdinalIgnoreCase);
+            bool esDocente = RolesSistema.Es(usuario, RolesSistema.Docente);
+            bool esEstudiante = RolesSistema.Es(usuario, RolesSistema.Estudiante);
 
             if (!esDocente && !esEstudiante)
             {
@@ -57,7 +59,7 @@ namespace EduNexus.UI.Controllers
                     // Escenario 2 (docente): sin horario para el periodo actual
                     if (!horarios.Any())
                     {
-                        modelo.mensaje = "Aun no tiene horario asignado para el periodo actual.";
+                        modelo.mensaje = "Aún no tiene horario asignado para el periodo actual.";
                     }
                 }
                 else
@@ -69,14 +71,14 @@ namespace EduNexus.UI.Controllers
                     // Escenario 2 (estudiante): sin seccion asignada en el periodo actual
                     if (!susSecciones.Any())
                     {
-                        modelo.mensaje = "Aun no tiene seccion asignada para el periodo lectivo actual.";
+                        modelo.mensaje = "Aún no tiene sección asignada para el periodo lectivo actual.";
                     }
                     else
                     {
                         horarios = db.Horarios.Where(h => susSecciones.Contains(h.fk_seccion)).ToList();
                         if (!horarios.Any())
                         {
-                            modelo.mensaje = "Su seccion aun no tiene horario configurado.";
+                            modelo.mensaje = "Su sección aún no tiene horario configurado.";
                         }
                     }
                 }

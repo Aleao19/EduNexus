@@ -1,9 +1,9 @@
-﻿@model EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionDestinoVm
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionesDto
 
 @{
     ViewBag.Title = "Asignar estudiantes";
-    var estudiantesAsignados = (List<EduNexus.UI.Controllers.EstudianteSeccionVm>)ViewBag.EstudiantesAsignados;
-    var destinos = (List<EduNexus.UI.Controllers.SeccionDestinoVm>)ViewBag.SeccionesDestino?? new List<EduNexus.UI.Controllers.SeccionDestinoVm>();
+    var estudiantesAsignados = (List<EduNexus.Abstracciones.ModelosParaUI.Secciones.EstudianteSeccionVm>)ViewBag.EstudiantesAsignados;
+    var destinos = (List<EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionDestinoVm>)ViewBag.SeccionesDestino?? new List<EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionDestinoVm>();
     int cantidadAsignada = ViewBag.CantidadAsignada ?? 0;
     int cupoMaximo = ViewBag.CupoMaximo ?? 0;
     int cuposDisponibles = cupoMaximo - cantidadAsignada;
@@ -14,8 +14,7 @@
         @{
             var usuarioActual = Session[EduNexus.UI.Models.AutorizarAdministradorAttribute.ClaveSesion]
                 as EduNexus.Abstracciones.ModelosParaUI.Usuarios.UsuarioDto;
-            bool esAdminActual = usuarioActual != null &&
-                string.Equals(usuarioActual.nombreRol, "Administrador", StringComparison.OrdinalIgnoreCase);
+            bool esAdminActual = EduNexus.UI.Models.RolesSistema.Es(usuarioActual, EduNexus.UI.Models.RolesSistema.Administrador);
         }
 
         @if (esAdminActual)
@@ -30,20 +29,6 @@
         }
     </div>
 </div>
-
-@if (TempData["Mensaje"] != null)
-{
-    <div class="alert alert-success">
-        @TempData["Mensaje"]
-    </div>
-}
-
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">
-        @TempData["Error"]
-    </div>
-}
 
 <div class="card shadow-sm mb-3">
     <div class="card-header">
@@ -140,6 +125,7 @@
                         <th>Nombre completo</th>
                         <th>Identificación</th>
                         <th>Fecha de asignación</th>
+                        <th>Mover a otra sección</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -149,6 +135,29 @@
                             <td>@estudiante.nombreCompleto</td>
                             <td>@estudiante.identificacion</td>
                             <td>@(((DateTime)estudiante.fecha_asignacion).ToString("dd/MM/yyyy"))</td>
+                            <td>
+                                @if (!destinos.Any())
+                                {
+                                    <span class="text-secondary small">No hay otras secciones del mismo grado y año.</span>
+                                }
+                                else
+                                {
+                                    using (Html.BeginForm("MoverEstudiante", "Secciones", FormMethod.Post, new { @class = "d-flex gap-2 align-items-center", onsubmit = "return confirm('¿Desea mover a este estudiante a la sección seleccionada?');" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@Model.id_seccion" />
+                                        <input type="hidden" name="idUsuario" value="@estudiante.id_usuario" />
+                                        <select name="idSeccionDestino" class="form-select form-select-sm" required aria-label="Sección destino">
+                                            <option value="">-- Sección destino --</option>
+                                            @foreach (var d in destinos)
+                                            {
+                                                <option value="@d.id_seccion" disabled="@(d.disponibles <= 0)">@d.texto (@d.disponibles cupo(s))</option>
+                                            }
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">Mover</button>
+                                    }
+                                }
+                            </td>
                         </tr>
                     }
                 </tbody>

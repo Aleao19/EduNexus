@@ -173,6 +173,15 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Models\Auditoria.cs" />
+    <Compile Include="Models\RolesSistema.cs" />
+    <Compile Include="Models\DocumentoExpedienteEntity.cs" />
+    <Compile Include="Controllers\AsistenciaController.cs" />
+    <Compile Include="Controllers\MiHorarioController.cs" />
+    <Compile Include="Models\AsistenciaEntity.cs" />
+    <Compile Include="Models\AutorizarRolesAttribute.cs" />
+    <Compile Include="Models\HorarioServicio.cs" />
+    <Compile Include="Models\PermitirCoordinadorAttribute.cs" />
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
@@ -222,6 +231,18 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Scripts\Asistencia\ListaAsistencia.js" />
+    <Content Include="Scripts\Horarios\ListadoDeHorarios.js" />
+    <Content Include="Views\Asistencia\Registrar.cshtml" />
+    <Content Include="Views\Asistencia\_ListaAsistencia.cshtml" />
+    <Content Include="Views\Horarios\HorarioParaAsignacion.cshtml" />
+    <Content Include="Views\MiHorario\MiHorario.cshtml" />
+    <Content Include="Views\Prematriculas\Comprobante.cshtml" />
+    <Content Include="Views\Prematriculas\Editar.cshtml" />
+    <Content Include="Views\Prematriculas\EstudiantesActivos.cshtml" />
+    <Content Include="Views\Prematriculas\Listado.cshtml" />
+    <Content Include="Views\Prematriculas\Renovar.cshtml" />
+    <Content Include="Views\Shared\_HorarioSemanal.cshtml" />
     <Content Include="bin\es - Copia\System.Web.Helpers.resources.dll" />
     <Content Include="bin\es - Copia\System.Web.Mvc.resources.dll" />
     <Content Include="bin\es - Copia\System.Web.Optimization.resources.dll" />
@@ -351,7 +372,6 @@
     <Content Include="Views\Secciones\CrearSeccion.cshtml" />
     <Content Include="Views\Secciones\EditarSeccion.cshtml" />
     <Content Include="Views\Home\Bitacora.cshtml" />
-    <Content Include="Views\AulaVirtual\Horario.cshtml" />
     <Content Include="Views\AulaVirtual\AulaVirtual.cshtml" />
     <Content Include="Views\AulaVirtual\Materia.cshtml" />
     <Content Include="Views\Home\Login.cshtml" />
@@ -384,7 +404,6 @@
     <Content Include="Views\Grados\ListadoDeGrados.cshtml" />
     <Content Include="Views\Secciones\CuposPorGrupo.cshtml" />
     <Content Include="Views\Secciones\EliminarSeccion.cshtml" />
-    <Content Include="Views\Roles\CrearRol.cshtml" />
     <Content Include="Views\Roles\ListadoDeRoles.cshtml" />
     <Content Include="Views\Usuarios\CrearUsuario.cshtml" />
     <Content Include="Views\Usuarios\ListadoDeUsuarios.cshtml" />

@@ -1,172 +1,94 @@
-
-@model EduNexus.Abstracciones.ModelosParaUI.Expedientes.DocumentoExpedienteDto
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Expedientes.DocumentoExpedienteDto
 
 @{
     ViewBag.Title = "Adjuntar documento";
+    int tamanoMaximo = EduNexus.UI.Models.AlmacenamientoDocumentoExpediente.TamanoMaximo;
+    string tamanoTexto = EduNexus.UI.Models.AlmacenamientoDocumentoExpediente.TamanoMaximoTexto;
 }
 
-<h2>Adjuntar documento al expediente</h2>
-
-<hr />
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Adjuntar documento al expediente</h1>
+        <p class="text-secondary mb-0">
+            Expediente #@Model.id_expediente
+            @if (!string.IsNullOrWhiteSpace(Model.estudiante))
+            {
+                <span>· @Model.estudiante</span>
+            }
+        </p>
+    </div>
+</div>
 
 @using (Html.BeginForm(
     "AdjuntarDocumento",
     "DocumentosExpediente",
     FormMethod.Post,
-    new { enctype = "multipart/form-data" }))
+    new { enctype = "multipart/form-data", id = "formDocumento" }))
 {
     @Html.AntiForgeryToken()
+    @Html.HiddenFor(model => model.id_expediente)
 
-    <div class="form-horizontal">
+    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
 
-        @Html.ValidationSummary(
-            true,
-            "",
-            new { @class = "text-danger" }
-        )
+    <div class="card shadow-sm">
+        <div class="card-body">
 
-        @Html.HiddenFor(model => model.id_expediente)
+            <div class="mb-3">
+                @Html.LabelFor(model => model.nombre_documento, new { @class = "form-label" })
+                @Html.TextBoxFor(model => model.nombre_documento, new { @class = "form-control", maxlength = "150", placeholder = "Ejemplo: Certificado médico" })
+                @Html.ValidationMessageFor(model => model.nombre_documento, "", new { @class = "text-danger" })
+            </div>
 
-        <div class="container">
+            <div class="mb-3">
+                @Html.LabelFor(model => model.descripcion, new { @class = "form-label" })
+                @Html.TextAreaFor(model => model.descripcion, new { @class = "form-control", rows = "4", maxlength = "500", placeholder = "Descripción del documento" })
+                @Html.ValidationMessageFor(model => model.descripcion, "", new { @class = "text-danger" })
+            </div>
 
-            <div class="row">
-
-                <div class="col-md-8">
-
-                    <div class="form-group mt-3">
-
-                        <label>Expediente</label>
-
-                        <div class="col-md-10">
-
-                            <input type="text"
-                                   class="form-control"
-                                   value="@Model.id_expediente"
-                                   readonly />
-
-                            @Html.ValidationMessageFor(
-                                model => model.id_expediente,
-                                "",
-                                new { @class = "text-danger" }
-                            )
-
-                        </div>
-
-                    </div>
-
-                    <div class="form-group mt-3">
-
-                        @Html.LabelFor(
-                            model => model.nombre_documento
-                        )
-
-                        <div class="col-md-10">
-
-                            @Html.TextBoxFor(
-                                model => model.nombre_documento,
-                                new {
-                                    @class = "form-control",
-                                    placeholder = "Ejemplo: Certificado médico"
-                                }
-                            )
-
-                            @Html.ValidationMessageFor(
-                                model => model.nombre_documento,
-                                "",
-                                new { @class = "text-danger" }
-                            )
-
-                        </div>
-
-                    </div>
-
-                    <div class="form-group mt-3">
-
-                        @Html.LabelFor(
-                            model => model.descripcion
-                        )
-
-                        <div class="col-md-10">
-
-                            @Html.TextAreaFor(
-                                model => model.descripcion,
-                                new {
-                                    @class = "form-control",
-                                    rows = "4",
-                                    placeholder = "Descripción del documento"
-                                }
-                            )
-
-                            @Html.ValidationMessageFor(
-                                model => model.descripcion,
-                                "",
-                                new { @class = "text-danger" }
-                            )
-
-                        </div>
-
-                    </div>
-
-                    <div class="form-group mt-3">
-
-                        <label for="archivo">
-                            Seleccionar documento
-                        </label>
-
-                        <div class="col-md-10">
-
-                            <input type="file"
-                                   id="archivo"
-                                   name="archivo"
-                                   class="form-control"
-                                   accept=".pdf,.jpg,.jpeg,.png"
-                                   required />
-
-                            @Html.ValidationMessage(
-                                "archivo",
-                                "",
-                                new { @class = "text-danger" }
-                            )
-
-                            <small class="text-muted">
-                                Formatos permitidos:
-                                PDF, JPG, JPEG y PNG.
-                                Tamaño máximo: 5 MB.
-                            </small>
-
-                        </div>
-
-                    </div>
-
-                    <div class="form-group mt-3">
-
-                        <div class="col-md-10 my-3">
-
-                            <input type="submit"
-                                   value="Adjuntar documento"
-                                   class="btn btn-cyan" />
-
-                            @Html.ActionLink(
-                                "Regresar al expediente",
-                                "DetalleDeExpediente",
-                                "Expedientes",
-                                new { id = Model.id_expediente },
-                                new { @class = "btn btn-default" }
-                            )
-
-                        </div>
-
-                    </div>
-
+            <div class="mb-3">
+                <label class="form-label" for="archivo">Seleccionar documento</label>
+                <input type="file"
+                       id="archivo"
+                       name="archivo"
+                       class="form-control"
+                       accept=".pdf,.jpg,.jpeg,.png"
+                       data-tamano-maximo="@tamanoMaximo"
+                       required />
+                @Html.ValidationMessage("archivo", "", new { @class = "text-danger", id = "errorArchivo" })
+                <div class="form-text">
+                    Formatos permitidos: PDF, JPG, JPEG y PNG. Tamaño máximo: @tamanoTexto.
                 </div>
-
             </div>
 
         </div>
-
+        <div class="card-footer">
+            <input type="submit" value="Adjuntar documento" class="btn btn-primary" />
+            @Html.ActionLink("Ver documentos", "HistorialDocumentos", "DocumentosExpediente", new { id_expediente = Model.id_expediente }, new { @class = "btn btn-outline-primary ms-1" })
+            @Html.ActionLink("Regresar al expediente", "DetalleDeExpediente", "Expedientes", new { id = Model.id_expediente }, new { @class = "btn btn-outline-secondary ms-1" })
+        </div>
     </div>
 }
 
 @section Scripts {
     @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        // Evita enviar archivos más grandes que el límite del servidor
+        // (de lo contrario el servidor rechaza la solicitud completa).
+        document.addEventListener("DOMContentLoaded", function () {
+            var formulario = document.getElementById("formDocumento");
+            var archivo = document.getElementById("archivo");
+            if (!formulario || !archivo) { return; }
+
+            var maximo = parseInt(archivo.getAttribute("data-tamano-maximo"), 10);
+
+            formulario.addEventListener("submit", function (evento) {
+                if (archivo.files && archivo.files.length > 0 && archivo.files[0].size > maximo) {
+                    evento.preventDefault();
+                    var error = document.getElementById("errorArchivo");
+                    var texto = "El documento no puede superar los @tamanoTexto.";
+                    if (error) { error.textContent = texto; } else { alert(texto); }
+                }
+            });
+        });
+    </script>
 }

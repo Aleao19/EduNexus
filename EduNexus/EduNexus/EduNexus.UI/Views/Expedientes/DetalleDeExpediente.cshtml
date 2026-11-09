@@ -1,148 +1,75 @@
-﻿
-@model EduNexus.Abstracciones.ModelosParaUI.Expedientes.ExpedienteDto
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Expedientes.ExpedienteDto
 
 @{
-    ViewBag.Title = "Detalle de Expediente";
+    ViewBag.Title = "Detalle de expediente";
+    bool tienePrematricula = !string.IsNullOrEmpty(Model.identificacion);
+    Func<string, string, string> valor = (texto, vacio) => string.IsNullOrWhiteSpace(texto) ? vacio : texto;
 }
 
-<h2>Detalle de Expediente Estudiantil</h2>
-
-<hr />
-
-<div class="panel panel-default">
-    <div class="panel-heading">
-        <h3 class="panel-title">
-            Información personal del estudiante
-        </h3>
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">Expediente estudiantil #@Model.id_expediente</h1>
+        <p class="text-secondary mb-0">@Model.nombre @Model.apellido1 @Model.apellido2</p>
     </div>
-
-    <div class="panel-body">
-        <dl class="dl-horizontal">
-
-            <dt>Número de expediente</dt>
-            <dd>@Model.id_expediente</dd>
-
-            <dt>Número de matrícula</dt>
-            <dd>@Model.id_matricula</dd>
-
-            <dt>Identificación</dt>
-            <dd>@Model.identificacion</dd>
-
-            <dt>Nombre</dt>
-            <dd>@Model.nombre</dd>
-
-            <dt>Primer apellido</dt>
-            <dd>@Model.apellido1</dd>
-
-            <dt>Segundo apellido</dt>
-            <dd>@Model.apellido2</dd>
-
-            <dt>Sexo</dt>
-            <dd>@Model.genero</dd>
-
-            <dt>Grado</dt>
-            <dd>@Model.grado</dd>
-
-            <dt>Fecha de nacimiento</dt>
-            <dd>@Model.fecha_nacimiento.ToString("dd/MM/yyyy")</dd>
-
-            <dt>Teléfono</dt>
-            <dd>@Model.telefono</dd>
-
-            <dt>Correo electrónico</dt>
-            <dd>@Model.correo</dd>
-
-            <dt>Dirección</dt>
-            <dd>@Model.direccion</dd>
-
-        </dl>
+    <div class="col-auto">
+        @Html.ActionLink("Regresar al listado", "ListadoDeExpedientes", "Expedientes", null, new { @class = "btn btn-outline-secondary" })
     </div>
 </div>
 
-<div class="panel panel-default">
-    <div class="panel-heading">
-        <h3 class="panel-title">
-            Información médica
-        </h3>
+@if (!tienePrematricula)
+{
+    <div class="alert alert-warning">
+        No se encontró la prematrícula ligada a este expediente (matrícula #@Model.id_matricula); los datos personales no están disponibles.
     </div>
+}
 
-    <div class="panel-body">
-        <dl class="dl-horizontal">
-
-            <dt>Grupo sanguíneo</dt>
-            <dd>@Model.grupo_sanguineo</dd>
-
-            <dt>Alergias</dt>
-            <dd>@Model.alergias</dd>
-
-            <dt>¿Tiene discapacidad?</dt>
-            <dd>
-                @(Model.tiene_discapacidad ? "Sí" : "No")
-            </dd>
-
-            <dt>¿Tiene adecuación?</dt>
-            <dd>
-                @(Model.tiene_adecuacion ? "Sí" : "No")
-            </dd>
-
-        </dl>
+<div class="card shadow-sm mb-3">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Información personal del estudiante</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3"><div class="text-secondary small">Número de matrícula</div><div>#@Model.id_matricula</div></div>
+            <div class="col-md-4 mb-3"><div class="text-secondary small">Identificación</div><div>@valor(Model.identificacion, "No disponible")</div></div>
+            <div class="col-md-4 mb-3"><div class="text-secondary small">Nombre completo</div><div>@valor((Model.nombre + " " + Model.apellido1 + " " + Model.apellido2).Trim(), "No disponible")</div></div>
+            <div class="col-md-4 mb-3"><div class="text-secondary small">Género</div><div>@valor(Model.genero, "No registrado")</div></div>
+            <div class="col-md-4 mb-3"><div class="text-secondary small">Grado</div><div>@valor(Model.nombre_grado, "No disponible")</div></div>
+            <div class="col-md-4 mb-3"><div class="text-secondary small">Fecha de nacimiento</div><div>@(tienePrematricula ? Model.fecha_nacimiento.ToString("dd/MM/yyyy") : "No disponible")</div></div>
+            <div class="col-md-4 mb-3"><div class="text-secondary small">Teléfono</div><div>@valor(Model.telefono, "No registrado")</div></div>
+            <div class="col-md-4 mb-3"><div class="text-secondary small">Correo electrónico</div><div>@valor(Model.correo, "No registrado")</div></div>
+            <div class="col-md-4 mb-3"><div class="text-secondary small">Dirección</div><div>@valor(Model.direccion, "No registrada")</div></div>
+        </div>
     </div>
 </div>
 
-<div class="panel panel-default">
-    <div class="panel-heading">
-        <h3 class="panel-title">
-            Contacto de emergencia
-        </h3>
+<div class="card shadow-sm mb-3">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Información médica</h3>
     </div>
-
-    <div class="panel-body">
-        <dl class="dl-horizontal">
-
-            <dt>Contacto de emergencia</dt>
-            <dd>@Model.contactoEmergencia</dd>
-
-        </dl>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 mb-3"><div class="text-secondary small">Grupo sanguíneo</div><div>@valor(Model.grupo_sanguineo, "No registrado")</div></div>
+            <div class="col-md-5 mb-3"><div class="text-secondary small">Alergias</div><div>@valor(Model.alergias, "No registradas")</div></div>
+            <div class="col-md-2 mb-3"><div class="text-secondary small">¿Tiene discapacidad?</div><div>@(Model.tiene_discapacidad ? "Sí" : "No")</div></div>
+            <div class="col-md-2 mb-3"><div class="text-secondary small">¿Tiene adecuación?</div><div>@(Model.tiene_adecuacion ? "Sí" : "No")</div></div>
+        </div>
     </div>
 </div>
 
-<div class="my-3">
+<div class="card shadow-sm mb-3">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Contacto de emergencia</h3>
+    </div>
+    <div class="card-body">
+        @valor(Model.contactoEmergencia, "No registrado")
+    </div>
+</div>
 
-    @* =========================================
-       REXP-03-006
-       BOTÓN PARA EDITAR EXPEDIENTE
-       ========================================= *@
-
-    @Html.ActionLink(
-        "Editar expediente",
-        "EditarExpediente",
-        "Expedientes",
-        new { id = Model.id_expediente },
-        new { @class = "btn btn-warning" }
-    )
-
-    @Html.ActionLink(
-        "Adjuntar documento",
-        "AdjuntarDocumento",
-        "DocumentosExpediente",
-        new { id_expediente = Model.id_expediente },
-        new { @class = "btn btn-cyan" }
-    )
-
-    @Html.ActionLink(
-        "Ver documentos",
-        "HistorialDocumentos",
-        "DocumentosExpediente",
-        new { id_expediente = Model.id_expediente },
-        new { @class = "btn btn-info" }
-    )
-
-    @Html.ActionLink(
-        "Regresar al listado",
-        "ListadoDeExpedientes",
-        "Expedientes",
-        null,
-        new { @class = "btn btn-default" }
-    )
-
+<div class="d-flex flex-wrap gap-2 my-3">
+    @if (tienePrematricula)
+    {
+        @Html.ActionLink("Editar expediente", "EditarExpediente", "Expedientes", new { id = Model.id_expediente }, new { @class = "btn btn-primary" })
+    }
+    @Html.ActionLink("Adjuntar documento", "AdjuntarDocumento", "DocumentosExpediente", new { id_expediente = Model.id_expediente }, new { @class = "btn btn-cyan" })
+    @Html.ActionLink("Ver documentos", "HistorialDocumentos", "DocumentosExpediente", new { id_expediente = Model.id_expediente }, new { @class = "btn btn-outline-primary" })
 </div>

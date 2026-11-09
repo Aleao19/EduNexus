@@ -1,4 +1,4 @@
-﻿
+
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
 
@@ -28,6 +28,9 @@ namespace EduNexus.UI.Models.Identity
         // RMPR-08-001: entidades para registrar prematrículas y expedientes.
         public DbSet<PrematriculaEntity> Prematriculas { get; set; }
         public DbSet<ExpedienteEntity> Expedientes { get; set; }
+
+        // REXP-03-002: documentos adjuntos al expediente (tabla documentos_expediente)
+        public DbSet<DocumentoExpedienteEntity> DocumentosExpediente { get; set; }
 
         // REXP-02-007 / 008 / 009: expediente académico
         public DbSet<AdecuacionEntity> Adecuaciones { get; set; }
@@ -90,7 +93,7 @@ namespace EduNexus.UI.Models.Identity
 
             modelBuilder.Entity<MateriaEntity>()
                 .Property(m => m.id_materia)
-                .HasDatabaseGeneratedOption(DatabaseGeneratedOption.None);
+                .HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
 
             modelBuilder.Entity<SeccionMateriaEntity>()
                 .ToTable("secciones_materias")
@@ -136,8 +139,8 @@ namespace EduNexus.UI.Models.Identity
             // =========================================================
             // RMPR-08-001: EXPEDIENTES -> tabla real "expediente_estudiantes"
             // El expediente queda ligado a la prematrícula (fk_id_matricula);
-            // los datos del estudiante se leen de la prematrícula, por eso
-            // no se guardan duplicados aquí.
+            // los datos personales se leen de la prematrícula y aquí solo
+            // se guardan correo, datos médicos y contacto de emergencia.
             // =========================================================
             modelBuilder.Entity<ExpedienteEntity>()
                 .ToTable("expediente_estudiantes")
@@ -147,22 +150,22 @@ namespace EduNexus.UI.Models.Identity
                 .Property(e => e.id_expediente)
                 .HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
 
-            modelBuilder.Entity<ExpedienteEntity>()
-                .Property(e => e.fk_id_prematricula)
-                .HasColumnName("fk_id_matricula");
 
-            modelBuilder.Entity<ExpedienteEntity>().Ignore(e => e.identificacion);
-            modelBuilder.Entity<ExpedienteEntity>().Ignore(e => e.nombre);
-            modelBuilder.Entity<ExpedienteEntity>().Ignore(e => e.apellido1);
-            modelBuilder.Entity<ExpedienteEntity>().Ignore(e => e.apellido2);
-            modelBuilder.Entity<ExpedienteEntity>().Ignore(e => e.genero);
-            modelBuilder.Entity<ExpedienteEntity>().Ignore(e => e.fk_id_grado);
-            modelBuilder.Entity<ExpedienteEntity>().Ignore(e => e.telefono);
-            modelBuilder.Entity<ExpedienteEntity>().Ignore(e => e.fecha_nacimiento);
-            modelBuilder.Entity<ExpedienteEntity>().Ignore(e => e.tiene_adecuacion);
-            modelBuilder.Entity<ExpedienteEntity>().Ignore(e => e.tiene_discapacidad);
-            modelBuilder.Entity<ExpedienteEntity>().Ignore(e => e.contactoEmergencia);
-            modelBuilder.Entity<ExpedienteEntity>().Ignore(e => e.direccion);
+            modelBuilder.Entity<ExpedienteEntity>()
+                .Property(e => e.contactoEmergencia)
+                .HasColumnName("contacto_emergencia");
+
+            // =========================================================
+            // REXP-03-002: DOCUMENTOS DEL EXPEDIENTE
+            // -> tabla "documentos_expediente"
+            // =========================================================
+            modelBuilder.Entity<DocumentoExpedienteEntity>()
+                .ToTable("documentos_expediente")
+                .HasKey(d => d.id_documento);
+
+            modelBuilder.Entity<DocumentoExpedienteEntity>()
+                .Property(d => d.id_documento)
+                .HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
 
             // =========================================================
             // REXP-02-007 / 008 / 009: EXPEDIENTE ACADÉMICO

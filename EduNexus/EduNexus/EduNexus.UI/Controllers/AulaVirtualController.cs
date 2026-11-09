@@ -11,6 +11,9 @@ using System.Web.Mvc;
 
 namespace EduNexus.UI.Controllers
 {
+    // Aula virtual: Docente (sus clases), Estudiante (las de sus secciones),
+    // Administrador y Director (todas, solo consulta).
+    [AutorizarRoles(RolesSistema.Administrador, RolesSistema.Director, RolesSistema.Docente, RolesSistema.Estudiante)]
     public class AulaVirtualController : Controller
     {
         // GET: AulaVirtual
@@ -34,11 +37,11 @@ namespace EduNexus.UI.Controllers
                     .Where(u => idsProfesores.Contains(u.id_usuario)).ToList()
                     .ToDictionary(u => u.id_usuario);
 
-                List<MateriasDto> modelo = clases.Select(c =>
+                List<MateriasDto> modelo = clases.Where(c => materias.ContainsKey(c.fk_id_materia)).Select(c =>
                 {
                     MateriaEntity materia = materias[c.fk_id_materia];
                     UsuarioEntity profesor;
-                    profesores.TryGetValue(c.fk_id_profesor, out profesor);
+                    if (c.fk_id_profesor == null || !profesores.TryGetValue(c.fk_id_profesor, out profesor)) profesor = null;
                     string seccion;
                     secciones.TryGetValue(c.fk_id_seccion, out seccion);
 
@@ -58,9 +61,22 @@ namespace EduNexus.UI.Controllers
             }
         }
 
-        // Clases (materia + seccion) del periodo actual que el usuario puede ver
+        // Clases (materia + sección) del periodo actual que el usuario puede ver:
+        // - Docente: las clases donde él es el docente (secciones_materias.fk_id_profesor).
+        // - Estudiante: las materias de las secciones donde está matriculado.
+        // - Administrador y Director: todas (solo consulta).
+        // - Cualquier otro rol: ninguna.
         private static List<SeccionMateriaEntity> ObtenerClasesVisibles(EduNexusDbContext db, UsuarioDto usuario)
         {
+            bool esDocente = RolesSistema.Es(usuario, RolesSistema.Docente);
+            bool esEstudiante = RolesSistema.Es(usuario, RolesSistema.Estudiante);
+            bool veTodas = RolesSistema.Es(usuario, RolesSistema.Administrador, RolesSistema.Director);
+
+            if (!esDocente && !esEstudiante && !veTodas)
+            {
+                return new List<SeccionMateriaEntity>();
+            }
+
             DateTime hoy = DateTime.Today;
 
             List<int> idsCalendario = db.Calendarios
@@ -74,17 +90,14 @@ namespace EduNexus.UI.Controllers
             IQueryable<SeccionMateriaEntity> consulta = db.SeccionesMaterias
                 .Where(sm => idsSecciones.Contains(sm.fk_id_seccion));
 
-            string rol = usuario != null ? usuario.nombreRol : "";
-            string idUsuario = usuario != null ? usuario.id_usuario : null;
+            string idUsuario = usuario.id_usuario;
 
-            if (string.Equals(rol, "Docente", StringComparison.OrdinalIgnoreCase))
+            if (esDocente)
             {
-                // Solo las clases donde él es el docente de esa sección
                 consulta = consulta.Where(sm => sm.fk_id_profesor == idUsuario);
             }
-            else if (string.Equals(rol, "Estudiante", StringComparison.OrdinalIgnoreCase))
+            else if (esEstudiante)
             {
-                // Solo las materias de su seccion
                 List<int> susSecciones = db.SeccionesEstudiantes
                     .Where(se => se.fk_id_usuario == idUsuario)
                     .Select(se => se.fk_id_seccion).ToList();
@@ -95,17 +108,12 @@ namespace EduNexus.UI.Controllers
             return consulta.ToList();
         }
 
-        // GET: AulaVirtual
-        public ActionResult Horario()
-        {
-            return View();
-        }
         // GET: AulaVirtual/Materia/5?seccion=2
+        // Vista de una clase: asignaciones reales (solo lectura), estudiantes de la sección
+        // y, para el docente, la pestaña de asistencia.
         public ActionResult Materia(int? id, int? seccion)
         {
             var usuario = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
-
-            int? idSeccionClase = seccion;
 
             using (var db = new EduNexusDbContext())
             {
@@ -116,154 +124,69 @@ namespace EduNexus.UI.Controllers
 
                 if (clase == null)
                 {
-                    TempData["MensajeError"] = "No tiene acceso a esta materia.";
+                    TempData["Error"] = "No tiene acceso a esta clase o la clase no existe en el periodo actual.";
                     return RedirectToAction("AulaVirtual");
                 }
 
-                idSeccionClase = clase.fk_id_seccion;
-            }
+                int idSeccion = clase.fk_id_seccion;
+                int idMateria = clase.fk_id_materia;
+                bool esEstudiante = RolesSistema.Es(usuario, RolesSistema.Estudiante);
 
-            ViewBag.IdMateria = id;
-            ViewBag.IdSeccion = idSeccionClase;
-            ViewBag.EsDocente = usuario != null &&
-                string.Equals(usuario.nombreRol, "Docente", StringComparison.OrdinalIgnoreCase);
+                MateriaEntity materia = db.Materias.FirstOrDefault(m => m.id_materia == idMateria);
+                string etiquetaSeccion;
+                HorarioServicio.EtiquetasDeSecciones(db).TryGetValue(idSeccion, out etiquetaSeccion);
 
-            List<AsignacionesDto> asignaciones = new List<AsignacionesDto>()
-            {
-                new AsignacionesDto
+                // Estudiantes reales de la sección
+                List<string> idsEstudiantes = db.SeccionesEstudiantes
+                    .Where(se => se.fk_id_seccion == idSeccion)
+                    .Select(se => se.fk_id_usuario).ToList();
+                Dictionary<string, UsuarioEntity> estudiantes = db.Usuarios
+                    .Where(u => idsEstudiantes.Contains(u.id_usuario)).ToList()
+                    .ToDictionary(u => u.id_usuario);
+
+                // Asignaciones reales de la clase (el estudiante solo ve las suyas)
+                IQueryable<AsignacionEntity> consulta = db.Asignaciones
+                    .Where(a => a.fk_id_seccion == idSeccion && a.fk_id_materia == idMateria);
+                if (esEstudiante)
                 {
-                    id_asignacion = 1,
-                    nombre = "Tarea 1",
-                    descripcion = "Lectura de un texto y respuesta a preguntas",
-                    porcentaje_nota = 10,
-                    calificacion = 85,
-                    estado = "Entregado",
-                    fechaDeApertura = DateTime.Now,
-                    fechaDeCierre = DateTime.Now.AddDays(7),
-                    fechaDeEntrega = DateTime.Now.AddDays(7)
-                },
-                new AsignacionesDto
-                {
-                    id_asignacion = 2,
-                    nombre = "Tarea 2",
-                    descripcion = "Redactar un ensayo sobre la historia",
-                    porcentaje_nota = 15,
-                    calificacion = 90,
-                    estado = "Entregado",
-                    fechaDeApertura = DateTime.Now,
-                    fechaDeCierre = DateTime.Now.AddDays(7),
-                    fechaDeEntrega = DateTime.Now.AddDays(7)
-                },
-                new AsignacionesDto
-                {
-                    id_asignacion = 3,
-                    nombre = "Tarea 3",
-                    descripcion = "Realizar un experimento y presentar los resultados",
-                    porcentaje_nota = 20,
-                    calificacion = 0,
-                    estado = "Pendiente",
-                    fechaDeApertura = DateTime.Now,
-                    fechaDeCierre = DateTime.Now.AddDays(7),
-                    fechaDeEntrega = DateTime.Now.AddDays(7)
+                    string idUsuario = usuario.id_usuario;
+                    consulta = consulta.Where(a => a.fk_id_usuario == idUsuario);
                 }
-            };
-            ViewBag.Estudiantes = ObtenerEstudiantes();
+                List<AsignacionEntity> registros = consulta.OrderBy(a => a.nombre).ToList();
 
-            return View(asignaciones);
-        }
+                List<AsignacionesDto> asignaciones = registros.Select(a => new AsignacionesDto
+                {
+                    id_asignacion = a.id_asignacion,
+                    nombre = a.nombre,
+                    descripcion = a.descripcion,
+                    porcentaje_nota = (float)a.porcentaje_nota,
+                    calificacion = (float)a.calificacion,
+                    estado = a.estado
+                }).ToList();
 
-        // POST: AulaVirtual/GuardarAsistencia
-        [HttpPost]
-        public ActionResult GuardarAsistencia(FormCollection collection)
-        {
-            try
-            {
-                // TODO: Add insert/update logic here
-                // collection["fecha"] trae la fecha general
-                // collection["asistencia_1"], collection["asistencia_2"], ... traen el estado de cada estudiante
+                Dictionary<int, string> estudiantePorAsignacion = registros.ToDictionary(
+                    a => a.id_asignacion,
+                    a =>
+                    {
+                        UsuarioEntity est;
+                        return a.fk_id_usuario != null && estudiantes.TryGetValue(a.fk_id_usuario, out est)
+                            ? HorarioServicio.NombreCompleto(est)
+                            : "";
+                    });
 
-                return RedirectToAction("AulaVirtual");
-            }
-            catch
-            {
-                return RedirectToAction("AulaVirtual");
-            }
-        }
+                ViewBag.IdMateria = idMateria;
+                ViewBag.IdSeccion = idSeccion;
+                ViewBag.NombreMateria = materia != null ? materia.nombre : "Materia";
+                ViewBag.NombreSeccion = etiquetaSeccion ?? "";
+                ViewBag.EsDocente = RolesSistema.Es(usuario, RolesSistema.Docente);
+                ViewBag.EsEstudiante = esEstudiante;
+                ViewBag.EstudiantePorAsignacion = estudiantePorAsignacion;
+                ViewBag.Estudiantes = estudiantes.Values
+                    .Select(u => HorarioServicio.NombreCompleto(u))
+                    .OrderBy(n => n)
+                    .ToList();
 
-        private List<string> ObtenerEstudiantes()
-        {
-            return new List<string>
-            {
-                "Sofía Castro Mora",
-                "Diego Fernández Rojas",
-                "Valeria Gómez Vindas",
-                "Kevin Araya Solano",
-                "Fabiana Chaves Mora"
-            };
-        }
-        // GET: AulaVirtual/Create
-        public ActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: AulaVirtual/Create
-        [HttpPost]
-        public ActionResult Create(FormCollection collection)
-        {
-            try
-            {
-                // TODO: Add insert logic here
-
-                return RedirectToAction("Index");
-            }
-            catch
-            {
-                return View();
-            }
-        }
-
-        // GET: AulaVirtual/Edit/5
-        public ActionResult Edit(int id)
-        {
-            return View();
-        }
-
-        // POST: AulaVirtual/Edit/5
-        [HttpPost]
-        public ActionResult Edit(int id, FormCollection collection)
-        {
-            try
-            {
-                // TODO: Add update logic here
-
-                return RedirectToAction("Index");
-            }
-            catch
-            {
-                return View();
-            }
-        }
-
-        // GET: AulaVirtual/Delete/5
-        public ActionResult Delete(int id)
-        {
-            return View();
-        }
-
-        // POST: AulaVirtual/Delete/5
-        [HttpPost]
-        public ActionResult Delete(int id, FormCollection collection)
-        {
-            try
-            {
-                // TODO: Add delete logic here
-
-                return RedirectToAction("Index");
-            }
-            catch
-            {
-                return View();
+                return View(asignaciones);
             }
         }
     }

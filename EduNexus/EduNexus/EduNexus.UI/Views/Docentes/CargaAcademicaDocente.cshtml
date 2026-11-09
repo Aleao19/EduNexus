@@ -85,7 +85,7 @@
                             <div class="d-flex align-items-start mb-3">
                                 <div>
                                     <h6 class="card-title mb-1">
-                                        <span class="badge bg-blue">@asignacion.Key.id_materia</span>
+                                        <span class="badge bg-blue">Materia</span>
                                     </h6>
                                     <p class="text-secondary small mb-0">
                                         @{
@@ -106,7 +106,7 @@
                                         var secciones = (ViewBag.Secciones as System.Collections.Generic.List<EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionesDto>)
                                                        ?? new System.Collections.Generic.List<EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionesDto>();
                                         var seccion = secciones.FirstOrDefault(s => s.id_seccion == asignacion.Key.id_seccion);
-                                        <span class="badge bg-green">@(seccion?.nombre ?? "Sección " + asignacion.Key.id_seccion)</span>
+                                        <span class="badge bg-green">@(seccion != null ? seccion.nombre + (seccion.anio.HasValue ? " (" + seccion.anio.Value + ")" : "") : "Sección " + asignacion.Key.id_seccion)</span>
                                     }
                                 </div>
                             </div>
@@ -124,7 +124,7 @@
 
                             <!-- Acciones -->
                             <div class="btn-group" role="group">
-                                <a href="#" class="btn btn-sm btn-outline-secondary" title="Ver horarios">
+                                <a href="@Url.Action("VisualizarHorario", "Horarios", new { id = asignacion.Key.id_seccion })" class="btn btn-sm btn-outline-secondary" title="Ver horario de la sección">
                                     📅 Horarios
                                 </a>
                             </div>

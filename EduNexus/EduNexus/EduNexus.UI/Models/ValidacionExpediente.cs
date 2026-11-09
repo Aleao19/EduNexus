@@ -12,8 +12,23 @@ namespace EduNexus.UI.Models
 
     public static class ValidacionExpediente
     {
+        public const string EstadoAprobada = "Aprobada";
+
+        public static readonly string[] GruposSanguineos =
+        {
+            "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"
+        };
+
+        public static readonly string[] Generos =
+        {
+            "Femenino", "Masculino", "Otro"
+        };
+
         // =========================================
         // VALIDAR RELACIONES DEL EXPEDIENTE
+        // La prematrícula debe existir y estar aprobada, y el
+        // estudiante no puede tener otro expediente (ni por
+        // matrícula, ni por identificación, ni por usuario).
         // =========================================
 
         public static List<string> ValidarRelacion(
@@ -23,67 +38,57 @@ namespace EduNexus.UI.Models
         {
             List<string> errores = new List<string>();
 
-            // Validar identificador de matricula
-            if (id_matricula <= 0)
+            PrematriculaEntity prematricula = id_matricula > 0
+                ? db.Prematriculas.FirstOrDefault(p => p.id_prematricula == id_matricula)
+                : null;
+
+            if (prematricula == null)
             {
-                errores.Add(
-                    "Debe seleccionar una matricula valida."
-                );
+                errores.Add("Debe seleccionar una matrícula válida.");
             }
             else
             {
-                // Verificar que exista la prematricula
-                bool existeMatricula = db.Prematriculas
-                    .Any(p => p.id_prematricula == id_matricula);
-
-                if (!existeMatricula)
+                if (prematricula.estado != EstadoAprobada)
                 {
-                    errores.Add(
-                        "La matricula seleccionada no existe."
-                    );
+                    errores.Add("Solo se puede crear el expediente de una matrícula aprobada.");
                 }
 
-                // Evitar expediente duplicado
+                string identificacion = prematricula.identificacion;
+
+                // Matrículas del mismo estudiante (nuevo ingreso y renovaciones)
+                List<int> idsMatriculas = db.Prematriculas
+                    .Where(p => p.identificacion == identificacion)
+                    .Select(p => p.id_prematricula)
+                    .ToList();
+
                 bool existeExpediente = db.Expedientes
-                    .Any(e => e.fk_id_matricula == id_matricula);
+                    .Any(e => idsMatriculas.Contains(e.fk_id_matricula));
 
                 if (existeExpediente)
                 {
-                    errores.Add(
-                        "La matricula ya tiene un expediente registrado."
-                    );
+                    errores.Add("El estudiante ya tiene un expediente registrado.");
                 }
             }
 
-            // Validar identificador del usuario
             if (string.IsNullOrWhiteSpace(id_usuario))
             {
-                errores.Add(
-                    "Debe identificar el usuario estudiante."
-                );
+                errores.Add("El estudiante no tiene un usuario con rol Estudiante. Apruebe su prematrícula para crearlo.");
             }
-            else
+            else if (db.Expedientes.Any(e => e.fk_id_usuario == id_usuario))
             {
-                // Verificar que exista el usuario
-                bool existeUsuario = db.Usuarios
-                    .Any(u => u.id_usuario == id_usuario);
-
-                if (!existeUsuario)
-                {
-                    errores.Add(
-                        "El usuario estudiante no existe."
-                    );
-                }
+                errores.Add("El usuario del estudiante ya tiene un expediente registrado.");
             }
 
-            return errores;
+            return errores.Distinct().ToList();
         }
 
         // =========================================
         // BUSCAR USUARIO DEL ESTUDIANTE
+        // Solo se acepta un usuario con rol Estudiante.
+        // Si hay coincidencias duplicadas no se elige una al azar.
         // =========================================
 
-        public static string ObtenerIdUsuarioEstudiante(
+        public static UsuarioEntity BuscarUsuarioEstudiante(
             EduNexusDbContext db,
             string identificacion)
         {
@@ -92,23 +97,35 @@ namespace EduNexus.UI.Models
                 return null;
             }
 
-            // Buscar el usuario por identificacion.
-            // No se utiliza el usuario administrador.
-            // Si existen coincidencias duplicadas,
-            // no se selecciona una arbitrariamente.
+            string idRol = IdRolEstudiante(db);
 
-            var coincidencias = db.Usuarios
-                .Where(u => u.identificacion == identificacion)
-                .Select(u => u.id_usuario)
-                .Take(2)
-                .ToList();
-
-            if (coincidencias.Count != 1)
+            if (idRol == null)
             {
                 return null;
             }
 
-            return coincidencias[0];
+            var coincidencias = db.Usuarios
+                .Where(u => u.identificacion == identificacion && u.rol == idRol)
+                .Take(2)
+                .ToList();
+
+            return coincidencias.Count == 1 ? coincidencias[0] : null;
+        }
+
+        public static string ObtenerIdUsuarioEstudiante(
+            EduNexusDbContext db,
+            string identificacion)
+        {
+            UsuarioEntity usuario = BuscarUsuarioEstudiante(db, identificacion);
+            return usuario != null ? usuario.id_usuario : null;
+        }
+
+        public static string IdRolEstudiante(EduNexusDbContext db)
+        {
+            return db.Roles.ToList()
+                .Where(r => RolesSistema.Es(r.nombre, RolesSistema.Estudiante))
+                .Select(r => r.id_rol)
+                .FirstOrDefault();
         }
     }
 }

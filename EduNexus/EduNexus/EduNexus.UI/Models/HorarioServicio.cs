@@ -13,6 +13,9 @@ namespace EduNexus.UI.Models
         public const string RolDocente = "Docente";
         private static readonly string[] OrdenDias = { "lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo" };
 
+        // Nombres de los días como se muestran y se guardan en la tabla horarios
+        public static readonly string[] DiasSemana = { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
+
         public static string Hora(TimeSpan t)
         {
             return t.ToString("hh\\:mm");
@@ -20,9 +23,22 @@ namespace EduNexus.UI.Models
 
         public static int OrdenDia(string dia)
         {
-            string d = (dia ?? "").Trim().ToLowerInvariant().Replace("é", "e").Replace("a", "a");
-            int posicion = Array.IndexOf(OrdenDias, d);
+            int posicion = Array.IndexOf(OrdenDias, SinTildes(dia));
             return posicion < 0 ? 99 : posicion;
+        }
+
+        // Nombre oficial del día ("miercoles" -> "Miércoles"), o null si no es un día válido
+        public static string NombreDia(string dia)
+        {
+            int posicion = OrdenDia(dia);
+            return posicion < DiasSemana.Length ? DiasSemana[posicion] : null;
+        }
+
+        // Compara dos días sin importar tildes ni mayúsculas ("Miércoles" == "miercoles")
+        public static bool MismoDia(string a, string b)
+        {
+            int pa = OrdenDia(a);
+            return pa != 99 ? pa == OrdenDia(b) : SinTildes(a) == SinTildes(b);
         }
         public static string SinTildes(string texto)
         {
@@ -114,20 +130,29 @@ namespace EduNexus.UI.Models
             {
                 SeccionMateriaEntity clase = clases.FirstOrDefault(c =>
                     c.fk_id_seccion == h.fk_seccion && c.fk_id_materia == h.fk_materia);
-                return clase != null ? clase.fk_id_profesor : materias[h.fk_materia].profesor;
+                if (clase != null)
+                {
+                    return clase.fk_id_profesor;
+                }
+                MateriaEntity m;
+                return materias.TryGetValue(h.fk_materia, out m) ? m.profesor : null;
             };
 
-            List<string> idsProfesores = horarios.Select(docenteDe).Distinct().ToList();
+            List<string> idsProfesores = horarios.Select(docenteDe).Where(x => x != null).Distinct().ToList();
             Dictionary<string, UsuarioEntity> profesores = db.Usuarios
                 .Where(u => idsProfesores.Contains(u.id_usuario)).ToList()
                 .ToDictionary(u => u.id_usuario);
 
             return horarios.Select(h =>
             {
-                MateriaEntity materia = materias[h.fk_materia];
+                MateriaEntity materia;
+                materias.TryGetValue(h.fk_materia, out materia);
                 string idProfesor = docenteDe(h);
-                UsuarioEntity profesor;
-                profesores.TryGetValue(idProfesor, out profesor);
+                UsuarioEntity profesor = null;
+                if (idProfesor != null)
+                {
+                    profesores.TryGetValue(idProfesor, out profesor);
+                }
                 string seccion;
                 secciones.TryGetValue(h.fk_seccion, out seccion);
 
@@ -139,8 +164,8 @@ namespace EduNexus.UI.Models
                     hora_fin = h.hora_fin,
                     inicio = Hora(h.hora_inicio),
                     fin = Hora(h.hora_fin),
-                    id_materia = materia.id_materia,
-                    materia = materia.nombre,
+                    id_materia = h.fk_materia,
+                    materia = materia != null ? materia.nombre : "",
                     id_profesor = idProfesor,
                     profesor = profesor != null ? NombreCompleto(profesor) : "",
                     id_seccion = h.fk_seccion,
@@ -152,16 +177,60 @@ namespace EduNexus.UI.Models
             .ToList();
         }
 
+        // Choque de horario al asignar un docente a una clase (sección + materia) que ya tiene horarios:
+        // devuelve el mensaje si el docente ya da otra clase en alguno de esos bloques, o null.
+        public static string BuscarChoqueDocente(EduNexusDbContext db, string idDocente, int idSeccion, int idMateria)
+        {
+            List<HorarioEntity> horariosClase = db.Horarios
+                .Where(h => h.fk_seccion == idSeccion && h.fk_materia == idMateria).ToList();
+            if (!horariosClase.Any())
+            {
+                return null;
+            }
+
+            List<SeccionMateriaEntity> otrasClases = ClasesDelDocente(db, idDocente)
+                .Where(c => !(c.fk_id_seccion == idSeccion && c.fk_id_materia == idMateria)).ToList();
+            if (!otrasClases.Any())
+            {
+                return null;
+            }
+
+            List<int> idsSecciones = otrasClases.Select(c => c.fk_id_seccion).Distinct().ToList();
+            List<HorarioEntity> horariosDocente = db.Horarios
+                .Where(h => idsSecciones.Contains(h.fk_seccion)).ToList()
+                .Where(h => otrasClases.Any(c => c.fk_id_seccion == h.fk_seccion && c.fk_id_materia == h.fk_materia))
+                .ToList();
+
+            foreach (HorarioEntity hc in horariosClase.OrderBy(h => OrdenDia(h.dia_semana)).ThenBy(h => h.hora_inicio))
+            {
+                HorarioEntity choque = horariosDocente.FirstOrDefault(o => MismoDia(o.dia_semana, hc.dia_semana)
+                    && o.hora_inicio < hc.hora_fin && o.hora_fin > hc.hora_inicio);
+                if (choque != null)
+                {
+                    string seccion;
+                    EtiquetasDeSecciones(db).TryGetValue(choque.fk_seccion, out seccion);
+                    string materia = db.Materias.Where(m => m.id_materia == choque.fk_materia)
+                        .Select(m => m.nombre).FirstOrDefault();
+                    return "Choque de horario: el docente ya imparte " + materia + " en la sección " + seccion
+                        + " el " + choque.dia_semana + " de " + Hora(choque.hora_inicio) + " a " + Hora(choque.hora_fin)
+                        + ", que coincide con el horario de esta clase (" + hc.dia_semana + " de "
+                        + Hora(hc.hora_inicio) + " a " + Hora(hc.hora_fin) + ").";
+                }
+            }
+            return null;
+        }
+
         // Devuelve el mensaje del conflicto encontrado, o null si no hay conflicto.
         // idExcluir = id del horario que se está modificando (0 al registrar).
         public static string BuscarConflicto(EduNexusDbContext db, int idSeccion, int idMateria,
             string dia, TimeSpan inicio, TimeSpan fin, int idExcluir)
         {
             // Conflicto por sección: la sección ya tiene una materia en ese bloque
+            // El día se compara en memoria para tolerar tildes ("Miércoles" / "Miercoles")
             HorarioEntity enSeccion = db.Horarios
-                .Where(h => h.fk_seccion == idSeccion && h.dia_semana == dia && h.id_horario != idExcluir)
+                .Where(h => h.fk_seccion == idSeccion && h.id_horario != idExcluir)
                 .ToList()
-                .FirstOrDefault(h => h.hora_inicio < fin && h.hora_fin > inicio);
+                .FirstOrDefault(h => MismoDia(h.dia_semana, dia) && h.hora_inicio < fin && h.hora_fin > inicio);
 
             if (enSeccion != null)
             {
@@ -183,9 +252,9 @@ namespace EduNexus.UI.Models
             List<SeccionMateriaEntity> clasesDelDocente = ClasesDelDocente(db, idProfesor);
 
             HorarioEntity enDocente = db.Horarios
-                .Where(h => h.dia_semana == dia && h.id_horario != idExcluir)
+                .Where(h => h.id_horario != idExcluir)
                 .ToList()
-                .FirstOrDefault(h => h.hora_inicio < fin && h.hora_fin > inicio
+                .FirstOrDefault(h => MismoDia(h.dia_semana, dia) && h.hora_inicio < fin && h.hora_fin > inicio
                     && clasesDelDocente.Any(c => c.fk_id_seccion == h.fk_seccion && c.fk_id_materia == h.fk_materia));
 
             if (enDocente != null)

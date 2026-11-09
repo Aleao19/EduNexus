@@ -78,9 +78,9 @@ namespace EduNexus.UI.Models
                     return Iguales(esperado, Derivar(contrasenna, sal, iteraciones, algoritmo, esperado.Length));
                 }
             }
-            catch (FormatException)
+            catch (Exception)
             {
-                // El valor guardado no es un hash válido
+                // El valor guardado no es un hash válido (formato, iteraciones o tamaños fuera de rango)
             }
 
             return false;

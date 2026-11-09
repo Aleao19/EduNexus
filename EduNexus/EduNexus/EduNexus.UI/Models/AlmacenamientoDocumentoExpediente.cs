@@ -2,13 +2,100 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Web;
 
 namespace EduNexus.UI.Models
 {
+    // REXP-03-002: guarda los documentos del expediente fuera de las carpetas públicas
+    // (App_Data/DocumentosExpedientes/{id_expediente}/{nombre_interno}).
     public static class AlmacenamientoDocumentoExpediente
     {
-        private const int TamanoMaximo = 5 * 1024 * 1024;
+        // El Web.config usa el maxRequestLength por defecto (4096 KB): el límite real es 4 MB.
+        public const int TamanoMaximo = 4 * 1024 * 1024;
+        public const string TamanoMaximoTexto = "4 MB";
+
+        public static readonly string[] ExtensionesPermitidas =
+        {
+            ".pdf",
+            ".jpg",
+            ".jpeg",
+            ".png"
+        };
+
+        private static readonly Regex NombreInternoValido =
+            new Regex(@"^[0-9a-f]{32}\.(pdf|jpg|jpeg|png)$", RegexOptions.CultureInvariant);
+
+        public static string CarpetaBase
+        {
+            get
+            {
+                return Path.GetFullPath(Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "App_Data",
+                    "DocumentosExpedientes"
+                ));
+            }
+        }
+
+        // Nombre del archivo sin la ruta del cliente. No usa Path.GetFileName
+        // porque lanza excepción con caracteres inválidos en el nombre.
+        public static string NombreSeguro(string nombreArchivo)
+        {
+            if (string.IsNullOrWhiteSpace(nombreArchivo))
+            {
+                return "";
+            }
+
+            string nombre = nombreArchivo.Trim();
+            int corte = Math.Max(nombre.LastIndexOf('\\'), nombre.LastIndexOf('/'));
+
+            if (corte >= 0)
+            {
+                nombre = nombre.Substring(corte + 1);
+            }
+
+            char[] invalidos = Path.GetInvalidFileNameChars();
+            nombre = new string(nombre.Where(c => !invalidos.Contains(c) && !char.IsControl(c)).ToArray()).Trim();
+
+            return nombre.Length <= 255 ? nombre : nombre.Substring(nombre.Length - 255);
+        }
+
+        // Extensión en minúsculas (con punto) sin lanzar excepciones.
+        public static string ExtensionSegura(string nombreArchivo)
+        {
+            string nombre = NombreSeguro(nombreArchivo);
+            int punto = nombre.LastIndexOf('.');
+
+            if (punto < 0 || punto == nombre.Length - 1)
+            {
+                return "";
+            }
+
+            return nombre.Substring(punto).ToLowerInvariant();
+        }
+
+        public static bool ExtensionPermitida(string extension)
+        {
+            return ExtensionesPermitidas.Contains(extension);
+        }
+
+        // Tipo MIME según la extensión validada (no se confía en el que envía el navegador).
+        public static string TipoMime(string extension)
+        {
+            switch (extension)
+            {
+                case ".pdf":
+                    return "application/pdf";
+                case ".png":
+                    return "image/png";
+                case ".jpg":
+                case ".jpeg":
+                    return "image/jpeg";
+                default:
+                    return "application/octet-stream";
+            }
+        }
 
         public static string GuardarDocumento(
             HttpPostedFileBase archivo,
@@ -17,7 +104,7 @@ namespace EduNexus.UI.Models
             if (id_expediente <= 0)
             {
                 throw new ArgumentException(
-                    "El expediente no es valido."
+                    "El expediente no es válido."
                 );
             }
 
@@ -32,23 +119,13 @@ namespace EduNexus.UI.Models
             if (archivo.ContentLength > TamanoMaximo)
             {
                 throw new ArgumentException(
-                    "El archivo supera el tamaño permitido de 5 MB."
+                    "El archivo supera el tamaño permitido de " + TamanoMaximoTexto + "."
                 );
             }
 
-            string extension = Path.GetExtension(
-                archivo.FileName
-            ).ToLowerInvariant();
+            string extension = ExtensionSegura(archivo.FileName);
 
-            string[] extensionesPermitidas =
-            {
-                ".pdf",
-                ".jpg",
-                ".jpeg",
-                ".png"
-            };
-
-            if (!extensionesPermitidas.Contains(extension))
+            if (!ExtensionPermitida(extension))
             {
                 throw new ArgumentException(
                     "Formato de documento no permitido."
@@ -118,15 +195,8 @@ namespace EduNexus.UI.Models
                 );
             }
 
-            // Guardar fuera de las carpetas públicas.
-            string rutaBase = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "App_Data",
-                "DocumentosExpedientes"
-            );
-
             string carpetaExpediente = Path.Combine(
-                rutaBase,
+                CarpetaBase,
                 id_expediente.ToString()
             );
 
@@ -136,16 +206,49 @@ namespace EduNexus.UI.Models
             string nombreInterno =
                 Guid.NewGuid().ToString("N") + extension;
 
-            string rutaArchivo = Path.Combine(
+            archivo.SaveAs(Path.Combine(
                 carpetaExpediente,
                 nombreInterno
-            );
-
-            archivo.SaveAs(rutaArchivo);
+            ));
 
             // Retornar solo el nombre interno,
             // nunca la ruta física del servidor.
             return nombreInterno;
+        }
+
+        // Ruta física de un documento guardado. Devuelve null si el nombre interno
+        // no tiene el formato esperado o si la ruta queda fuera de la carpeta base.
+        public static string RutaDocumento(int id_expediente, string nombreInterno)
+        {
+            if (id_expediente <= 0 ||
+                string.IsNullOrEmpty(nombreInterno) ||
+                !NombreInternoValido.IsMatch(nombreInterno))
+            {
+                return null;
+            }
+
+            string baseCompleta = CarpetaBase.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+
+            string ruta = Path.GetFullPath(Path.Combine(
+                CarpetaBase,
+                id_expediente.ToString(),
+                nombreInterno
+            ));
+
+            return ruta.StartsWith(baseCompleta, StringComparison.OrdinalIgnoreCase)
+                ? ruta
+                : null;
+        }
+
+        // Se usa cuando el registro en la base de datos falla después de guardar el archivo.
+        public static void EliminarDocumento(int id_expediente, string nombreInterno)
+        {
+            string ruta = RutaDocumento(id_expediente, nombreInterno);
+
+            if (ruta != null && File.Exists(ruta))
+            {
+                File.Delete(ruta);
+            }
         }
     }
 }

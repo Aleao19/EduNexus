@@ -1,6 +1,8 @@
 ﻿@model EduNexus.Abstracciones.ModelosParaUI.Dashboard.DashboardViewModel
 @{
     ViewBag.Title = "Dashboard";
+    bool hayAccesosRapidos = Model.PuedeGestionarAcademico || Model.PuedeVerHorarios || Model.PuedeVerBitacora;
+    var jsonSeguro = new Newtonsoft.Json.JsonSerializerSettings { StringEscapeHandling = Newtonsoft.Json.StringEscapeHandling.EscapeHtml };
 }
 
 <main>
@@ -122,7 +124,7 @@
             </div>
         </div>
 
-        <div class="col-lg-5">
+        <div class="@(Model.PuedeVerBitacora ? "col-lg-5" : "col-12")">
             <div class="card shadow-sm">
                 <div class="card-header">
                     <h3 class="card-title">Docentes por materia</h3>
@@ -133,6 +135,8 @@
             </div>
         </div>
 
+        @if (Model.PuedeVerBitacora)
+        {
         <div class="col-lg-7">
             <div class="card shadow-sm">
                 <div class="card-header">
@@ -171,6 +175,7 @@
                 </div>
             </div>
         </div>
+        }
     </div>
 
     @* ===================== PRÓXIMAS CLASES ===================== *@
@@ -212,8 +217,12 @@
     </div>
 
     @* ===================== ACCESOS RÁPIDOS ===================== *@
+    @if (hayAccesosRapidos)
+    {
     <h2 class="h3 mb-3">Accesos rápidos</h2>
     <div class="row row-deck p-0 g-4 mb-4">
+        @if (Model.PuedeGestionarAcademico)
+        {
         <!-- Secciones -->
         <div class="col-md-4">
             <div class="card card-md card-link position-relative shadow-sm">
@@ -233,6 +242,10 @@
                 </div>
             </div>
         </div>
+        }
+
+        @if (Model.PuedeVerHorarios)
+        {
 
         <!-- Horarios -->
         <div class="col-md-4">
@@ -254,6 +267,10 @@
                 </div>
             </div>
         </div>
+        }
+
+        @if (Model.PuedeGestionarAcademico)
+        {
 
         <!-- Materias -->
         <div class="col-md-4">
@@ -323,6 +340,10 @@
                 </div>
             </div>
         </div>
+        }
+
+        @if (Model.PuedeVerBitacora)
+        {
 
         <!-- Auditoría -->
         <div class="col-md-4">
@@ -344,7 +365,9 @@
                 </div>
             </div>
         </div>
+        }
     </div>
+    }
 </main>
 
 @section scripts {
@@ -362,12 +385,12 @@
                 return true;
             }
 
-            var aniosMatricula = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.AniosMatricula));
-            var matriculaPorAnio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MatriculaPorAnio));
-            var nombresSecciones = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.NombresSecciones));
-            var estudiantesPorSeccion = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.EstudiantesPorSeccion));
-            var nombresMaterias = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.NombresMaterias));
-            var docentesPorMateria = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DocentesPorMateria));
+            var aniosMatricula = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.AniosMatricula, jsonSeguro));
+            var matriculaPorAnio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MatriculaPorAnio, jsonSeguro));
+            var nombresSecciones = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.NombresSecciones, jsonSeguro));
+            var estudiantesPorSeccion = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.EstudiantesPorSeccion, jsonSeguro));
+            var nombresMaterias = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.NombresMaterias, jsonSeguro));
+            var docentesPorMateria = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DocentesPorMateria, jsonSeguro));
 
             // Gráfica de barras: Matrícula histórica por año
             // (la matrícula es un proceso anual en el sistema educativo público de Costa Rica,

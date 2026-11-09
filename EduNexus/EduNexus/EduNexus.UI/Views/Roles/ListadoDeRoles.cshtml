@@ -8,19 +8,9 @@
 <div class="row align-items-center mb-3">
     <div class="col">
         <h1 class="mb-0">Roles</h1>
-        <p class="text-secondary mb-0">Administra los roles y sus niveles de acceso al sistema.</p>
-    </div>
-    <div class="col-auto">
-        @Html.ActionLink("+ Nuevo rol", "CrearRol", null, new { @class = "btn btn-primary" })
+        <p class="text-secondary mb-0">Roles precargados del sistema y sus permisos de acceso. Los permisos de cada rol son fijos.</p>
     </div>
 </div>
-
-@if (TempData["MensajeExito"] != null)
-{
-    <div class="alert alert-success" role="alert">
-        @TempData["MensajeExito"]
-    </div>
-}
 
 <div class="card shadow-sm">
     <div class="card-header d-flex align-items-center justify-content-between">
@@ -33,10 +23,7 @@
         <div class="card-body">
             <div class="empty">
                 <p class="empty-title">No hay roles registrados</p>
-                <p class="empty-subtitle text-secondary">Cuando agregues un rol aparecerá en este listado.</p>
-                <div class="empty-action">
-                    @Html.ActionLink("+ Nuevo rol", "CrearRol", null, new { @class = "btn btn-primary" })
-                </div>
+                <p class="empty-subtitle text-secondary">Los roles se precargan en la base de datos.</p>
             </div>
         </div>
     }
@@ -47,6 +34,7 @@
                 <thead>
                     <tr>
                         <th>@Html.DisplayNameFor(model => model.nombre)</th>
+                        <th>Permisos</th>
                         <th>@Html.DisplayNameFor(model => model.cantidadUsuarios)</th>
                     </tr>
                 </thead>
@@ -55,6 +43,7 @@
                     {
                         <tr>
                             <td class="fw-medium">@item.nombre</td>
+                            <td class="text-secondary">@EduNexus.UI.Models.RolesSistema.DescripcionPermisos(item.nombre)</td>
                             <td><span class="badge bg-blue-lt">@item.cantidadUsuarios</span></td>
                         </tr>
                     }
@@ -63,3 +52,7 @@
         </div>
     }
 </div>
+
+@section scripts {
+    <script src="~/Scripts/General/General.js"></script>
+}

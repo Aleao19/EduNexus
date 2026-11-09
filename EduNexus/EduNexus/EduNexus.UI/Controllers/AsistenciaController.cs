@@ -4,6 +4,7 @@ using EduNexus.UI.Models;
 using EduNexus.UI.Models.Identity;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Web.Mvc;
 
@@ -20,13 +21,15 @@ namespace EduNexus.UI.Controllers
             public int id_materia { get; set; }
             public string valor { get; set; }
             public string texto { get; set; }
+            public DateTime? inicio_periodo { get; set; }
+            public DateTime? fin_periodo { get; set; }
         }
 
         // Solo el rol Docente puede registrar asistencia
         protected override void OnActionExecuting(ActionExecutingContext filterContext)
         {
             var usuario = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
-            if (usuario == null || !string.Equals(usuario.nombreRol, "Docente", StringComparison.OrdinalIgnoreCase))
+            if (!RolesSistema.Es(usuario, RolesSistema.Docente))
             {
                 TempData["MensajeError"] = "Esta funcionalidad es exclusiva de los docentes.";
                 filterContext.Result = RedirectToAction("Index", "Home");
@@ -161,12 +164,6 @@ namespace EduNexus.UI.Controllers
                     return false;
                 }
 
-                if (modelo.fecha.Value > DateTime.Today)
-                {
-                    ModelState.AddModelError("", "No se puede registrar asistencia de una fecha futura.");
-                    return false;
-                }
-
                 if (!modelo.estudiantes.Any())
                 {
                     ModelState.AddModelError("", "La sección no tiene estudiantes asignados.");
@@ -203,6 +200,18 @@ namespace EduNexus.UI.Controllers
                     .Where(a => a.fk_id_seccion == idSeccion && a.fk_id_materia == idMateria && a.fecha == fecha)
                     .ToList();
 
+                Dictionary<string, AsistenciaEstudianteDto> porEstudiante = modelo.estudiantes
+                    .ToDictionary(e => e.id_usuario, e => e);
+
+                // Bitácora: resumen por estudiante antes y después del cambio
+                var antes = existentes.Any()
+                    ? existentes.OrderBy(x => x.fk_id_usuario).Select(x => new
+                    {
+                        estudiante = porEstudiante.ContainsKey(x.fk_id_usuario) ? porEstudiante[x.fk_id_usuario].identificacion : x.fk_id_usuario,
+                        x.estado
+                    }).ToList()
+                    : null;
+
                 foreach (AsistenciaEstudianteDto est in modelo.estudiantes)
                 {
                     AsistenciaEntity fila = existentes.FirstOrDefault(x => x.fk_id_usuario == est.id_usuario);
@@ -228,7 +237,33 @@ namespace EduNexus.UI.Controllers
                     }
                 }
 
-                db.SaveChanges();
+                bool esEdicion = existentes.Any();
+
+                Auditoria.Registrar(
+                    db,
+                    esEdicion ? "Editar asistencia" : "Registrar asistencia",
+                    (esEdicion ? "Se modificó" : "Se registró") + " la asistencia de " + modelo.titulo
+                        + " del " + fecha.ToString("dd/MM/yyyy") + " (" + modelo.estudiantes.Count + " estudiantes).",
+                    antes,
+                    modelo.estudiantes.OrderBy(e => e.id_usuario).Select(e => new
+                    {
+                        estudiante = e.identificacion ?? e.id_usuario,
+                        e.estado
+                    }).ToList());
+
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch (DbUpdateException ex)
+                {
+                    // Otro registro de la misma lista se guardó al mismo tiempo
+                    // (índice único fecha + sección + materia + estudiante).
+                    System.Diagnostics.Trace.TraceError("Error guardando asistencia: " + ex);
+                    ModelState.AddModelError("", "No se pudo guardar la asistencia porque ya existe un registro para alguno de los estudiantes en esta fecha. Recargue la lista e intente de nuevo.");
+                    return false;
+                }
+
                 return true;
             }
         }
@@ -278,6 +313,23 @@ namespace EduNexus.UI.Controllers
             }
 
             modelo.titulo = clase.texto;
+
+            // La fecha no puede ser futura y debe estar dentro del período lectivo de la sección
+            DateTime fechaLista = modelo.fecha.Value.Date;
+            if (fechaLista > DateTime.Today)
+            {
+                modelo.mensajeError = "No se puede registrar asistencia de una fecha futura.";
+                return;
+            }
+            if (clase.inicio_periodo.HasValue && clase.fin_periodo.HasValue &&
+                (fechaLista < clase.inicio_periodo.Value.Date || fechaLista > clase.fin_periodo.Value.Date))
+            {
+                modelo.mensajeError = "La fecha debe estar dentro del período lectivo de la sección ("
+                    + clase.inicio_periodo.Value.ToString("dd/MM/yyyy") + " al "
+                    + clase.fin_periodo.Value.ToString("dd/MM/yyyy") + ").";
+                return;
+            }
+
             int idSeccion = clase.id_seccion;
             int idMateria = clase.id_materia;
             DateTime fecha = modelo.fecha.Value.Date;
@@ -325,13 +377,19 @@ namespace EduNexus.UI.Controllers
         {
             DateTime hoy = DateTime.Today;
 
-            List<int> idsCalendario = db.Calendarios
+            Dictionary<int, CalendarioEntity> calendarios = db.Calendarios
                 .Where(c => c.fecha_inicio <= hoy && c.fecha_fin >= hoy)
-                .Select(c => c.id_calendario).ToList();
+                .ToList()
+                .ToDictionary(c => c.id_calendario, c => c);
 
-            List<int> idsSecciones = db.Secciones
+            List<int> idsCalendario = calendarios.Keys.ToList();
+
+            Dictionary<int, int> calendarioDeSeccion = db.Secciones
                 .Where(s => idsCalendario.Contains(s.fk_id_calendario))
-                .Select(s => s.id_seccion).ToList();
+                .ToList()
+                .ToDictionary(s => s.id_seccion, s => s.fk_id_calendario);
+
+            List<int> idsSecciones = calendarioDeSeccion.Keys.ToList();
 
             // Solo las clases donde él es el docente de esa sección
             List<SeccionMateriaEntity> asignadas = db.SeccionesMaterias
@@ -351,7 +409,9 @@ namespace EduNexus.UI.Controllers
                 id_materia = sm.fk_id_materia,
                 valor = sm.fk_id_seccion + "-" + sm.fk_id_materia,
                 texto = (etiquetas.ContainsKey(sm.fk_id_seccion) ? etiquetas[sm.fk_id_seccion] : "Sección")
-                        + " - " + nombresMaterias[sm.fk_id_materia]
+                        + " - " + (nombresMaterias.ContainsKey(sm.fk_id_materia) ? nombresMaterias[sm.fk_id_materia] : "Materia"),
+                inicio_periodo = calendarios[calendarioDeSeccion[sm.fk_id_seccion]].fecha_inicio,
+                fin_periodo = calendarios[calendarioDeSeccion[sm.fk_id_seccion]].fecha_fin
             })
             .OrderBy(c => c.texto)
             .ToList();

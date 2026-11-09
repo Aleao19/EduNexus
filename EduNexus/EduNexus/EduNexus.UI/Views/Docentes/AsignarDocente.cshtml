@@ -33,6 +33,7 @@
 {
     @Html.AntiForgeryToken()
     @Html.HiddenFor(model => model.id_docente)
+    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
 
     <!-- Contenedor principal -->
     <div class="row">
@@ -90,14 +91,14 @@
                         <div class="d-flex align-items-center mb-3">
                             <span class="badge badge-lg bg-blue rounded-circle fw-bold me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">3</span>
                             <div>
-                                <h6 class="mb-1">Revisa los horarios disponibles</h6>
-                                <p class="text-secondary small mb-0">Verifica que no haya conflictos de horarios</p>
+                                <h6 class="mb-1">Revisa el horario de la clase</h6>
+                                <p class="text-secondary small mb-0">Al asignar se verifica que el docente no tenga choques con estos bloques</p>
                             </div>
                         </div>
 
                         <!-- Estado inicial -->
                         <div id="hdInicio" class="alert alert-info">
-                            <span>Selecciona materia y sección para ver los horarios disponibles</span>
+                            <span>Selecciona materia y sección para ver el horario registrado de esa clase</span>
                         </div>
 
                         <!-- Tabla de horarios -->
@@ -116,10 +117,10 @@
                                     {
                                         <tr class="hd-fila" data-materia="@h.materia" data-seccion="@h.seccion" style="display:none;">
                                             <td class="text-nowrap">
-                                                <span class="badge bg-light-primary">@h.dia_semana.Substring(0, 3).ToUpper()</span>
+                                                <span class="badge bg-light-primary">@h.dia_semana</span>
                                             </td>
                                             <td class="text-nowrap">
-                                                <strong>@h.hora_inicio.ToString("HH:mm")</strong> - <small>@h.hora_fin.ToString("HH:mm")</small>
+                                                <strong>@EduNexus.UI.Models.HorarioServicio.Hora(h.hora_inicio)</strong> - <small>@EduNexus.UI.Models.HorarioServicio.Hora(h.hora_fin)</small>
                                             </td>
                                             <td>@nombre(nombresMaterias, h.materia)</td>
                                             <td>@nombre(nombresSecciones, h.seccion)</td>
@@ -132,10 +133,9 @@
                         <!-- Sin horarios disponibles -->
                         <div id="hdVacio" style="display:none;">
                             <div class="alert alert-warning">
-                                <strong>⚠️ Atención:</strong> No hay horarios disponibles para esta materia y sección.
-                                <a href="@Url.Action("CrearHorario", "Horarios")" class="alert-link ms-2">
-                                    Crea un nuevo horario →
-                                </a>
+                                <strong>Atención:</strong> Esta materia aún no tiene horario en la sección seleccionada.
+                                Después de asignarla podrá registrarlo en
+                                <a href="@Url.Action("ListadoDeHorarios", "Horarios")" class="alert-link">Horarios</a>.
                             </div>
                         </div>
                     </div>

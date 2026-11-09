@@ -14,21 +14,6 @@
     </div>
 </div>
 
-@if (TempData["Mensaje"] != null)
-{
-    <div class="alert alert-success alert-dismissible" role="alert">
-        @TempData["Mensaje"]
-        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-    </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible" role="alert">
-        @TempData["Error"]
-        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-    </div>
-}
-
 @if (ViewBag.SinRolEstudiante == true)
 {
     <div class="alert alert-warning">No existe el rol "Estudiante". Créelo en Roles y asígnelo a los usuarios estudiantes.</div>

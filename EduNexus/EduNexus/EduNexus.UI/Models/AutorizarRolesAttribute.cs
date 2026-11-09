@@ -29,8 +29,8 @@ namespace EduNexus.UI.Models
                 return;
             }
 
-            bool permitido = _roles.Any(r =>
-                string.Equals(usuario.nombreRol, r, StringComparison.OrdinalIgnoreCase));
+            // Se compara con RolesSistema (sin importar tildes ni mayúsculas).
+            bool permitido = RolesSistema.Es(usuario, _roles);
 
             if (!permitido)
             {

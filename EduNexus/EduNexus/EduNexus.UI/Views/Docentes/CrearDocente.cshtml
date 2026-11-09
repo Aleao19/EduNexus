@@ -16,6 +16,7 @@
         @using (Html.BeginForm("Create", "Docentes", FormMethod.Post, new { @class = "needs-validation", novalidate = "novalidate" }))
         {
             @Html.AntiForgeryToken()
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
 
             <div class="row">
                 <div class="col-lg-6">
@@ -58,15 +59,26 @@
                 <div class="col-lg-6">
                     <div class="mb-3">
                         @Html.LabelFor(model => model.email, new { @class = "form-label" })
-                        @Html.TextBoxFor(model => model.email, new { @class = "form-control", type = "email", placeholder = "email@example.com", required = "required" })
+                        @Html.TextBoxFor(model => model.email, new { @class = "form-control", type = "email", placeholder = "usuario@mep.go.cr", required = "required" })
                         @Html.ValidationMessageFor(model => model.email, "", new { @class = "text-danger" })
                     </div>
                 </div>
                 <div class="col-lg-6">
                     <div class="mb-3">
                         @Html.LabelFor(model => model.telefono, new { @class = "form-label" })
-                        @Html.TextBoxFor(model => model.telefono, new { @class = "form-control", type = "tel", placeholder = "+1 234 567 8900" })
+                        @Html.TextBoxFor(model => model.telefono, new { @class = "form-control", type = "tel", placeholder = "8888-8888" })
                         @Html.ValidationMessageFor(model => model.telefono, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.contrasenna_temporal, new { @class = "form-label" })
+                        @Html.PasswordFor(model => model.contrasenna_temporal, new { @class = "form-control", required = "required", minlength = "8", autocomplete = "new-password" })
+                        <small class="form-hint">Mínimo 8 caracteres. El docente la usará para su primer ingreso.</small>
+                        @Html.ValidationMessageFor(model => model.contrasenna_temporal, "", new { @class = "text-danger" })
                     </div>
                 </div>
             </div>

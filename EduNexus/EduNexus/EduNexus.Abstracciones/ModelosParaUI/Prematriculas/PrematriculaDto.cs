@@ -94,8 +94,8 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Prematriculas
 
         // DIRECCIÓN
         [StringLength(
-            500,
-            ErrorMessage = "La dirección no puede superar los 500 caracteres.")]
+            256,
+            ErrorMessage = "La dirección no puede superar los 256 caracteres.")]
         [DisplayName("Dirección")]
         public string direccion { get; set; }
 

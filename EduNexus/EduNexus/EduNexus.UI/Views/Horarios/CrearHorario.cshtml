@@ -2,6 +2,12 @@
 @{
     ViewBag.Title = "Crear horario";
     var materias = (System.Collections.Generic.IEnumerable<System.Web.Mvc.SelectListItem>)ViewBag.Materias;
+
+    // Si la validación falla se conserva el bloque elegido (día y horas) para no perder la selección
+    bool tieneBloque = !string.IsNullOrEmpty(Model.dia_semana) && Model.hora_fin > Model.hora_inicio;
+    string diaPrevio = tieneBloque ? Model.dia_semana : "";
+    string inicioPrevio = tieneBloque ? EduNexus.UI.Models.HorarioServicio.Hora(Model.hora_inicio) : "";
+    string finPrevio = tieneBloque ? EduNexus.UI.Models.HorarioServicio.Hora(Model.hora_fin) : "";
 }
 
 
@@ -15,9 +21,9 @@
     {
         @Html.AntiForgeryToken()
         @Html.HiddenFor(m => m.seccion)
-        <input type="hidden" name="dia_semana" id="dia_semana" />
-        <input type="hidden" name="hora_inicio" id="hora_inicio" />
-        <input type="hidden" name="hora_fin" id="hora_fin" />
+        <input type="hidden" name="dia_semana" id="dia_semana" value="@diaPrevio" />
+        <input type="hidden" name="hora_inicio" id="hora_inicio" value="@inicioPrevio" />
+        <input type="hidden" name="hora_fin" id="hora_fin" value="@finPrevio" />
 
         <div class="hz-card">
             <h5><span class="hz-step">1</span>Elija la materia</h5>
@@ -35,7 +41,7 @@
             <p class="text-muted mb-2" style="font-size:.85rem">
                 Primer clic: hora de inicio. Segundo clic en el mismo día: hora de fin. Un tercer clic reinicia la selección.
             </p>
-            <div class="hz-scroll"><div class="hz-grid" id="grid"></div></div>
+            <div class="hz-scroll"><div class="hz-grid" id="grid" data-dia="@diaPrevio" data-inicio="@inicioPrevio" data-fin="@finPrevio"></div></div>
         </div>
 
         <div class="hz-card">

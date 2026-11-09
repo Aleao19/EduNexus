@@ -17,13 +17,6 @@
     </div>
 </div>
 
-@if (TempData["MensajeExito"] != null)
-{
-    <div class="alert alert-success" role="alert">
-        @TempData["MensajeExito"]
-    </div>
-}
-
 <div class="row row-cards g-3 mb-3">
     <div class="col-sm-4">
         <div class="card card-sm shadow-sm">
@@ -86,7 +79,8 @@
                 <tbody>
                     @foreach (var item in Model)
                     {
-                        string inicial = (item.nombre ?? "?").Substring(0, 1).ToUpper();
+                        string inicial = string.IsNullOrWhiteSpace(item.nombre) ? "?" : item.nombre.Trim().Substring(0, 1).ToUpper();
+                        string nombreJs = System.Web.HttpUtility.JavaScriptStringEncode((item.nombre + " " + item.apellido1).Trim());
                         bool estaActivo = item.estado == "Activo";
                         string estadoBadge = estaActivo ? "green" : "red";
                         <tr>
@@ -109,7 +103,7 @@
                                     {
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                onclick="return confirm('¿Bloquear/desactivar a @item.nombre @item.apellido1?');">
+                                                onclick="return confirm('¿Bloquear/desactivar a @(nombreJs)?');">
                                             Bloquear
                                         </button>
                                     }
@@ -120,7 +114,7 @@
                                     {
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="btn btn-sm btn-outline-success"
-                                                onclick="return confirm('¿Reactivar a @item.nombre @item.apellido1?');">
+                                                onclick="return confirm('¿Reactivar a @(nombreJs)?');">
                                             Reactivar
                                         </button>
                                     }
@@ -133,3 +127,7 @@
         </div>
     }
 </div>
+
+@section scripts {
+    <script src="~/Scripts/General/General.js"></script>
+}
