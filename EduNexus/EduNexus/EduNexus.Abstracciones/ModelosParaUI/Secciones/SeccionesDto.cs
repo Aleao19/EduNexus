@@ -41,5 +41,21 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Secciones
         public DateTime? fecha_modificacion { get; set; }
         [DisplayName("Modificado por")]
         public string usuario_modificacion { get; set; }
+
+    }
+
+    public class EstudianteSeccionVm
+    {
+        public string id_usuario { get; set; }
+        public string nombreCompleto { get; set; }
+        public string identificacion { get; set; }
+        public DateTime fecha_asignacion { get; set; }
+    }
+
+    public class SeccionDestinoVm
+    {
+        public int id_seccion { get; set; }
+        public string texto { get; set; }
+        public int disponibles { get; set; }
     }
 }

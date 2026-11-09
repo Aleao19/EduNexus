@@ -23,14 +23,17 @@
         <h1 class="mb-0">Horarios</h1>
         <p class="text-secondary mb-0">Busque o filtre los horarios por sección y por docente.</p>
     </div>
-    @if (Model.id_seccion.HasValue)
-    {
-        <div class="col-auto">
+    <div class="col-auto">
+        @if (Model.id_seccion.HasValue)
+        {
             @Html.ActionLink("Ver semana", "VisualizarHorario", new { id = Model.id_seccion }, new { @class = "btn btn-outline-secondary me-1" })
             @Html.ActionLink("Asignar estudiantes", "HorarioParaAsignacion", new { id = Model.id_seccion }, new { @class = "btn btn-outline-secondary me-1" })
-            @Html.ActionLink("+ Nuevo horario", "CrearHorario", new { id = Model.id_seccion }, new { @class = "btn btn-primary" })
-        </div>
-    }
+        }
+        <a id="btnNuevoHorario"
+           href="@Url.Action("CrearHorario", new { id = Model.id_seccion })"
+           data-base="@Url.Content("~/Horarios/CrearHorario")"
+           class="btn btn-primary">+ Nuevo horario</a>
+    </div>
 </div>
 
 <form method="get" action="@Url.Content("~/Horarios/ListadoDeHorarios")" class="row g-2 align-items-end mb-3">

@@ -142,6 +142,96 @@ namespace EduNexus.UI.Controllers
             TempData["Mensaje"] = "El estudiante se asignó correctamente a la sección.";
             return RedirectToAction("AsignarEstudiantes", new { id = id });
         }
+        // POST: Secciones/MoverEstudiante
+        [PermitirCoordinador]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult MoverEstudiante(int id, string idUsuario, int? idSeccionDestino)
+        {
+            if (!idSeccionDestino.HasValue)
+            {
+                TempData["Error"] = "Seleccione la sección destino.";
+                return RedirectToAction("AsignarEstudiantes", new { id = id });
+            }
+
+            using (var db = new EduNexusDbContext())
+            {
+                var origen = db.Secciones.FirstOrDefault(s => s.id_seccion == id);
+                var destino = db.Secciones.FirstOrDefault(s => s.id_seccion == idSeccionDestino.Value);
+
+                if (origen == null || destino == null)
+                {
+                    return HttpNotFound();
+                }
+
+                if (destino.id_seccion == origen.id_seccion)
+                {
+                    TempData["Error"] = "El estudiante ya está en esa sección.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                if (destino.fk_id_grado != origen.fk_id_grado || destino.fk_id_calendario != origen.fk_id_calendario)
+                {
+                    TempData["Error"] = "Solo se puede mover al estudiante a una sección del mismo grado y año lectivo.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                var asignacion = db.SeccionesEstudiantes.FirstOrDefault(e =>
+                    e.fk_id_seccion == id && e.fk_id_usuario == idUsuario);
+
+                if (asignacion == null)
+                {
+                    TempData["Error"] = "El estudiante no está asignado a esta sección.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                if (db.SeccionesEstudiantes.Any(e => e.fk_id_seccion == destino.id_seccion && e.fk_id_usuario == idUsuario))
+                {
+                    TempData["Error"] = "El estudiante ya está asignado a la sección destino.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                if (!db.Horarios.Any(h => h.fk_seccion == destino.id_seccion))
+                {
+                    TempData["Error"] = "La sección destino no tiene horario configurado.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                if (db.SeccionesEstudiantes.Count(e => e.fk_id_seccion == destino.id_seccion) >= destino.cupo)
+                {
+                    TempData["Error"] = "La sección destino ya alcanzó su cupo máximo.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                var etiquetas = HorarioServicio.EtiquetasDeSecciones(db);
+                string etiquetaOrigen = etiquetas.ContainsKey(origen.id_seccion) ? etiquetas[origen.id_seccion] : origen.nombre;
+                string etiquetaDestino = etiquetas.ContainsKey(destino.id_seccion) ? etiquetas[destino.id_seccion] : destino.nombre;
+
+                // Se reutiliza el mismo registro: solo cambia la sección y la fecha de asignación
+                asignacion.fk_id_seccion = destino.id_seccion;
+                asignacion.fecha_asignacion = DateTime.Now;
+
+                var usuario = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
+                if (usuario != null)
+                {
+                    db.Bitacora.Add(new BitacoraEntity
+                    {
+                        tipo_de_evento = "Cambio de sección de estudiante",
+                        descripcion_evento = "Estudiante " + idUsuario + " movido a " + etiquetaDestino,
+                        fecha = DateTime.Now,
+                        datos_anteriores = JsonConvert.SerializeObject(new { id_seccion = origen.id_seccion, seccion = etiquetaOrigen }),
+                        datos_posteriores = JsonConvert.SerializeObject(new { id_seccion = destino.id_seccion, seccion = etiquetaDestino }),
+                        fk_id_usuario = usuario.id_usuario
+                    });
+                }
+
+                db.SaveChanges();
+
+                TempData["Mensaje"] = "El estudiante se movió a " + etiquetaDestino + ".";
+            }
+
+            return RedirectToAction("AsignarEstudiantes", new { id = id });
+        }
 
         private void CargarDatosAsignacion(EduNexusDbContext db, int idSeccion)
         {
@@ -180,14 +270,30 @@ namespace EduNexus.UI.Controllers
                 join u in db.Usuarios on e.fk_id_usuario equals u.id_usuario
                 where e.fk_id_seccion == idSeccion
                 orderby u.nombre, u.apellido1
-                select new EstudianteAsignadoDto
+                select new EstudianteSeccionVm
                 {
+                    id_usuario = u.id_usuario,
                     nombreCompleto = ((u.nombre ?? "") + " " +
                                       (u.apellido1 ?? "") + " " +
                                       (u.apellido2 ?? "")).Trim(),
                     identificacion = u.identificacion,
                     fecha_asignacion = e.fecha_asignacion
                 }).ToList();
+
+            var seccionActual = db.Secciones.FirstOrDefault(s => s.id_seccion == idSeccion);
+
+            // Secciones a las que se puede mover un estudiante: mismo grado y mismo año lectivo.
+            // Para permitir cualquier sección, quita la condición del .Where.
+            ViewBag.SeccionesDestino = seccionActual == null
+                ? new List<SeccionDestinoVm>()
+                : ObtenerSecciones(db, seccionActual.fk_id_grado, null, null)
+                    .Where(s => s.id_seccion != idSeccion && s.id_calendario == seccionActual.fk_id_calendario)
+                    .Select(s => new SeccionDestinoVm
+                    {
+                        id_seccion = s.id_seccion,
+                        texto = s.nombre_grado + " - " + s.nombre,
+                        disponibles = Math.Max(0, s.cupo - s.estudiantes_matriculados)
+                    }).ToList();
 
             var seccion = db.Secciones.FirstOrDefault(s => s.id_seccion == idSeccion);
 

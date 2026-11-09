@@ -1,8 +1,9 @@
-﻿@model EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionesDto
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionDestinoVm
 
 @{
     ViewBag.Title = "Asignar estudiantes";
-    var estudiantesAsignados = ViewBag.EstudiantesAsignados;
+    var estudiantesAsignados = (List<EduNexus.UI.Controllers.EstudianteSeccionVm>)ViewBag.EstudiantesAsignados;
+    var destinos = (List<EduNexus.UI.Controllers.SeccionDestinoVm>)ViewBag.SeccionesDestino?? new List<EduNexus.UI.Controllers.SeccionDestinoVm>();
     int cantidadAsignada = ViewBag.CantidadAsignada ?? 0;
     int cupoMaximo = ViewBag.CupoMaximo ?? 0;
     int cuposDisponibles = cupoMaximo - cantidadAsignada;

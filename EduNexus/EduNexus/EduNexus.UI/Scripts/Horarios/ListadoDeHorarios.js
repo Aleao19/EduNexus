@@ -99,4 +99,17 @@
     entrada.addEventListener('blur', function () {
         setTimeout(ocultar, 150);
     });
+    })();
+    (function () {
+        var boton = document.getElementById('btnNuevoHorario');
+        var combo = document.getElementById('id');
+        if (!boton || !combo) { return; }
+
+        function actualizar() {
+            var base = boton.getAttribute('data-base');
+            boton.href = combo.value ? base + '/' + encodeURIComponent(combo.value) : base;
+        }
+
+        combo.addEventListener('change', actualizar);
+        actualizar();
 })();
