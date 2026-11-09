@@ -32,7 +32,7 @@ namespace EduNexus.UI.Controllers
                     .Where(m => idsMaterias.Contains(m.id_materia)).ToList()
                     .ToDictionary(m => m.id_materia);
 
-                List<string> idsProfesores = materias.Values.Select(m => m.profesor).Distinct().ToList();
+                List<string> idsProfesores = asignaciones.Select(a => a.fk_id_profesor).Distinct().ToList();
                 Dictionary<string, UsuarioEntity> profesores = db.Usuarios
                     .Where(u => idsProfesores.Contains(u.id_usuario)).ToList()
                     .ToDictionary(u => u.id_usuario);
@@ -41,7 +41,7 @@ namespace EduNexus.UI.Controllers
                 {
                     MateriaEntity materia = materias[a.fk_id_materia];
                     UsuarioEntity profesor;
-                    profesores.TryGetValue(materia.profesor, out profesor);
+                    profesores.TryGetValue(a.fk_id_profesor, out profesor);
                     string etiqueta;
                     etiquetas.TryGetValue(a.fk_id_seccion, out etiqueta);
 
@@ -104,6 +104,13 @@ namespace EduNexus.UI.Controllers
                     ModelState.AddModelError("id_materia", "La materia seleccionada no está registrada en el sistema.");
                     return View(modelo);
                 }
+                UsuarioEntity docente = HorarioServicio.ObtenerDocentes(db)
+                    .FirstOrDefault(u => u.id_usuario == modelo.id_docente);
+                if (docente == null)
+                {
+                    ModelState.AddModelError("id_docente", "El docente debe estar registrado en el sistema.");
+                    return View(modelo);
+                }
 
                 // Escenario 2: la materia ya está asignada a esa sección
                 if (db.SeccionesMaterias.Any(x => x.fk_id_seccion == idSeccion && x.fk_id_materia == idMateria))
@@ -117,7 +124,8 @@ namespace EduNexus.UI.Controllers
                 {
                     fk_id_seccion = idSeccion,
                     fk_id_materia = idMateria,
-                    fecha_asignacion = DateTime.Now
+                    fecha_asignacion = DateTime.Now,
+                    fk_id_profesor = docente.id_usuario
                 });
                 db.SaveChanges();
 
@@ -166,6 +174,10 @@ namespace EduNexus.UI.Controllers
                 .ToList();
 
             ViewBag.EtiquetasSecciones = EtiquetasDeSecciones(db).Values.OrderBy(x => x).ToList();
+            ViewBag.Docentes = new SelectList(
+                HorarioServicio.ObtenerDocentes(db)
+                    .Select(u => new { u.id_usuario, nombre = HorarioServicio.NombreCompleto(u) }).ToList(),
+                "id_usuario", "nombre");
         }
 
         // Etiqueta de cada seccion ejemplo "Tercer Grado - 3-A (2026)"

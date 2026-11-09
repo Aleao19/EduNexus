@@ -27,5 +27,8 @@ public class AsignarMateriaDto
     [Required(ErrorMessage = "La sección es obligatoria")]
     [DisplayName("Sección")]
     public string seccion { get; set; }
-}
+    [Required(ErrorMessage = "Debe seleccionar un docente")]
+    [DisplayName("Docente")]
+    public string id_docente { get; set; }
+    }
 }

@@ -21,7 +21,8 @@
                     <div class="form-group mt-3">
                         <label class="control-label col-md-2">Sección</label>
                         <div class="col-md-10">
-                            @Html.DropDownListFor(model => model.seccion, (SelectList)ViewBag.Secciones, new { @class = "form-select" })
+                            @Html.HiddenFor(model => model.seccion)
+                            <input type="text" class="form-control" value="@ViewBag.NombreSeccion" readonly />
                         </div>
                     </div>
 

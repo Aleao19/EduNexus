@@ -16,6 +16,7 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Horarios
         public string profesor { get; set; }
         public int id_seccion { get; set; }
         public string seccion { get; set; }
+        public string id_profesor { get; set; }
     }
 
     // Consulta, visualización y "Mi horario"

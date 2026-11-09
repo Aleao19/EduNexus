@@ -1,0 +1,134 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Asistencia.AsistenciaFormDto
+
+@{
+    string[] estados = EduNexus.Abstracciones.ModelosParaUI.Asistencia.AsistenciaFormDto.Estados;
+    string[] colores = { "success", "warning", "danger", "info" };
+    string fechaTexto = Model.fecha.HasValue ? Model.fecha.Value.ToString("yyyy-MM-dd") : "";
+    bool soloLectura = Model.yaRegistrado && !Model.esEdicion;
+}
+
+@if (!string.IsNullOrEmpty(Model.mensajeError))
+{
+    <div class="alert alert-danger">@Model.mensajeError</div>
+}
+else if (!string.IsNullOrEmpty(Model.titulo))
+{
+    if (!string.IsNullOrEmpty(Model.mensajeExito))
+    {
+        <div class="alert alert-success">@Model.mensajeExito</div>
+    }
+
+    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+    if (!Model.estudiantes.Any())
+    {
+        <div class="alert alert-info">La sección no tiene estudiantes asignados.</div>
+    }
+    else if (soloLectura)
+    {
+        @* Escenario 3: la fecha ya tiene lista. Se muestra lo guardado y la opción de editar *@
+        <div class="alert alert-warning d-flex align-items-center">
+            <span>Ya existe una lista de asistencia para el @Model.fecha.Value.ToString("dd/MM/yyyy").</span>
+            <a href="@Model.urlEditar" class="btn btn-primary btn-sm ms-auto asist-ajax">Editar lista de este día</a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header"><h3 class="card-title mb-0">@Model.titulo - @Model.fecha.Value.ToString("dd/MM/yyyy")</h3></div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>Estudiante</th>
+                            <th>Estado guardado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var est in Model.estudiantes)
+                        {
+                            int posicion = Array.IndexOf(estados, est.estado);
+                            string color = posicion >= 0 ? colores[posicion] : "secondary";
+                            <tr>
+                                <td>@est.nombre</td>
+                                <td><span class="@("badge bg-" + color + "-lt")">@est.estado</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <form method="post" action="@Model.urlGuardar" class="@("asist-lista" + (Model.modoAjax ? " asist-ajax" : ""))">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="clase" value="@Model.clase" />
+            <input type="hidden" name="fecha" value="@fechaTexto" />
+            <input type="hidden" name="esEdicion" value="@Model.esEdicion.ToString().ToLower()" />
+
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h3 class="card-title mb-0">
+                        @Model.titulo - @Model.fecha.Value.ToString("dd/MM/yyyy")
+                        @if (Model.esEdicion)
+                        {
+                            <span class="badge bg-azure-lt ms-2">Editando</span>
+                        }
+                    </h3>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="small text-secondary">
+                            Presentes: <span id="contPresentes" class="fw-bold text-success">0</span> ·
+                            Tardías: <span id="contTardias" class="fw-bold text-warning">0</span> ·
+                            Ausencias: <span id="contAusentes" class="fw-bold text-danger">0</span> ·
+                            Sin marcar: <span id="contSinMarcar" class="fw-bold">0</span>
+                        </div>
+                        <button type="button" class="btn btn-outline-success btn-sm" id="btnTodosPresentes">Marcar todos presentes</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th class="w-1">#</th>
+                                <th>Estudiante</th>
+                                <th>Estado de asistencia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.estudiantes.Count; i++)
+                            {
+                                var est = Model.estudiantes[i];
+                                <tr class="@(est.sinMarcar ? "table-danger" : "")">
+                                    <td>@(i + 1)</td>
+                                    <td>
+                                        @est.nombre
+                                        <input type="hidden" name="estudiantes[@i].id_usuario" value="@est.id_usuario" />
+                                    </td>
+                                    <td>
+                                        <div class="btn-group asistencia-grupo" role="group">
+                                            @for (int k = 0; k < estados.Length; k++)
+                                            {
+                                                string idRadio = "est_" + i + "_" + k;
+                                                <input type="radio" class="btn-check" name="estudiantes[@i].estado" id="@idRadio"
+                                                       value="@estados[k]" autocomplete="off" @(est.estado == estados[k] ? "checked" : "") />
+                                                <label class="@("btn btn-sm btn-outline-" + colores[k])" for="@idRadio">@estados[k]</label>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-footer">
+                    <input type="submit" value="Guardar asistencia" class="btn btn-cyan" />
+                    @if (Model.esEdicion)
+                    {
+                        <a href="@Model.urlCancelar" class="@("btn btn-outline-secondary ms-1" + (Model.modoAjax ? " asist-ajax" : ""))">Cancelar</a>
+                    }
+                </div>
+            </div>
+        </form>
+    }
+}

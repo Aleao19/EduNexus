@@ -1,6 +1,8 @@
 ﻿using EduNexus.Abstracciones.ModelosParaUI.Asignaciones;
 using EduNexus.Abstracciones.ModelosParaUI.Materias;
-using EduNexus.Abstracciones.ModelosParaUI.Secciones;
+using EduNexus.Abstracciones.ModelosParaUI.Usuarios;
+using EduNexus.UI.Models;
+using EduNexus.UI.Models.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,43 +16,83 @@ namespace EduNexus.UI.Controllers
         // GET: AulaVirtual
         public ActionResult AulaVirtual()
         {
-            List<MateriasDto> materia = new List<MateriasDto>()
+            var usuario = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
+
+            using (var db = new EduNexusDbContext())
             {
-                new MateriasDto
-                {
-                    id_materia = 1,
-                    nombre = "Matemáticas",
-                    profesor = "Ana Maria"
-                },
-                new MateriasDto
-                {
-                    id_materia = 2,
-                    nombre = "Español",
-                    profesor = "Juan Carlos"
-                },
-                new MateriasDto
-                {
-                    id_materia = 3,
-                    nombre = "Ciencias",
-                    profesor = "María Fernanda"
-                },  
-                new MateriasDto
-                {
-                    id_materia = 4,
-                    nombre = "Estudios Sociales",
-                    profesor = "Carlos Eduardo"
-                },
-                new MateriasDto
-                {
-                    id_materia = 5,
-                    nombre = "Inglés",
-                    profesor = "Laura Sofía"
-                }
-            };
+                List<SeccionMateriaEntity> clases = ObtenerClasesVisibles(db, usuario);
 
-                       
+                Dictionary<int, string> secciones = HorarioServicio.EtiquetasDeSecciones(db);
 
-            return View(materia);
+                List<int> idsMaterias = clases.Select(c => c.fk_id_materia).Distinct().ToList();
+                Dictionary<int, MateriaEntity> materias = db.Materias
+                    .Where(m => idsMaterias.Contains(m.id_materia)).ToList()
+                    .ToDictionary(m => m.id_materia);
+
+                List<string> idsProfesores = clases.Select(c => c.fk_id_profesor).Distinct().ToList();
+                Dictionary<string, UsuarioEntity> profesores = db.Usuarios
+                    .Where(u => idsProfesores.Contains(u.id_usuario)).ToList()
+                    .ToDictionary(u => u.id_usuario);
+
+                List<MateriasDto> modelo = clases.Select(c =>
+                {
+                    MateriaEntity materia = materias[c.fk_id_materia];
+                    UsuarioEntity profesor;
+                    profesores.TryGetValue(c.fk_id_profesor, out profesor);
+                    string seccion;
+                    secciones.TryGetValue(c.fk_id_seccion, out seccion);
+
+                    return new MateriasDto
+                    {
+                        id_materia = materia.id_materia,
+                        nombre = materia.nombre,
+                        profesor = profesor != null ? HorarioServicio.NombreCompleto(profesor) : "",
+                        id_seccion = c.fk_id_seccion,
+                        seccion = seccion
+                    };
+                })
+                .OrderBy(x => x.nombre).ThenBy(x => x.seccion)
+                .ToList();
+
+                return View(modelo);
+            }
+        }
+
+        // Clases (materia + seccion) del periodo actual que el usuario puede ver
+        private static List<SeccionMateriaEntity> ObtenerClasesVisibles(EduNexusDbContext db, UsuarioDto usuario)
+        {
+            DateTime hoy = DateTime.Today;
+
+            List<int> idsCalendario = db.Calendarios
+                .Where(c => c.fecha_inicio <= hoy && c.fecha_fin >= hoy)
+                .Select(c => c.id_calendario).ToList();
+
+            List<int> idsSecciones = db.Secciones
+                .Where(s => idsCalendario.Contains(s.fk_id_calendario))
+                .Select(s => s.id_seccion).ToList();
+
+            IQueryable<SeccionMateriaEntity> consulta = db.SeccionesMaterias
+                .Where(sm => idsSecciones.Contains(sm.fk_id_seccion));
+
+            string rol = usuario != null ? usuario.nombreRol : "";
+            string idUsuario = usuario != null ? usuario.id_usuario : null;
+
+            if (string.Equals(rol, "Docente", StringComparison.OrdinalIgnoreCase))
+            {
+                // Solo las clases donde él es el docente de esa sección
+                consulta = consulta.Where(sm => sm.fk_id_profesor == idUsuario);
+            }
+            else if (string.Equals(rol, "Estudiante", StringComparison.OrdinalIgnoreCase))
+            {
+                // Solo las materias de su seccion
+                List<int> susSecciones = db.SeccionesEstudiantes
+                    .Where(se => se.fk_id_usuario == idUsuario)
+                    .Select(se => se.fk_id_seccion).ToList();
+
+                consulta = consulta.Where(sm => susSecciones.Contains(sm.fk_id_seccion));
+            }
+
+            return consulta.ToList();
         }
 
         // GET: AulaVirtual
@@ -58,10 +100,34 @@ namespace EduNexus.UI.Controllers
         {
             return View();
         }
-
-        // GET: AulaVirtual/Details/5
-        public ActionResult Materia(int? id)
+        // GET: AulaVirtual/Materia/5?seccion=2
+        public ActionResult Materia(int? id, int? seccion)
         {
+            var usuario = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
+
+            int? idSeccionClase = seccion;
+
+            using (var db = new EduNexusDbContext())
+            {
+                SeccionMateriaEntity clase = id.HasValue
+                    ? ObtenerClasesVisibles(db, usuario).FirstOrDefault(c =>
+                        c.fk_id_materia == id.Value && (!seccion.HasValue || c.fk_id_seccion == seccion.Value))
+                    : null;
+
+                if (clase == null)
+                {
+                    TempData["MensajeError"] = "No tiene acceso a esta materia.";
+                    return RedirectToAction("AulaVirtual");
+                }
+
+                idSeccionClase = clase.fk_id_seccion;
+            }
+
+            ViewBag.IdMateria = id;
+            ViewBag.IdSeccion = idSeccionClase;
+            ViewBag.EsDocente = usuario != null &&
+                string.Equals(usuario.nombreRol, "Docente", StringComparison.OrdinalIgnoreCase);
+
             List<AsignacionesDto> asignaciones = new List<AsignacionesDto>()
             {
                 new AsignacionesDto
@@ -102,10 +168,9 @@ namespace EduNexus.UI.Controllers
                 }
             };
             ViewBag.Estudiantes = ObtenerEstudiantes();
-            
+
             return View(asignaciones);
         }
-
 
         // POST: AulaVirtual/GuardarAsistencia
         [HttpPost]
@@ -117,11 +182,11 @@ namespace EduNexus.UI.Controllers
                 // collection["fecha"] trae la fecha general
                 // collection["asistencia_1"], collection["asistencia_2"], ... traen el estado de cada estudiante
 
-                return RedirectToAction("Materia");
+                return RedirectToAction("AulaVirtual");
             }
             catch
             {
-                return RedirectToAction("Materia");
+                return RedirectToAction("AulaVirtual");
             }
         }
 

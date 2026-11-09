@@ -73,6 +73,29 @@ namespace EduNexus.UI.Models
                      + (anios.ContainsKey(s.fk_id_calendario) ? " (" + anios[s.fk_id_calendario] + ")" : ""));
         }
 
+        // Docente de una clase (sección + materia)
+        public static string DocenteDeClase(EduNexusDbContext db, int idSeccion, int idMateria)
+        {
+            string idProfesor = db.SeccionesMaterias
+                .Where(sm => sm.fk_id_seccion == idSeccion && sm.fk_id_materia == idMateria)
+                .Select(sm => sm.fk_id_profesor).FirstOrDefault();
+
+            if (idProfesor != null)
+            {
+                return idProfesor;
+            }
+
+            // Si la materia no está asignada a la sección, se usa su profesor responsable
+            return db.Materias.Where(m => m.id_materia == idMateria)
+                .Select(m => m.profesor).FirstOrDefault();
+        }
+
+        // Clases (sección + materia) que da un docente
+        public static List<SeccionMateriaEntity> ClasesDelDocente(EduNexusDbContext db, string idDocente)
+        {
+            return db.SeccionesMaterias.Where(sm => sm.fk_id_profesor == idDocente).ToList();
+        }
+
         public static List<HorarioItemDto> ConstruirItems(EduNexusDbContext db, List<HorarioEntity> horarios)
         {
             Dictionary<int, string> secciones = EtiquetasDeSecciones(db);
@@ -82,7 +105,19 @@ namespace EduNexus.UI.Models
                 .Where(m => idsMaterias.Contains(m.id_materia)).ToList()
                 .ToDictionary(m => m.id_materia);
 
-            List<string> idsProfesores = materias.Values.Select(m => m.profesor).Distinct().ToList();
+            // Docente de cada clase (sección + materia)
+            List<int> idsSecciones = horarios.Select(h => h.fk_seccion).Distinct().ToList();
+            List<SeccionMateriaEntity> clases = db.SeccionesMaterias
+                .Where(sm => idsSecciones.Contains(sm.fk_id_seccion)).ToList();
+
+            Func<HorarioEntity, string> docenteDe = h =>
+            {
+                SeccionMateriaEntity clase = clases.FirstOrDefault(c =>
+                    c.fk_id_seccion == h.fk_seccion && c.fk_id_materia == h.fk_materia);
+                return clase != null ? clase.fk_id_profesor : materias[h.fk_materia].profesor;
+            };
+
+            List<string> idsProfesores = horarios.Select(docenteDe).Distinct().ToList();
             Dictionary<string, UsuarioEntity> profesores = db.Usuarios
                 .Where(u => idsProfesores.Contains(u.id_usuario)).ToList()
                 .ToDictionary(u => u.id_usuario);
@@ -90,8 +125,9 @@ namespace EduNexus.UI.Models
             return horarios.Select(h =>
             {
                 MateriaEntity materia = materias[h.fk_materia];
+                string idProfesor = docenteDe(h);
                 UsuarioEntity profesor;
-                profesores.TryGetValue(materia.profesor, out profesor);
+                profesores.TryGetValue(idProfesor, out profesor);
                 string seccion;
                 secciones.TryGetValue(h.fk_seccion, out seccion);
 
@@ -105,6 +141,7 @@ namespace EduNexus.UI.Models
                     fin = Hora(h.hora_fin),
                     id_materia = materia.id_materia,
                     materia = materia.nombre,
+                    id_profesor = idProfesor,
                     profesor = profesor != null ? NombreCompleto(profesor) : "",
                     id_seccion = h.fk_seccion,
                     seccion = seccion ?? ""
@@ -115,18 +152,12 @@ namespace EduNexus.UI.Models
             .ToList();
         }
 
-        // Devuelve el mensaje del conflicto encontrado, o null si no hay conflicto
-        // idExcluir = id del horario que se esta modificando (0 al registrar)
+        // Devuelve el mensaje del conflicto encontrado, o null si no hay conflicto.
+        // idExcluir = id del horario que se está modificando (0 al registrar).
         public static string BuscarConflicto(EduNexusDbContext db, int idSeccion, int idMateria,
             string dia, TimeSpan inicio, TimeSpan fin, int idExcluir)
         {
-            MateriaEntity materia = db.Materias.FirstOrDefault(m => m.id_materia == idMateria);
-            if (materia == null)
-            {
-                return null;
-            }
-
-            // Conflicto por seccion: la seccion ya tiene una materia en ese bloque
+            // Conflicto por sección: la sección ya tiene una materia en ese bloque
             HorarioEntity enSeccion = db.Horarios
                 .Where(h => h.fk_seccion == idSeccion && h.dia_semana == dia && h.id_horario != idExcluir)
                 .ToList()
@@ -138,31 +169,35 @@ namespace EduNexus.UI.Models
                 string ocupante = db.Materias.Where(m => m.id_materia == idMateriaOcupante)
                     .Select(m => m.nombre).FirstOrDefault();
 
-                return "Conflicto: la seccion ya tiene la materia " + ocupante + " asignada el "
+                return "Conflicto: la sección ya tiene la materia " + ocupante + " asignada el "
                     + enSeccion.dia_semana + " de " + Hora(enSeccion.hora_inicio) + " a " + Hora(enSeccion.hora_fin) + ".";
             }
 
-            // Conflicto por docente: el profesor de la materia ya tiene otra leccion en ese bloque
-            List<int> materiasDelDocente = db.Materias
-                .Where(m => m.profesor == materia.profesor)
-                .Select(m => m.id_materia).ToList();
+            // Conflicto por docente: el docente de esta clase ya da otra en ese bloque
+            string idProfesor = DocenteDeClase(db, idSeccion, idMateria);
+            if (idProfesor == null)
+            {
+                return null;
+            }
+
+            List<SeccionMateriaEntity> clasesDelDocente = ClasesDelDocente(db, idProfesor);
 
             HorarioEntity enDocente = db.Horarios
-                .Where(h => materiasDelDocente.Contains(h.fk_materia) && h.dia_semana == dia && h.id_horario != idExcluir)
+                .Where(h => h.dia_semana == dia && h.id_horario != idExcluir)
                 .ToList()
-                .FirstOrDefault(h => h.hora_inicio < fin && h.hora_fin > inicio);
+                .FirstOrDefault(h => h.hora_inicio < fin && h.hora_fin > inicio
+                    && clasesDelDocente.Any(c => c.fk_id_seccion == h.fk_seccion && c.fk_id_materia == h.fk_materia));
 
             if (enDocente != null)
             {
                 string seccion;
                 EtiquetasDeSecciones(db).TryGetValue(enDocente.fk_seccion, out seccion);
-                string idProfesor = materia.profesor;
                 UsuarioEntity docente = db.Usuarios.FirstOrDefault(u => u.id_usuario == idProfesor);
 
                 return "Conflicto: el docente " + (docente != null ? NombreCompleto(docente) : "")
-                    + " ya tiene una leccion asignada el " + enDocente.dia_semana
+                    + " ya tiene una lección asignada el " + enDocente.dia_semana
                     + " de " + Hora(enDocente.hora_inicio) + " a " + Hora(enDocente.hora_fin)
-                    + " con la seccion " + seccion + ".";
+                    + " en la sección " + seccion + ".";
             }
 
             return null;

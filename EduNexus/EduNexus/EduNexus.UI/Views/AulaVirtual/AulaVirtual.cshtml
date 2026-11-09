@@ -41,12 +41,12 @@
                             </div>
 
                             <h3 class="card-title mt-2 mb-1">
-                                <a href="@Url.Action("Materia", "AulaVirtual", new { id = materia.id_materia })" class="text-body">
+                                <a href="@Url.Action("Materia", "AulaVirtual", new { id = materia.id_materia, seccion = materia.id_seccion })" class="text-body">
                                     @materia.nombre
                                 </a>
                             </h3>
 
-                            <div class="text-secondary small mb-3">Sección: 3-B</div>
+                            <div class="text-secondary small mb-3">@materia.seccion</div>
 
                             <div class="d-flex align-items-center pt-2 mt-auto border-top">
                                 <span class="avatar avatar-sm rounded-circle @(sinProfesor ? "bg-red-lt" : "bg-" + color + "-lt") fw-bold">
@@ -59,8 +59,7 @@
                                     </div>
                                     <div class="text-secondary small">Profesor titular</div>
                                 </div>
-
-                                <a href="@Url.Action("Materia", "AulaVirtual", new { id = materia.id_materia })" class="btn btn-sm btn-icon btn-ghost-secondary" title="Entrar al aula">
+                                <a href="@Url.Action("Materia", "AulaVirtual", new { id = materia.id_materia, seccion = materia.id_seccion })" class="btn btn-sm btn-icon btn-ghost-secondary" title="Entrar al aula">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
                                         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                                         <path d="M5 12l14 0" />
@@ -80,8 +79,8 @@
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <div class="empty">
-                            <p class="empty-title">No hay materias registradas</p>
-                            <p class="empty-subtitle text-secondary">Cuando se asignen materias aparecerán aquí.</p>
+                            <p class="empty-title">No hay clases para mostrar</p>
+                            <p class="empty-subtitle text-secondary">Cuando se le asignen materias a una sección aparecerán aquí.</p>
                         </div>
                     </div>
                 </div>

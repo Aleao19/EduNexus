@@ -26,6 +26,14 @@
                     </div>
 
                     <div class="form-group mt-3">
+                        @Html.LabelFor(model => model.id_docente, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div class="col-md-10">
+                            @Html.DropDownListFor(model => model.id_docente, (SelectList)ViewBag.Docentes, "-- Seleccione un docente --", new { @class = "form-select" })
+                            @Html.ValidationMessageFor(model => model.id_docente, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
                         @Html.LabelFor(model => model.seccion, htmlAttributes: new { @class = "control-label col-md-2" })
                         <div class="col-md-10">
                             @Html.EditorFor(model => model.seccion, new { htmlAttributes = new { @class = "form-control", list = "listaSecciones", autocomplete = "off", placeholder = "Ej: Tercer Grado - 3-A (2026)" } })

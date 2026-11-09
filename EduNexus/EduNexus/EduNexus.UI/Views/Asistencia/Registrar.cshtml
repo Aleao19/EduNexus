@@ -1,0 +1,41 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Asistencia.AsistenciaFormDto
+
+@{
+    ViewBag.Title = Model.esEdicion ? "Editar asistencia" : "Registrar asistencia";
+    string fechaTexto = Model.fecha.HasValue ? Model.fecha.Value.ToString("yyyy-MM-dd") : "";
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h1 class="mb-0">@ViewBag.Title</h1>
+        <p class="text-secondary mb-0">Seleccione la sección y la fecha para marcar la asistencia de cada estudiante.</p>
+    </div>
+</div>
+
+@if (Model.sinClases)
+{
+    <div class="alert alert-info">No tiene secciones asignadas para el período lectivo actual.</div>
+}
+else
+{
+    using (Html.BeginForm("Registrar", "Asistencia", FormMethod.Get, new { @class = "row g-2 align-items-end mb-3" }))
+    {
+        <div class="col-md-6">
+            <label class="form-label" for="clase">Sección y materia</label>
+            @Html.DropDownList("clase", (SelectList)ViewBag.Clases, "-- Seleccione --", new { @class = "form-select" })
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="fecha">Fecha</label>
+            <input type="date" id="fecha" name="fecha" value="@fechaTexto" max="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-cyan">Cargar lista</button>
+        </div>
+    }
+}
+
+@Html.Partial("_ListaAsistencia", Model)
+
+@section Scripts {
+    <script src="@Url.Content("~/Scripts/Asistencia/ListaAsistencia.js")"></script>
+}

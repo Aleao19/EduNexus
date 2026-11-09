@@ -37,15 +37,13 @@ namespace EduNexus.UI.Controllers
                     consulta = consulta.Where(h => h.fk_seccion == idSeccion);
                 }
 
-                if (!string.IsNullOrEmpty(docente))
-                {
-                    List<int> idsMaterias = db.Materias
-                        .Where(m => m.profesor == docente)
-                        .Select(m => m.id_materia).ToList();
-                    consulta = consulta.Where(h => idsMaterias.Contains(h.fk_materia));
-                }
 
                 List<HorarioItemDto> items = HorarioServicio.ConstruirItems(db, consulta.ToList());
+
+                if (!string.IsNullOrEmpty(docente))
+                {
+                    items = items.Where(x => x.id_profesor == docente).ToList();
+                }
 
                 // Búsqueda por texto: materia, docente, sección o día
                 if (!string.IsNullOrWhiteSpace(q))
@@ -205,6 +203,11 @@ namespace EduNexus.UI.Controllers
                 if (!db.Secciones.Any(s => s.id_seccion == id.Value))
                 {
                     return HttpNotFound();
+                }
+                if (!db.SeccionesMaterias.Any(sm => sm.fk_id_seccion == id.Value))
+                {
+                    TempData["Error"] = "Esta sección aun no tiene materias asignadas. Asignelas primero en Materias por sección.";
+                    return RedirectToAction("ListadoDeHorarios", new { id = id.Value });
                 }
 
                 var horario = new HorariosDto { seccion = id.Value };
@@ -385,6 +388,10 @@ namespace EduNexus.UI.Controllers
             {
                 return "La materia especificada no existe.";
             }
+            if (!db.SeccionesMaterias.Any(sm => sm.fk_id_seccion == horario.seccion && sm.fk_id_materia == horario.materia))
+            {
+                return "La materia no está asignada a esta sección. Asígnela primero en Materias por sección, con su docente.";
+            }
             return null;
         }
 
@@ -393,33 +400,41 @@ namespace EduNexus.UI.Controllers
             string etiqueta;
             HorarioServicio.EtiquetasDeSecciones(db).TryGetValue(horario.seccion, out etiqueta);
             ViewBag.NombreSeccion = etiqueta;
-            ViewBag.Materias = ListaMaterias(db);
+            ViewBag.Materias = ListaMaterias(db, horario.seccion);
             return View("CrearHorario", horario);
         }
 
         private ActionResult VistaEditar(EduNexusDbContext db, HorariosDto horario)
         {
+            string etiqueta;
+            HorarioServicio.EtiquetasDeSecciones(db).TryGetValue(horario.seccion, out etiqueta);
+            ViewBag.NombreSeccion = etiqueta;
             ViewBag.Dias = new SelectList(Dias);
-            ViewBag.Materias = ListaMaterias(db);
-            ViewBag.Secciones = new SelectList(
-                HorarioServicio.EtiquetasDeSecciones(db).OrderBy(x => x.Value).ToList(), "Key", "Value");
+            ViewBag.Materias = ListaMaterias(db, horario.seccion);
             return View("EditarHorario", horario);
         }
 
-        // Materias con su docente responsable: "Matematicas - Ana Mora"
-        private static SelectList ListaMaterias(EduNexusDbContext db)
+        // Materias asignadas a la sección, con el docente de esa sección: "Matemáticas - Ana Mora"
+        private static SelectList ListaMaterias(EduNexusDbContext db, int idSeccion)
         {
-            List<MateriaEntity> materias = db.Materias.OrderBy(m => m.nombre).ToList();
-            List<string> ids = materias.Select(m => m.profesor).Distinct().ToList();
+            List<SeccionMateriaEntity> clases = db.SeccionesMaterias
+                .Where(sm => sm.fk_id_seccion == idSeccion).ToList();
+
+            List<int> idsMaterias = clases.Select(c => c.fk_id_materia).ToList();
+            Dictionary<int, string> nombres = db.Materias
+                .Where(m => idsMaterias.Contains(m.id_materia)).ToList()
+                .ToDictionary(m => m.id_materia, m => m.nombre);
+
+            List<string> idsDocentes = clases.Select(c => c.fk_id_profesor).Distinct().ToList();
             Dictionary<string, UsuarioEntity> docentes = db.Usuarios
-                .Where(u => ids.Contains(u.id_usuario)).ToList()
+                .Where(u => idsDocentes.Contains(u.id_usuario)).ToList()
                 .ToDictionary(u => u.id_usuario);
 
-            var opciones = materias.Select(m => new
+            var opciones = clases.Select(c => new
             {
-                m.id_materia,
-                texto = m.nombre + (docentes.ContainsKey(m.profesor) ? " - " + HorarioServicio.NombreCompleto(docentes[m.profesor]) : "")
-            }).ToList();
+                id_materia = c.fk_id_materia,
+                texto = nombres[c.fk_id_materia] + " - " + HorarioServicio.NombreCompleto(docentes[c.fk_id_profesor])
+            }).OrderBy(o => o.texto).ToList();
 
             return new SelectList(opciones, "id_materia", "texto");
         }

@@ -48,12 +48,10 @@ namespace EduNexus.UI.Controllers
 
                 if (esDocente)
                 {
-                    List<int> idsMaterias = db.Materias
-                        .Where(m => m.profesor == idUsuario)
-                        .Select(m => m.id_materia).ToList();
+                    List<SeccionMateriaEntity> clasesDelDocente = HorarioServicio.ClasesDelDocente(db, idUsuario);
 
-                    horarios = db.Horarios
-                        .Where(h => idsMaterias.Contains(h.fk_materia) && idsSecciones.Contains(h.fk_seccion))
+                    horarios = db.Horarios.Where(h => idsSecciones.Contains(h.fk_seccion)).ToList()
+                        .Where(h => clasesDelDocente.Any(c => c.fk_id_seccion == h.fk_seccion && c.fk_id_materia == h.fk_materia))
                         .ToList();
 
                     // Escenario 2 (docente): sin horario para el periodo actual

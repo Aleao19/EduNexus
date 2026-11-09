@@ -244,76 +244,35 @@
     @* ===================== TAB: ASISTENCIA ===================== *@
     <div class="tab-pane fade" id="tab-asistencia" role="tabpanel">
 
-        @using (Html.BeginForm("GuardarAsistencia", "AulaVirtual", FormMethod.Post, new { id = "formAsistencia" }))
+        @if (ViewBag.EsDocente == true)
         {
-            @Html.AntiForgeryToken()
+            <div id="contenedorAsistencia"
+                 data-url-lista="@Url.Action("Lista", "Asistencia")"
+                 data-clase="@(ViewBag.IdSeccion + "-" + ViewBag.IdMateria)">
 
-            <div class="card shadow-sm mb-3">
-                <div class="card-body d-flex align-items-end flex-wrap gap-3">
-                    <div>
-                        <label class="form-label">Fecha</label>
-                        <input type="date" name="fecha" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
-                    </div>
-                    <div class="ms-auto d-flex gap-2">
-                        <button type="button" class="btn btn-outline-success btn-sm" id="btnTodosPresentes">Marcar todos presentes</button>
-                        <button type="submit" class="btn btn-cyan btn-sm">Guardar asistencia</button>
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body d-flex align-items-end flex-wrap gap-3">
+                        <div>
+                            <label class="form-label" for="asistFecha">Fecha</label>
+                            <input type="date" id="asistFecha" class="form-control"
+                                   value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                   max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <button type="button" id="btnCargarAsistencia" class="btn btn-cyan">Cargar lista</button>
                     </div>
                 </div>
+
+                <div id="listaAsistencia"></div>
             </div>
 
-            <div class="card shadow-sm">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Lista de asistencia</h3>
-                    <div class="small text-secondary">
-                        Presentes: <span id="contPresentes" class="fw-bold text-success">@estudiantes.Count</span> ·
-                        Tardías: <span id="contTardias" class="fw-bold text-warning">0</span> ·
-                        Ausencias: <span id="contAusentes" class="fw-bold text-danger">0</span>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-vcenter card-table">
-                        <thead>
-                            <tr>
-                                <th>Estudiante</th>
-                                <th>Estado de asistencia</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (int i = 0; i < estudiantes.Count; i++)
-                            {
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <span class="avatar avatar-sm rounded-circle bg-teal-lt fw-bold me-2">@estudiantes[i].Substring(0, 1).ToUpper()</span>
-                                            @estudiantes[i]
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="btn-group asistencia-grupo" role="group">
-                                            <input type="radio" class="btn-check" name="asistencia_@i" id="presente_@i" value="Presente" checked autocomplete="off">
-                                            <label class="btn btn-sm btn-outline-success" for="presente_@i">Presente</label>
-
-                                            <input type="radio" class="btn-check" name="asistencia_@i" id="tardia_@i" value="Tardía" autocomplete="off">
-                                            <label class="btn btn-sm btn-outline-warning" for="tardia_@i">Tardía</label>
-
-                                            <input type="radio" class="btn-check" name="asistencia_@i" id="ausenteJust_@i" value="Ausencia justificada" autocomplete="off">
-                                            <label class="btn btn-sm btn-outline-info" for="ausenteJust_@i">Ausencia justificada</label>
-
-                                            <input type="radio" class="btn-check" name="asistencia_@i" id="ausenteInjust_@i" value="Ausencia no justificada" autocomplete="off">
-                                            <label class="btn btn-sm btn-outline-danger" for="ausenteInjust_@i">Ausencia no justificada</label>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+            <div class="text-secondary small mt-2">
+                Al guardar una ausencia se notificará automáticamente al correo del padre/encargado registrado.
             </div>
         }
-
-        <div class="text-secondary small mt-2">
-            Al guardar una ausencia se notificará automáticamente al correo del padre/encargado registrado.
-        </div>
+        else
+        {
+            <div class="alert alert-info">La asistencia la registra el docente de la clase.</div>
+        }
     </div>
 
     @* ===================== TAB: MATERIAL Y COMUNICADOS ===================== *@
@@ -469,3 +428,6 @@
         </div>
     </div>
 </div>
+@section scripts {
+    <script src="@Url.Content("~/Scripts/Asistencia/ListaAsistencia.js")"></script>
+}

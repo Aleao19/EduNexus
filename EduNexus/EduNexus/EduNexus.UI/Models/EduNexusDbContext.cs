@@ -35,6 +35,8 @@ namespace EduNexus.UI.Models.Identity
         public DbSet<TipoAyudaEntity> TiposAyuda { get; set; }
         public DbSet<AyudaEstudianteEntity> AyudasEstudiantes { get; set; }
         public DbSet<AsignacionEntity> Asignaciones { get; set; }
+        //RASI-10-001: Asistencia de estudiantes
+        public DbSet<AsistenciaEntity> Asistencias { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
@@ -199,6 +201,13 @@ namespace EduNexus.UI.Models.Identity
                 .HasKey(a => a.id_asignacion);
             modelBuilder.Entity<AsignacionEntity>()
                 .Property(a => a.id_asignacion)
+                .HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
+            //RASI-10-001: Asistencia de estudiantes
+            modelBuilder.Entity<AsistenciaEntity>()
+                .ToTable("asistencia")
+                .HasKey(a => a.id_asistencia);
+            modelBuilder.Entity<AsistenciaEntity>()
+                .Property(a => a.id_asistencia)
                 .HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
 
             // NOTA: esta configuración no crea tablas ni comprueba

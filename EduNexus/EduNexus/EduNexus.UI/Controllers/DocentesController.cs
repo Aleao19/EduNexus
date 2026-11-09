@@ -194,31 +194,34 @@ namespace EduNexus.UI.Controllers
 
                 using (var db = new EduNexusDbContext())
                 {
-                    // Validar que la materia y sección no estén ya asignadas al docente
-                    var asignacionExistente = db.SeccionesMaterias
-                        .FirstOrDefault(a => a.fk_id_materia == asignacion.id_materia && a.fk_id_seccion == asignacion.id_seccion);
+                    SeccionMateriaEntity clase = db.SeccionesMaterias.FirstOrDefault(a =>
+                        a.fk_id_materia == asignacion.id_materia && a.fk_id_seccion == asignacion.id_seccion);
 
-                    if (asignacionExistente != null)
+                    if (clase != null && clase.fk_id_profesor == asignacion.id_docente)
                     {
-                        // Verificar si el profesor de esa materia es el docente actual
-                        var materia = db.Materias.FirstOrDefault(m => m.id_materia == asignacion.id_materia);
-                        if (materia?.profesor == asignacion.id_docente)
+                        ModelState.AddModelError("", "Esta materia y sección ya está asignada a este docente.");
+                        ViewBag.NombreDocente = ObtenerDocentes().FirstOrDefault(x => x.id_docente == asignacion.id_docente)?.nombre;
+                        ViewBag.Materias = new SelectList(ObtenerMaterias(), "id_materia", "nombre");
+                        ViewBag.Secciones = new SelectList(ObtenerSecciones(), "id_seccion", "nombre");
+                        return View(asignacion);
+                    }
+
+                    if (clase == null)
+                    {
+                        db.SeccionesMaterias.Add(new SeccionMateriaEntity
                         {
-                            ModelState.AddModelError("", "Esta materia y sección ya está asignada a este docente.");
-                            ViewBag.NombreDocente = ObtenerDocentes().FirstOrDefault(x => x.id_docente == asignacion.id_docente)?.nombre;
-                            ViewBag.Materias = new SelectList(ObtenerMaterias(), "id_materia", "nombre");
-                            ViewBag.Secciones = new SelectList(ObtenerSecciones(), "id_seccion", "nombre");
-                            return View(asignacion);
-                        }
+                            fk_id_materia = asignacion.id_materia,
+                            fk_id_seccion = asignacion.id_seccion,
+                            fk_id_profesor = asignacion.id_docente,
+                            fecha_asignacion = DateTime.Now
+                        });
+                    }
+                    else
+                    {
+                        clase.fk_id_profesor = asignacion.id_docente;
                     }
 
-                    // Actualizar la materia para asignarla al docente
-                    var materia2 = db.Materias.FirstOrDefault(m => m.id_materia == asignacion.id_materia);
-                    if (materia2 != null)
-                    {
-                        materia2.profesor = asignacion.id_docente;
-                        db.SaveChanges();
-                    }
+                    db.SaveChanges();
                 }
 
                 return RedirectToAction("CargaAcademicaDocente", new { id = asignacion.id_docente });
@@ -270,15 +273,11 @@ namespace EduNexus.UI.Controllers
         {
             using (var db = new EduNexusDbContext())
             {
-                var materias = db.Materias.ToList().ToDictionary(m => m.id_materia);
-                var asignaciones = db.SeccionesMaterias.ToList();
-
-                return asignaciones
-                    .Where(a => materias.ContainsKey(a.fk_id_materia) && !string.IsNullOrEmpty(materias[a.fk_id_materia].profesor))
+                return db.SeccionesMaterias.ToList()
                     .Select(a => new AsignacionDocenteDto
                     {
                         id_asignacion_docente = a.id_seccion_materia,
-                        id_docente = materias[a.fk_id_materia].profesor,
+                        id_docente = a.fk_id_profesor,
                         id_materia = a.fk_id_materia,
                         id_seccion = a.fk_id_seccion
                     })
