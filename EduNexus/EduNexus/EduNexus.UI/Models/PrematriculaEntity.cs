@@ -1,4 +1,5 @@
 
+
 using System;
 
 namespace EduNexus.UI.Models.Identity
@@ -20,5 +21,11 @@ namespace EduNexus.UI.Models.Identity
         public string direccion { get; set; }
         public bool es_nuevo_ingreso { get; set; }
         public DateTime fecha_prematricula { get; set; }
+
+        // Estado de la solicitud de prematricula
+        public string estado { get; set; }
+
+        // Calendario asociado a la prematricula
+        public int? fk_id_calendario { get; set; }
     }
 }

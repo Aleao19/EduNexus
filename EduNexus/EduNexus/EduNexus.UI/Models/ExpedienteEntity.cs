@@ -1,4 +1,4 @@
-
+using EduNexus.UI.Models.Identity;
 using System;
 
 namespace EduNexus.UI.Models.Identity
@@ -19,5 +19,12 @@ namespace EduNexus.UI.Models.Identity
         public bool tiene_discapacidad { get; set; }
         public string contactoEmergencia { get; set; }
         public string direccion { get; set; }
+
+        // Propiedades utilizadas por otros modulos
+        public int fk_id_matricula { get; set; }
+        public string fk_id_usuario { get; set; }
+        public string correo { get; set; }
+        public string grupo_sanguineo { get; set; }
+        public string alergias { get; set; }
     }
 }

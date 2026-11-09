@@ -32,9 +32,9 @@ namespace EduNexus.UI.Models
             }
             else
             {
-                // Verificar que exista la matricula
+                // Verificar que exista la prematricula
                 bool existeMatricula = db.Prematriculas
-                    .Any(p => p.id_matricula == id_matricula);
+                    .Any(p => p.id_prematricula == id_matricula);
 
                 if (!existeMatricula)
                 {
