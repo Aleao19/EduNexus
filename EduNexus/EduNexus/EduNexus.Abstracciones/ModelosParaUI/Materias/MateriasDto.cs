@@ -21,5 +21,7 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Materias
         [Display(Name = "Descripción")]
         [StringLength(100, ErrorMessage = "La descripción no puede superar los 100 caracteres.")]
         public string descripcion { get; set; }
+        public int? id_seccion { get; set; }
+        public string seccion { get; set; }
     }
 }
