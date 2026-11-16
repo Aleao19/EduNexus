@@ -1,10 +1,26 @@
-﻿.vs/
-/EduNexus/EduNexus/EduNexus.UI/obj/Debug
-*.cache
-*.cache
-*.txt
-*.pdb
-*.dll
+﻿## Visual Studio
+.vs/
+*.user
+*.suo
+*.userprefs
 
-# Documentos subidos a los expedientes (datos de estudiantes, no van al repo)
+## Compilación (se regeneran al compilar)
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.cache
+*.pdb
+
+## Paquetes NuGet (Visual Studio los restaura automáticamente)
+packages/
+
+## Credenciales de la base de datos (cada quien tiene su copia local)
+# Plantilla versionada: EduNexus.UI/connectionStrings.example.config
+connectionStrings.config
+
+## Documentos subidos a los expedientes (datos de estudiantes, no van al repo)
 /EduNexus/EduNexus/EduNexus.UI/App_Data/DocumentosExpedientes/
+
+## Varios
+*.zip
