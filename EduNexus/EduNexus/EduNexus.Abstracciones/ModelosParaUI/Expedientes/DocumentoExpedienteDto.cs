@@ -40,5 +40,8 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Expedientes
 
         // Nombre del estudiante dueño del expediente (solo para mostrar)
         public string estudiante { get; set; }
+
+        // Usuario estudiante dueño del expediente (para volver al expediente unificado)
+        public string id_usuario { get; set; }
     }
 }

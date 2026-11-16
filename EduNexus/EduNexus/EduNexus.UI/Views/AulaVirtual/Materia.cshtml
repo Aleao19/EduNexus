@@ -17,20 +17,22 @@
     double promedio = asignaciones.Any(a => a.calificacion > 0) ? asignaciones.Where(a => a.calificacion > 0).Average(a => a.calificacion) : 0;
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <div class="text-secondary small mb-1">
-            @Html.ActionLink("Aula Virtual", "AulaVirtual", "AulaVirtual") / @nombreMateria
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">
+                @Html.ActionLink("Aula Virtual", "AulaVirtual", "AulaVirtual") / @nombreMateria
+            </div>
+            <h2 class="page-title">@nombreMateria</h2>
+            <div class="page-subtitle">@nombreSeccion</div>
         </div>
-        <h1 class="mb-0">@nombreMateria</h1>
-        <p class="text-secondary mb-0">@nombreSeccion</p>
     </div>
 </div>
 
 @* ===================== KPIs ===================== *@
 <div class="row row-cards g-3 mb-3">
     <div class="col-sm-6 col-lg-3">
-        <div class="card card-sm shadow-sm">
+        <div class="card card-sm">
             <div class="card-body">
                 <div class="text-secondary small">@(esEstudiante ? "Mi promedio" : "Promedio de la clase")</div>
                 <div class="h2 mb-0">@(asignaciones.Any(a => a.calificacion > 0) ? promedio.ToString("0.0") : "—")</div>
@@ -38,7 +40,7 @@
         </div>
     </div>
     <div class="col-sm-6 col-lg-3">
-        <div class="card card-sm shadow-sm">
+        <div class="card card-sm">
             <div class="card-body">
                 <div class="text-secondary small">Asignaciones pendientes</div>
                 <div class="h2 mb-0 @(pendientes > 0 ? "text-warning" : "")">@pendientes</div>
@@ -46,7 +48,7 @@
         </div>
     </div>
     <div class="col-sm-6 col-lg-3">
-        <div class="card card-sm shadow-sm">
+        <div class="card card-sm">
             <div class="card-body">
                 <div class="text-secondary small">Entregadas</div>
                 <div class="h2 mb-0 text-success">@entregadas / @totalAsignaciones</div>
@@ -54,7 +56,7 @@
         </div>
     </div>
     <div class="col-sm-6 col-lg-3">
-        <div class="card card-sm shadow-sm">
+        <div class="card card-sm">
             <div class="card-body">
                 <div class="text-secondary small">Estudiantes de la sección</div>
                 <div class="h2 mb-0">@estudiantes.Count</div>
@@ -102,7 +104,7 @@
 
         @if (asignaciones.Any())
         {
-            <div class="btn-group mb-3" role="group" aria-label="Filtrar asignaciones" id="filtrosAsignaciones">
+            <div class="btn-group flex-wrap mb-3" role="group" aria-label="Filtrar asignaciones" id="filtrosAsignaciones">
                 <button type="button" class="btn btn-sm btn-outline-secondary active" data-filtro="todas">Todas</button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-filtro="pendiente">Pendientes</button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-filtro="entreg">Entregadas</button>
@@ -149,7 +151,7 @@
                     }
 
                     <div class="col-12 tarjeta-asignacion" data-estado="@estadoFiltro">
-                        <div class="card shadow-sm mb-3">
+                        <div class="card mb-3">
                             <div class="card-body">
                                 <div class="row align-items-center g-3">
                                     <div class="col-md-8 col-12">
@@ -172,7 +174,7 @@
                                         </div>
                                         <div class="h2 mb-0 fw-bold text-primary">
                                             @asignacion.calificacion.ToString("0.0")
-                                            <span class="fs-6 text-muted fw-normal">/ 100</span>
+                                            <span class="fs-6 text-secondary fw-normal">/ 100</span>
                                         </div>
                                     </div>
                                 </div>
@@ -184,12 +186,13 @@
             else
             {
                 <div class="col-12">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <div class="empty">
-                                <p class="empty-title">No hay asignaciones registradas</p>
-                                <p class="empty-subtitle text-secondary">Todavía no hay asignaciones registradas para esta clase.</p>
+                    <div class="card">
+                        <div class="empty">
+                            <div class="empty-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" /><path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" /></svg>
                             </div>
+                            <p class="empty-title">No hay asignaciones registradas</p>
+                            <p class="empty-subtitle text-secondary">Todavía no hay asignaciones registradas para esta clase.</p>
                         </div>
                     </div>
                 </div>
@@ -202,7 +205,10 @@
 
     @* ===================== TAB: ESTUDIANTES ===================== *@
     <div class="tab-pane fade" id="tab-estudiantes" role="tabpanel">
-        <div class="card shadow-sm">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Estudiantes de la sección</h3>
+            </div>
             @if (estudiantes.Any())
             {
                 <div class="list-group list-group-flush">
@@ -218,10 +224,9 @@
             }
             else
             {
-                <div class="card-body">
-                    <div class="empty">
-                        <p class="empty-title">La sección no tiene estudiantes asignados</p>
-                    </div>
+                <div class="empty">
+                    <p class="empty-title">La sección no tiene estudiantes asignados</p>
+                    <p class="empty-subtitle text-secondary">Cuando se asignen estudiantes a la sección aparecerán aquí.</p>
                 </div>
             }
         </div>
@@ -235,7 +240,7 @@
                  data-url-lista="@Url.Action("Lista", "Asistencia")"
                  data-clase="@(ViewBag.IdSeccion + "-" + ViewBag.IdMateria)">
 
-                <div class="card shadow-sm mb-3">
+                <div class="card mb-3">
                     <div class="card-body d-flex align-items-end flex-wrap gap-3">
                         <div>
                             <label class="form-label" for="asistFecha">Fecha</label>
@@ -243,7 +248,7 @@
                                    value="@DateTime.Today.ToString("yyyy-MM-dd")"
                                    max="@DateTime.Today.ToString("yyyy-MM-dd")" />
                         </div>
-                        <button type="button" id="btnCargarAsistencia" class="btn btn-cyan">Cargar lista</button>
+                        <button type="button" id="btnCargarAsistencia" class="btn btn-primary">Cargar lista</button>
                     </div>
                 </div>
 
@@ -256,9 +261,9 @@
     <div class="tab-pane fade" id="tab-material" role="tabpanel">
         <div class="row g-3">
             <div class="col-lg-7">
-                <div class="card shadow-sm">
+                <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title mb-0">Material publicado</h3>
+                        <h3 class="card-title">Material publicado</h3>
                     </div>
                     <div class="card-body">
                         <div class="empty">
@@ -269,9 +274,9 @@
                 </div>
             </div>
             <div class="col-lg-5">
-                <div class="card shadow-sm">
+                <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title mb-0">Comunicados</h3>
+                        <h3 class="card-title">Comunicados</h3>
                     </div>
                     <div class="card-body">
                         <div class="empty">

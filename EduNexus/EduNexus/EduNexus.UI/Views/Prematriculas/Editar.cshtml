@@ -33,32 +33,24 @@
     var esNuevoIngreso = Model != null && Model.esNuevoIngreso;
 }
 
-<div class="container-xl mt-4">
-
-    <!-- ENCABEZADO -->
-    <div class="row mb-4">
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
         <div class="col">
-
-            <h1>Editar solicitud de prematrícula</h1>
-
-            <p class="text-secondary">
-                Modifique los datos necesarios antes de aprobar
-                la solicitud.
-            </p>
-
-            <span class="badge bg-blue-lt">
-                Solicitud #@Model.id_prematricula
-            </span>
-
-            <span class="badge bg-yellow-lt">
-                @Model.estado
-            </span>
-
+            <div class="page-pretitle">Estudiantes</div>
+            <h2 class="page-title d-flex flex-wrap align-items-center gap-2">
+                Editar solicitud de prematrícula
+                <span class="badge bg-blue-lt">Solicitud #@Model.id_prematricula</span>
+                <span class="badge bg-yellow-lt">@Model.estado</span>
+            </h2>
+            <div class="page-subtitle">Modifique los datos necesarios antes de aprobar la solicitud.</div>
         </div>
     </div>
+</div>
+
+<div>
 
     <!-- FORMULARIO -->
-    <div class="card shadow-sm">
+    <div class="card">
 
         <div class="card-header">
             <h3 class="card-title">
@@ -86,40 +78,36 @@
                     new { @class = "alert alert-danger" }
                 )
 
-                <div class="row">
+                <div class="row g-3">
 
                     <!-- IDENTIFICACIÓN -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         @Html.LabelFor(
                             m => m.identificacion,
                             new { @class = "form-label" }
                         )
 
-                        @Html.TextBoxFor(
-                            m => m.identificacion,
-                            new
-                            {
-                                @class = "form-control",
-                                required = "required",
-                                maxlength = "50"
-                            }
-                        )
+                        @* La cédula no es modificable: se muestra de solo lectura
+                           y el controlador conserva la guardada en la BD. *@
+                        <input type="text"
+                               id="identificacion"
+                               class="form-control"
+                               value="@(EduNexus.UI.Models.Cedula.Normalizar(Model.identificacion) ?? Model.identificacion)"
+                               placeholder="@EduNexus.UI.Models.Cedula.Formato"
+                               maxlength="11"
+                               readonly />
 
-                        @Html.ValidationMessageFor(
-                            m => m.identificacion,
-                            "",
-                            new { @class = "text-danger" }
-                        )
+                        <small class="form-hint">La cédula no se puede modificar.</small>
 
                     </div>
 
                     <!-- NOMBRE -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         @Html.LabelFor(
                             m => m.nombre,
-                            new { @class = "form-label" }
+                            new { @class = "form-label required" }
                         )
 
                         @Html.TextBoxFor(
@@ -141,11 +129,11 @@
                     </div>
 
                     <!-- PRIMER APELLIDO -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         @Html.LabelFor(
                             m => m.apellido1,
-                            new { @class = "form-label" }
+                            new { @class = "form-label required" }
                         )
 
                         @Html.TextBoxFor(
@@ -167,7 +155,7 @@
                     </div>
 
                     <!-- SEGUNDO APELLIDO -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         @Html.LabelFor(
                             m => m.apellido2,
@@ -192,11 +180,11 @@
                     </div>
 
                     <!-- GÉNERO -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         @Html.LabelFor(
                             m => m.genero,
-                            new { @class = "form-label" }
+                            new { @class = "form-label required" }
                         )
 
                         @Html.DropDownListFor(
@@ -219,11 +207,11 @@
                     </div>
 
                     <!-- GRADO -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         @Html.LabelFor(
                             m => m.grado,
-                            new { @class = "form-label" }
+                            new { @class = "form-label required" }
                         )
 
                         @Html.DropDownListFor(
@@ -246,7 +234,7 @@
                     </div>
 
                     <!-- TELÉFONO -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         @Html.LabelFor(
                             m => m.telefono,
@@ -282,11 +270,11 @@
                     </div>
 
                     <!-- FECHA DE NACIMIENTO -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         @Html.LabelFor(
                             m => m.fecha_nacimiento,
-                            new { @class = "form-label" }
+                            new { @class = "form-label required" }
                         )
 
                         @Html.TextBoxFor(
@@ -310,7 +298,7 @@
                     </div>
 
                     <!-- CONTACTO DE EMERGENCIA -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         @Html.LabelFor(
                             m => m.contactoEmergencia,
@@ -335,7 +323,7 @@
                     </div>
 
                     <!-- DIRECCIÓN -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         @Html.LabelFor(
                             m => m.direccion,
@@ -365,13 +353,13 @@
                 <!-- INFORMACIÓN ADICIONAL -->
                 <hr />
 
-                <h3 class="mb-3">
+                <h4 class="text-uppercase text-secondary small fw-bold mb-3">
                     Información adicional
-                </h3>
+                </h4>
 
-                <div class="row">
+                <div class="row g-3">
 
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         <div class="form-check mb-3">
 
@@ -404,13 +392,13 @@
                     </div>
 
                     <!-- TIPO DE INGRESO: SOLO LECTURA -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         <label class="form-label">
                             Tipo de ingreso
                         </label>
 
-                        <div class="form-control bg-light">
+                        <div class="form-control bg-light" aria-readonly="true">
                             @if (esNuevoIngreso)
                             {
                                 <span>Nuevo ingreso</span>
@@ -421,7 +409,7 @@
                             }
                         </div>
 
-                        <small class="text-secondary">
+                        <small class="form-hint">
                             El tipo de ingreso se conserva
                             automáticamente y no puede
                             modificarse desde este formulario.
@@ -434,15 +422,7 @@
                 <!-- BOTONES -->
                 <hr />
 
-                <div class="d-flex gap-2">
-
-                    <button type="submit"
-                            class="btn btn-primary"
-                            id="btnGuardarCambios">
-
-                        Guardar cambios
-
-                    </button>
+                <div class="en-form-acciones">
 
                     @Html.ActionLink(
                         "Cancelar",
@@ -451,6 +431,14 @@
                         null,
                         new { @class = "btn btn-outline-secondary" }
                     )
+
+                    <button type="submit"
+                            class="btn btn-primary"
+                            id="btnGuardarCambios">
+
+                        Guardar
+
+                    </button>
 
                 </div>
             }

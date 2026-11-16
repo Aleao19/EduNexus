@@ -1,34 +1,32 @@
-﻿@using System.Linq
-@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Expedientes.DocumentoExpedienteDto>
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Expedientes.ExpedienteEstudianteDto
 
+@* Vista parcial: pestaña "Documentos" del expediente unificado (Expedientes/Expediente/{id}?tab=documentos).
+   La acción DocumentosExpediente/HistorialDocumentos ahora redirige a esa pestaña. *@
 @{
-    ViewBag.Title = "Historial de documentos";
-    int idExpediente = (int)ViewBag.IdExpediente;
-    string estudiante = ViewBag.Estudiante as string;
+    int idExpediente = Model.expediente.id_expediente;
+    var documentos = Model.documentos ?? new List<EduNexus.Abstracciones.ModelosParaUI.Expedientes.DocumentoExpedienteDto>();
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Historial de documentos</h1>
-        <p class="text-secondary mb-0">
-            Expediente #@idExpediente
-            @if (!string.IsNullOrWhiteSpace(estudiante))
-            {
-                <span>· @estudiante</span>
-            }
-        </p>
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Documentos del expediente</h3>
+        <div class="card-actions">
+            @Html.ActionLink("Adjuntar documento", "AdjuntarDocumento", "DocumentosExpediente", new { id_expediente = idExpediente }, new { @class = "btn btn-sm btn-primary" })
+        </div>
     </div>
-    <div class="col-auto">
-        @Html.ActionLink("+ Adjuntar documento", "AdjuntarDocumento", "DocumentosExpediente", new { id_expediente = idExpediente }, new { @class = "btn btn-primary me-1" })
-        @Html.ActionLink("Regresar al expediente", "DetalleDeExpediente", "Expedientes", new { id = idExpediente }, new { @class = "btn btn-outline-secondary" })
-    </div>
-</div>
-
-<div class="card shadow-sm">
-    @if (Model == null || !Model.Any())
+    @if (!documentos.Any())
     {
-        <div class="card-body text-secondary">
-            No hay documentos registrados para este expediente.
+        <div class="card-body p-0">
+            <div class="empty">
+                <div class="empty-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5" /></svg>
+                </div>
+                <p class="empty-title">No hay documentos subidos</p>
+                <p class="empty-subtitle text-secondary">Adjunte documentos PDF, JPG o PNG (por ejemplo, certificados médicos o constancias).</p>
+                <div class="empty-action">
+                    @Html.ActionLink("Adjuntar documento", "AdjuntarDocumento", "DocumentosExpediente", new { id_expediente = idExpediente }, new { @class = "btn btn-primary" })
+                </div>
+            </div>
         </div>
     }
     else
@@ -37,27 +35,40 @@
             <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
-                        <th>Nombre del documento</th>
-                        <th>Descripción</th>
+                        <th>Documento</th>
                         <th>Archivo</th>
                         <th>Tamaño</th>
-                        <th>Fecha de registro</th>
-                        <th>Registrado por</th>
-                        <th class="w-1">Acciones</th>
+                        <th>Fecha de subida</th>
+                        <th>Subido por</th>
+                        <th class="en-acciones">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var documento in Model)
+                    @foreach (var documento in documentos)
                     {
                         <tr>
-                            <td class="fw-medium">@documento.nombre_documento</td>
-                            <td>@(string.IsNullOrWhiteSpace(documento.descripcion) ? "Sin descripción" : documento.descripcion)</td>
-                            <td>@documento.nombre_archivo</td>
-                            <td class="text-nowrap">@((documento.tamano_bytes / 1024.0).ToString("0.#")) KB</td>
+                            <td>
+                                <div class="fw-medium">@documento.nombre_documento</div>
+                                @if (!string.IsNullOrWhiteSpace(documento.descripcion))
+                                {
+                                    <div class="text-secondary small">@documento.descripcion</div>
+                                }
+                            </td>
+                            <td class="text-break">@documento.nombre_archivo</td>
+                            <td class="text-nowrap">
+                                @(documento.tamano_bytes >= 1024 * 1024
+                                    ? (documento.tamano_bytes / (1024.0 * 1024.0)).ToString("0.#") + " MB"
+                                    : (documento.tamano_bytes / 1024.0).ToString("0.#") + " KB")
+                            </td>
                             <td class="text-nowrap">@documento.fecha_registro.ToString("dd/MM/yyyy HH:mm")</td>
                             <td>@(string.IsNullOrWhiteSpace(documento.registrado_por) ? "No disponible" : documento.registrado_por)</td>
-                            <td>
-                                @Html.ActionLink("Descargar", "Descargar", "DocumentosExpediente", new { id = documento.id_documento }, new { @class = "btn btn-sm btn-outline-primary" })
+                            <td class="en-acciones">
+                                @Html.ActionLink("Descargar", "Descargar", "DocumentosExpediente", new { id = documento.id_documento }, new { @class = "btn btn-sm btn-outline-primary me-1" })
+                                @using (Html.BeginForm("EliminarDocumento", "DocumentosExpediente", new { id = documento.id_documento }, FormMethod.Post, new { style = "display:inline" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar este documento del expediente? Esta acción no se puede deshacer.');">Eliminar</button>
+                                }
                             </td>
                         </tr>
                     }

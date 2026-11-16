@@ -1,7 +1,5 @@
 ﻿using EduNexus.Abstracciones.ModelosParaUI.AsignacionesDocentes;
 using EduNexus.Abstracciones.ModelosParaUI.Docentes;
-using EduNexus.Abstracciones.ModelosParaUI.Materias;
-using EduNexus.Abstracciones.ModelosParaUI.Secciones;
 using EduNexus.Abstracciones.ModelosParaUI.Horarios;
 using EduNexus.UI.Models;
 using EduNexus.UI.Models.Identity;
@@ -12,7 +10,9 @@ using System;
 
 namespace EduNexus.UI.Controllers
 {
-    // Gestión de docentes (usuarios con rol Docente) y su carga académica (secciones_materias.fk_id_profesor)
+    // Gestión de docentes (usuarios con rol Docente) y su carga académica (secciones_materias.fk_id_profesor).
+    // Flujo único: los docentes se registran aquí (no en Seguridad → Usuarios) y su ficha
+    // (CargaAcademicaDocente) es el lugar para asignarle o quitarle materias y secciones.
     [AutorizarAdministrador]
     public class DocentesController : Controller
     {
@@ -49,11 +49,23 @@ namespace EduNexus.UI.Controllers
                     ModelState.AddModelError("contrasenna_temporal", "La contraseña temporal debe tener al menos " + LongitudMinimaContrasenna + " caracteres.");
                 }
 
+                // Cédula con formato estándar 0-0000-0000
+                string cedula = Cedula.Normalizar(docente.identificacion);
+                if (!string.IsNullOrWhiteSpace(docente.identificacion) && cedula == null)
+                {
+                    ModelState.AddModelError("identificacion", Cedula.MensajeFormato);
+                }
+                else if (cedula != null)
+                {
+                    docente.identificacion = cedula;
+                }
+
                 if (!ModelState.IsValid)
                 {
                     return VistaCrear(docente);
                 }
 
+                string idNuevo;
                 using (var db = new EduNexusDbContext())
                 {
                     string idRolDocente = IdRolDocente(db);
@@ -72,7 +84,7 @@ namespace EduNexus.UI.Controllers
                     var nuevoDocente = new UsuarioEntity
                     {
                         id_usuario = Guid.NewGuid().ToString(),
-                        identificacion = docente.identificacion.Trim(),
+                        identificacion = cedula,
                         nombre = docente.nombre.Trim(),
                         apellido1 = docente.apellido1.Trim(),
                         apellido2 = string.IsNullOrWhiteSpace(docente.apellido2) ? null : docente.apellido2.Trim(),
@@ -90,12 +102,15 @@ namespace EduNexus.UI.Controllers
                         "Se registró el docente " + HorarioServicio.NombreCompleto(nuevoDocente) + " (" + nuevoDocente.identificacion + ").",
                         null, DatosAuditoria(nuevoDocente));
                     db.SaveChanges();
+                    idNuevo = nuevoDocente.id_usuario;
 
                     TempData["Mensaje"] = "El docente " + HorarioServicio.NombreCompleto(nuevoDocente)
-                        + " se registró correctamente. Comuníquele su contraseña temporal para el primer ingreso.";
+                        + " se registró correctamente. Comuníquele su contraseña temporal para el primer ingreso"
+                        + " y asígnele sus materias y secciones desde esta ficha.";
                 }
 
-                return RedirectToAction("ListadoDeDocentes");
+                // Se continúa en la ficha del docente para asignarle su carga académica
+                return RedirectToAction("CargaAcademicaDocente", new { id = idNuevo });
             }
             catch (Exception ex)
             {
@@ -133,8 +148,9 @@ namespace EduNexus.UI.Controllers
             }
             docente.id_docente = id;
 
-            // La contraseña no se cambia desde esta pantalla
+            // La contraseña no se cambia desde esta pantalla y la cédula no es modificable
             ModelState.Remove("contrasenna_temporal");
+            ModelState.Remove("identificacion");
 
             if (docente.estado != "Activo" && docente.estado != "Inactivo")
             {
@@ -154,6 +170,9 @@ namespace EduNexus.UI.Controllers
                         return HttpNotFound();
                     }
 
+                    // Cualquier valor de cédula enviado se ignora: se muestra siempre la guardada
+                    docente.identificacion = Cedula.Normalizar(docenteExistente.identificacion) ?? docenteExistente.identificacion;
+
                     if (!ModelState.IsValid)
                     {
                         return View("EditarDocente", docente);
@@ -167,7 +186,6 @@ namespace EduNexus.UI.Controllers
 
                     var antes = DatosAuditoria(docenteExistente);
 
-                    docenteExistente.identificacion = docente.identificacion.Trim();
                     docenteExistente.nombre = docente.nombre.Trim();
                     docenteExistente.apellido1 = docente.apellido1.Trim();
                     docenteExistente.apellido2 = string.IsNullOrWhiteSpace(docente.apellido2) ? null : docente.apellido2.Trim();
@@ -176,14 +194,14 @@ namespace EduNexus.UI.Controllers
                     docenteExistente.estado = docente.estado == "Activo";
 
                     Auditoria.Registrar(db, "Editar docente",
-                        "Se modificó el docente " + HorarioServicio.NombreCompleto(docenteExistente) + " (" + docenteExistente.identificacion + ").",
+                        "Se modificó el docente " + HorarioServicio.NombreCompleto(docenteExistente) + " (" + docente.identificacion + ").",
                         antes, DatosAuditoria(docenteExistente));
                     db.SaveChanges();
 
                     TempData["Mensaje"] = "Los datos del docente " + HorarioServicio.NombreCompleto(docenteExistente) + " se actualizaron correctamente.";
                 }
 
-                return RedirectToAction("ListadoDeDocentes");
+                return RedirectToAction("CargaAcademicaDocente", new { id });
             }
             catch (Exception ex)
             {
@@ -193,6 +211,7 @@ namespace EduNexus.UI.Controllers
         }
 
         // GET: Docentes/CargaAcademicaDocente/{id}
+        // Ficha del docente: sus datos y las materias/secciones que tiene a cargo (secciones_materias.fk_id_profesor)
         public ActionResult CargaAcademicaDocente(string id)
         {
             DocentesDto docente = ObtenerDocentes().FirstOrDefault(x => x.id_docente == id);
@@ -201,11 +220,50 @@ namespace EduNexus.UI.Controllers
                 return HttpNotFound();
             }
 
-            List<AsignacionDocenteDto> asignaciones = ObtenerAsignaciones().Where(x => x.id_docente == id).ToList();
+            List<AsignacionDocenteDto> asignaciones;
+            using (var db = new EduNexusDbContext())
+            {
+                List<SeccionMateriaEntity> clases = HorarioServicio.ClasesDelDocente(db, id);
+                List<int> idsSecciones = clases.Select(c => c.fk_id_seccion).Distinct().ToList();
+                List<int> idsMaterias = clases.Select(c => c.fk_id_materia).Distinct().ToList();
+
+                Dictionary<int, string> materias = db.Materias
+                    .Where(m => idsMaterias.Contains(m.id_materia)).ToList()
+                    .ToDictionary(m => m.id_materia, m => m.nombre);
+                Dictionary<int, SeccionEntity> secciones = db.Secciones
+                    .Where(s => idsSecciones.Contains(s.id_seccion)).ToList()
+                    .ToDictionary(s => s.id_seccion);
+                Dictionary<int, string> etiquetas = HorarioServicio.EtiquetasDeSecciones(db);
+                Dictionary<int, int> matriculados = db.SeccionesEstudiantes
+                    .Where(se => idsSecciones.Contains(se.fk_id_seccion))
+                    .GroupBy(se => se.fk_id_seccion)
+                    .Select(g => new { id = g.Key, total = g.Count() })
+                    .ToList()
+                    .ToDictionary(x => x.id, x => x.total);
+                List<HorarioEntity> horarios = db.Horarios
+                    .Where(h => idsSecciones.Contains(h.fk_seccion)).ToList();
+
+                asignaciones = clases.Select(c => new AsignacionDocenteDto
+                {
+                    id_asignacion_docente = c.id_seccion_materia,
+                    id_docente = c.fk_id_profesor,
+                    id_materia = c.fk_id_materia,
+                    id_seccion = c.fk_id_seccion,
+                    materia = materias.ContainsKey(c.fk_id_materia) ? materias[c.fk_id_materia] : "Materia " + c.fk_id_materia,
+                    seccion = etiquetas.ContainsKey(c.fk_id_seccion) ? etiquetas[c.fk_id_seccion] : "Sección " + c.fk_id_seccion,
+                    estudiantes_matriculados = matriculados.ContainsKey(c.fk_id_seccion) ? matriculados[c.fk_id_seccion] : 0,
+                    cupo = secciones.ContainsKey(c.fk_id_seccion) ? secciones[c.fk_id_seccion].cupo : 0,
+                    bloques_horario = horarios.Count(h => h.fk_seccion == c.fk_id_seccion && h.fk_materia == c.fk_id_materia),
+                    fecha_asignacion = c.fecha_asignacion
+                })
+                .OrderBy(a => a.seccion)
+                .ThenBy(a => a.materia)
+                .ToList();
+            }
+
+            ViewBag.Docente = docente;
             ViewBag.IdDocente = id;
             ViewBag.NombreDocente = NombreCompleto(docente);
-            ViewBag.Materias = ObtenerMaterias();
-            ViewBag.Secciones = ObtenerSecciones();
             return View(asignaciones);
         }
 
@@ -328,6 +386,69 @@ namespace EduNexus.UI.Controllers
             return RedirectToAction("CargaAcademicaDocente", new { id = asignacion.id_docente });
         }
 
+        // POST: Docentes/QuitarAsignacion
+        // Deja la clase (sección + materia) sin este docente. Como secciones_materias.fk_id_profesor es
+        // obligatorio, quitar al docente elimina la fila, pero solo si la clase no tiene horarios,
+        // asistencia ni asignaciones (notas); si los tiene, debe reasignarse otro docente en su lugar.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult QuitarAsignacion(int id, string idDocente)
+        {
+            if (string.IsNullOrWhiteSpace(idDocente))
+            {
+                return RedirectToAction("ListadoDeDocentes");
+            }
+
+            using (var db = new EduNexusDbContext())
+            {
+                SeccionMateriaEntity clase = db.SeccionesMaterias.FirstOrDefault(x => x.id_seccion_materia == id);
+                if (clase == null || clase.fk_id_profesor != idDocente)
+                {
+                    TempData["Error"] = "La asignación no existe o ya no pertenece a este docente.";
+                    return RedirectToAction("CargaAcademicaDocente", new { id = idDocente });
+                }
+
+                int idSeccion = clase.fk_id_seccion;
+                int idMateria = clase.fk_id_materia;
+                string nombreMateria = db.Materias.Where(m => m.id_materia == idMateria).Select(m => m.nombre).FirstOrDefault()
+                                       ?? "Materia " + idMateria;
+                string etiqueta;
+                HorarioServicio.EtiquetasDeSecciones(db).TryGetValue(idSeccion, out etiqueta);
+                etiqueta = etiqueta ?? "Sección " + idSeccion;
+
+                int horarios = db.Horarios.Count(h => h.fk_seccion == idSeccion && h.fk_materia == idMateria);
+                int asistencia = db.Asistencias.Count(a => a.fk_id_seccion == idSeccion && a.fk_id_materia == idMateria);
+                int tareas = db.Asignaciones.Count(a => a.fk_id_seccion == idSeccion && a.fk_id_materia == idMateria);
+
+                if (horarios + asistencia + tareas > 0)
+                {
+                    var detalle = new List<string>();
+                    if (horarios > 0) detalle.Add(horarios + " bloque(s) de horario");
+                    if (asistencia > 0) detalle.Add(asistencia + " registro(s) de asistencia");
+                    if (tareas > 0) detalle.Add(tareas + " asignación(es) o nota(s)");
+
+                    TempData["Error"] = "No se puede quitar al docente de " + nombreMateria + " en " + etiqueta
+                        + " porque la clase ya tiene " + string.Join(", ", detalle)
+                        + ". Reasigne otro docente en su lugar (desde la ficha del otro docente, \"Asignar materia y sección\").";
+                    return RedirectToAction("CargaAcademicaDocente", new { id = idDocente });
+                }
+
+                UsuarioEntity docente = db.Usuarios.FirstOrDefault(u => u.id_usuario == idDocente);
+                string nombreDocente = docente != null ? HorarioServicio.NombreCompleto(docente) : idDocente;
+
+                db.SeccionesMaterias.Remove(clase);
+                Auditoria.Registrar(db, "Quitar asignación de docente",
+                    "Se quitó al docente " + nombreDocente + " de " + nombreMateria + " en " + etiqueta + " (la materia queda sin asignar en esa sección).",
+                    new { id_seccion_materia = id, id_seccion = idSeccion, seccion = etiqueta, id_materia = idMateria, materia = nombreMateria, id_profesor = idDocente },
+                    null);
+                db.SaveChanges();
+
+                TempData["Mensaje"] = "Se quitó " + nombreMateria + " en " + etiqueta + " de la carga del docente.";
+            }
+
+            return RedirectToAction("CargaAcademicaDocente", new { id = idDocente });
+        }
+
         private ActionResult VistaCrear(DocentesDto docente)
         {
             // La contraseña nunca se devuelve a la vista
@@ -335,7 +456,7 @@ namespace EduNexus.UI.Controllers
             return View("CrearDocente", docente);
         }
 
-        // Identificación y correo únicos (comparación en memoria, sin mayúsculas) y correo institucional del MEP
+        // Cédula (solo al registrar) y correo únicos (comparación en memoria) y correo institucional del MEP
         private void ValidarDatosDocente(EduNexusDbContext db, DocentesDto docente, string idExcluido)
         {
             var otros = db.Usuarios
@@ -343,12 +464,12 @@ namespace EduNexus.UI.Controllers
                 .Select(u => new { u.identificacion, u.email })
                 .ToList();
 
-            if (!string.IsNullOrWhiteSpace(docente.identificacion))
+            // La cédula solo se valida al registrar: después de creada no se modifica
+            if (idExcluido == null && !string.IsNullOrWhiteSpace(docente.identificacion))
             {
-                string identificacion = docente.identificacion.Trim();
-                if (otros.Any(u => u.identificacion != null && u.identificacion.Trim().Equals(identificacion, StringComparison.OrdinalIgnoreCase)))
+                if (otros.Any(u => u.identificacion != null && Cedula.Iguales(u.identificacion, docente.identificacion)))
                 {
-                    ModelState.AddModelError("identificacion", "Esta identificación ya está registrada.");
+                    ModelState.AddModelError("identificacion", "Esta cédula ya está registrada.");
                 }
             }
 
@@ -456,7 +577,8 @@ namespace EduNexus.UI.Controllers
                 return usuarios.Select(u => new DocentesDto
                 {
                     id_docente = u.id_usuario,
-                    identificacion = u.identificacion,
+                    // Se muestra siempre con formato 0-0000-0000 (datos viejos pueden venir sin guiones)
+                    identificacion = Cedula.Normalizar(u.identificacion) ?? u.identificacion,
                     nombre = u.nombre,
                     apellido1 = u.apellido1,
                     apellido2 = u.apellido2,
@@ -464,70 +586,6 @@ namespace EduNexus.UI.Controllers
                     telefono = u.telefono,
                     estado = u.estado ? "Activo" : "Inactivo"
                 }).ToList();
-            }
-        }
-
-        private List<AsignacionDocenteDto> ObtenerAsignaciones()
-        {
-            using (var db = new EduNexusDbContext())
-            {
-                return db.SeccionesMaterias.ToList()
-                    .Select(a => new AsignacionDocenteDto
-                    {
-                        id_asignacion_docente = a.id_seccion_materia,
-                        id_docente = a.fk_id_profesor,
-                        id_materia = a.fk_id_materia,
-                        id_seccion = a.fk_id_seccion
-                    })
-                    .ToList();
-            }
-        }
-
-        private List<MateriasDto> ObtenerMaterias()
-        {
-            using (var db = new EduNexusDbContext())
-            {
-                return db.Materias
-                    .OrderBy(m => m.nombre)
-                    .ToList()
-                    .Select(m => new MateriasDto
-                    {
-                        id_materia = m.id_materia,
-                        nombre = m.nombre,
-                        id_profesor = m.profesor
-                    })
-                    .ToList();
-            }
-        }
-
-        private List<SeccionesDto> ObtenerSecciones()
-        {
-            using (var db = new EduNexusDbContext())
-            {
-                var grados = db.Grados.ToList().ToDictionary(g => g.id_grado, g => g.nombre);
-                var calendarios = db.Calendarios.ToList().ToDictionary(c => c.id_calendario, c => c.fecha_inicio.Year);
-                var conteo = db.SeccionesEstudiantes
-                    .GroupBy(se => se.fk_id_seccion)
-                    .Select(g => new { id = g.Key, total = g.Count() })
-                    .ToList()
-                    .ToDictionary(x => x.id, x => x.total);
-
-                return db.Secciones
-                    .ToList()
-                    .Select(s => new SeccionesDto
-                    {
-                        id_seccion = s.id_seccion,
-                        nombre = s.nombre,
-                        grado = s.fk_id_grado,
-                        nombre_grado = grados.ContainsKey(s.fk_id_grado) ? grados[s.fk_id_grado] : string.Empty,
-                        anio = calendarios.ContainsKey(s.fk_id_calendario) ? (int?)calendarios[s.fk_id_calendario] : null,
-                        id_calendario = s.fk_id_calendario,
-                        cupo = s.cupo,
-                        estudiantes_matriculados = conteo.ContainsKey(s.id_seccion) ? conteo[s.id_seccion] : 0,
-                        fecha_modificacion = null,
-                        usuario_modificacion = string.Empty
-                    })
-                    .ToList();
             }
         }
     }

@@ -5,168 +5,92 @@
     int total = Model.Count();
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Grados</h1>
-        <p class="text-secondary mb-0">
-            Gestión de grados académicos.
-        </p>
-    </div>
-
-    <div class="col-auto">
-        @Html.ActionLink(
-            "+ Nuevo grado",
-            "CrearGrado",
-            null,
-            new { @class = "btn btn-primary" }
-        )
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Grados</h2>
+            <div class="page-subtitle">Gestión de los grados académicos de la institución.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink("Nuevo grado", "CrearGrado", null, new { @class = "btn btn-primary" })
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="row row-cards g-3 mb-3">
-
     <div class="col-sm-6">
-        <div class="card card-sm shadow-sm">
+        <div class="card card-sm">
             <div class="card-body">
-                <div class="text-secondary small">
-                    Grados registrados
-                </div>
-
-                <div class="h2 mb-0">
-                    @total
-                </div>
+                <div class="text-secondary small">Grados registrados</div>
+                <div class="h2 mb-0">@total</div>
             </div>
         </div>
     </div>
-
     <div class="col-sm-6">
-        <div class="card card-sm shadow-sm">
+        <div class="card card-sm">
             <div class="card-body">
-                <div class="text-secondary small">
-                    Año lectivo
-                </div>
-
-                <div class="h2 mb-0">
-                    2026
-                </div>
+                <div class="text-secondary small">Año lectivo</div>
+                <div class="h2 mb-0">@DateTime.Now.Year</div>
             </div>
         </div>
     </div>
-
 </div>
 
-<div class="card shadow-sm">
-
+<div class="card">
     <div class="card-header">
-        <h3 class="card-title mb-0">
-            Listado
-        </h3>
+        <h3 class="card-title">Listado de grados</h3>
     </div>
 
     @if (!Model.Any())
     {
-        <div class="card-body">
-
-            <div class="empty">
-
-                <p class="empty-title">
-                    No hay grados registrados
-                </p>
-
-                <div class="empty-action">
-
-                    @Html.ActionLink(
-                        "+ Nuevo grado",
-                        "CrearGrado",
-                        null,
-                        new { @class = "btn btn-primary" }
-                    )
-
-                </div>
-
+        <div class="empty">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M22 9l-10 -4l-10 4l10 4l10 -4v6" /><path d="M6 10.6v5.4a6 3 0 0 0 12 0v-5.4" /></svg>
             </div>
-
+            <p class="empty-title">No hay grados registrados</p>
+            <p class="empty-subtitle text-secondary">Cree el primer grado para empezar a organizar las secciones.</p>
+            <div class="empty-action">
+                @Html.ActionLink("Nuevo grado", "CrearGrado", null, new { @class = "btn btn-primary" })
+            </div>
         </div>
     }
     else
     {
         <div class="table-responsive">
-
             <table class="table table-vcenter card-table" id="myTable">
-
                 <thead>
                     <tr>
-                        <th>
-                            @Html.DisplayNameFor(model => model.grado)
-                        </th>
-
-                        <th>
-                            @Html.DisplayNameFor(model => model.descripcion)
-                        </th>
-
+                        <th>@Html.DisplayNameFor(model => model.grado)</th>
+                        <th>@Html.DisplayNameFor(model => model.descripcion)</th>
                         <th>Año</th>
-
-                        <th class="w-1">
-                            Acciones
-                        </th>
+                        <th class="en-acciones">Acciones</th>
                     </tr>
                 </thead>
-
                 <tbody>
-
                     @foreach (var item in Model)
                     {
                         <tr>
-
                             <td>
-                                <span class="badge bg-blue-lt">
-                                    @Html.DisplayFor(modelItem => item.grado)
-                                </span>
+                                <span class="badge bg-blue-lt">@Html.DisplayFor(modelItem => item.grado)</span>
                             </td>
-
-                            <td>
-                                @Html.DisplayFor(modelItem => item.descripcion)
+                            <td>@Html.DisplayFor(modelItem => item.descripcion)</td>
+                            <td class="text-secondary">@DateTime.Now.Year</td>
+                            <td class="en-acciones">
+                                <div class="btn-list">
+                                    @Html.ActionLink("Detalles", "DetalleDeGrado", new { id = item.id_grado }, new { @class = "btn btn-sm btn-outline-primary" })
+                                    @Html.ActionLink("Editar", "EditarGrado", new { id = item.id_grado }, new { @class = "btn btn-sm btn-outline-secondary" })
+                                    @Html.ActionLink("Eliminar", "EliminarGrado", new { id = item.id_grado }, new { @class = "btn btn-sm btn-outline-danger" })
+                                </div>
                             </td>
-
-                            <td>
-                                2026
-                            </td>
-
-                            <td class="text-nowrap">
-
-                                @Html.ActionLink(
-                                    "Editar",
-                                    "EditarGrado",
-                                    new { id = item.id_grado },
-                                    new { @class = "btn btn-sm btn-outline-secondary me-1" }
-                                )
-
-                                @Html.ActionLink(
-                                    "Detalles",
-                                    "DetalleDeGrado",
-                                    new { id = item.id_grado },
-                                    new { @class = "btn btn-sm btn-primary me-1" }
-                                )
-
-                                @Html.ActionLink(
-                                    "Eliminar",
-                                    "EliminarGrado",
-                                    new { id = item.id_grado },
-                                    new { @class = "btn btn-sm btn-outline-danger" }
-                                )
-
-                            </td>
-
                         </tr>
                     }
-
                 </tbody>
-
             </table>
-
         </div>
     }
-
 </div>
 
 @section scripts

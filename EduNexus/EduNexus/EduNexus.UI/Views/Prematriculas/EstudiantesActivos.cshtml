@@ -1,5 +1,4 @@
-﻿
-@model IEnumerable<EduNexus.UI.Models.Identity.UsuarioEntity>
+﻿@model IEnumerable<EduNexus.UI.Models.Identity.UsuarioEntity>
 
 @using System.Linq
 
@@ -15,50 +14,45 @@
     bool hayPeriodoDestino = ViewBag.HayPeriodoDestino == true;
 }
 
-<div class="container-xl mt-4">
-
-    <!-- ENCABEZADO -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-
-        <div>
-            <h1>Renovación de matrícula</h1>
-
-            <p class="text-secondary">
-                Seleccione el estudiante al que desea realizarle
-                la renovación de matrícula.
-            </p>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Estudiantes</div>
+            <h2 class="page-title">Renovación de matrícula</h2>
+            <div class="page-subtitle">Seleccione el estudiante al que desea realizarle la renovación de matrícula.</div>
         </div>
-
-        <div>
-            @Html.ActionLink(
-                "Regresar al listado",
-                "Listado",
-                "Prematriculas",
-                null,
-                new
-                {
-                    @class = "btn btn-outline-secondary"
-                }
-            )
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink(
+                    "Regresar al listado",
+                    "Listado",
+                    "Prematriculas",
+                    null,
+                    new
+                    {
+                        @class = "btn btn-outline-secondary"
+                    }
+                )
+            </div>
         </div>
+    </div>
+</div>
 
+<!-- PERÍODO DE DESTINO -->
+<div class="alert @(hayPeriodoDestino ? "alert-info" : "alert-warning") mb-3">
+    Período lectivo de destino de la renovación:
+    <strong>@periodoDestino</strong>
+</div>
+
+<!-- TABLA DE ESTUDIANTES -->
+<div class="card">
+
+    <div class="card-header">
+        <h3 class="card-title">Estudiantes activos registrados</h3>
     </div>
 
-    <!-- PERÍODO DE DESTINO -->
-    <div class="alert @(hayPeriodoDestino ? "alert-secondary" : "alert-warning") mb-3">
-        Período lectivo de destino de la renovación:
-        <strong>@periodoDestino</strong>
-    </div>
-
-    <!-- TABLA DE ESTUDIANTES -->
-    <div class="card shadow-sm">
-
-        <div class="card-header">
-            <h3 class="card-title mb-0">
-                Estudiantes activos registrados
-            </h3>
-        </div>
-
+    @if (Model != null && Model.Any())
+    {
         <div class="table-responsive">
 
             <table class="table table-vcenter card-table"
@@ -70,21 +64,19 @@
                         <th>Nombre completo</th>
                         <th>Teléfono</th>
                         <th>Renovación</th>
-                        <th>Acción</th>
+                        <th class="en-acciones">Acción</th>
                     </tr>
                 </thead>
 
                 <tbody>
 
-                    @if (Model != null && Model.Any())
-                    {
-                        foreach (var estudiante in Model)
+                        @foreach (var estudiante in Model)
                         {
                             <tr>
 
                                 <!-- IDENTIFICACIÓN -->
-                                <td>
-                                    @estudiante.identificacion
+                                <td class="text-nowrap">
+                                    @(EduNexus.UI.Models.Cedula.Normalizar(estudiante.identificacion) ?? estudiante.identificacion)
                                 </td>
 
                                 <!-- NOMBRE COMPLETO -->
@@ -115,11 +107,11 @@
                                     }
                                     else if (estadoRenovacion == "Aprobada")
                                     {
-                                        <span class="badge bg-success-lt">Aprobada</span>
+                                        <span class="badge bg-green-lt">Aprobada</span>
                                     }
                                     else if (estadoRenovacion == "Pendiente")
                                     {
-                                        <span class="badge bg-warning-lt">Pendiente</span>
+                                        <span class="badge bg-yellow-lt">Pendiente</span>
                                     }
                                     else
                                     {
@@ -128,7 +120,7 @@
                                 </td>
 
                                 <!-- ACCIONES -->
-                                <td>
+                                <td class="en-acciones">
 
                                     @if (sinSolicitud)
                                     {
@@ -142,59 +134,56 @@
                                             },
                                             new
                                             {
-                                                @class = "btn btn-sm btn-primary",
+                                                @class = "btn btn-sm btn-outline-primary",
                                                 title = "Registrar renovación de matrícula"
                                             }
                                         )
                                     }
                                     else if (conEstado)
                                     {
-                                        <span class="text-secondary">Ya tiene solicitud</span>
+                                        <span class="text-secondary small">Ya tiene solicitud</span>
                                     }
                                     else
                                     {
-                                        <span class="text-secondary">Sin período de destino</span>
+                                        <span class="text-secondary small">Sin período de destino</span>
                                     }
 
                                 </td>
 
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="5"
-                                class="text-center text-secondary py-4">
-
-                                No existen estudiantes activos registrados.
-
-                            </td>
-                        </tr>
-                    }
 
                 </tbody>
 
             </table>
 
         </div>
+    }
+    else
+    {
+        <div class="empty">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></svg>
+            </div>
+            <p class="empty-title">Sin estudiantes activos</p>
+            <p class="empty-subtitle text-secondary">No existen estudiantes activos registrados.</p>
+        </div>
+    }
 
-    </div>
+</div>
 
-    <!-- INFORMACIÓN IMPORTANTE -->
-    <div class="alert alert-info mt-4">
+<!-- INFORMACIÓN IMPORTANTE -->
+<div class="alert alert-info mt-3">
 
-        <strong>Información importante:</strong>
+    <strong>Información importante:</strong>
 
-        <p class="mb-0 mt-2">
-            La renovación de matrícula genera una nueva solicitud
-            con estado <strong>Pendiente</strong>.
+    <p class="mb-0 mt-2">
+        La renovación de matrícula genera una nueva solicitud
+        con estado <strong>Pendiente</strong>.
 
-            La administración deberá aprobarla posteriormente,
-            considerando la disponibilidad de cupos.
-        </p>
-
-    </div>
+        La administración deberá aprobarla posteriormente,
+        considerando la disponibilidad de cupos.
+    </p>
 
 </div>
 

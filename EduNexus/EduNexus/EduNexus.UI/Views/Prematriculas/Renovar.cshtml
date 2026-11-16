@@ -15,16 +15,19 @@
         : "No disponible";
 }
 
-<div class="container-xl mt-4">
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Estudiantes</div>
+            <h2 class="page-title">Renovación de matrícula</h2>
+            <div class="page-subtitle">Registre la renovación de un estudiante activo para el siguiente período lectivo.</div>
+        </div>
+    </div>
+</div>
 
-    <h1>Renovación de matrícula</h1>
+<div>
 
-    <p class="text-secondary">
-        Registre la renovación de un estudiante activo
-        para el siguiente período lectivo.
-    </p>
-
-    <div class="card shadow-sm">
+    <div class="card">
 
         <div class="card-header">
             <h3 class="card-title">
@@ -52,14 +55,14 @@
                     new { @class = "alert alert-danger" }
                 )
 
-                <h4 class="mb-3">
+                <h4 class="card-subtitle text-uppercase text-secondary small fw-bold mb-3">
                     Información del estudiante
                 </h4>
 
-                <div class="row">
+                <div class="row g-3">
 
                     <!-- IDENTIFICACIÓN -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         <label for="identificacionConsulta"
                                class="form-label">
@@ -69,13 +72,15 @@
                         <input type="text"
                                id="identificacionConsulta"
                                class="form-control"
-                               value="@Model.identificacion"
+                               value="@(EduNexus.UI.Models.Cedula.Normalizar(Model.identificacion) ?? Model.identificacion)"
+                               placeholder="@EduNexus.UI.Models.Cedula.Formato"
+                               maxlength="11"
                                readonly />
 
                     </div>
 
                     <!-- NOMBRE COMPLETO -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         <label for="nombreConsulta"
                                class="form-label">
@@ -91,7 +96,7 @@
                     </div>
 
                     <!-- FECHA DE NACIMIENTO -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         <label for="fechaConsulta"
                                class="form-label">
@@ -109,7 +114,7 @@
                     </div>
 
                     <!-- GRADO ANTERIOR -->
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
 
                         <label for="gradoAnterior"
                                class="form-label">
@@ -128,7 +133,7 @@
 
                 <hr />
 
-                <h4 class="mb-3">
+                <h4 class="card-subtitle text-uppercase text-secondary small fw-bold mb-3">
                     Información de la renovación
                 </h4>
 
@@ -146,7 +151,7 @@
                            value="@periodoDestino"
                            readonly />
 
-                    <div class="form-text">
+                    <div class="form-hint">
                         La renovación se realizará para el
                         período lectivo indicado.
                         Este período es determinado
@@ -161,10 +166,8 @@
                     @Html.LabelFor(
                         m => m.grado,
                         "Grado solicitado para la renovación",
-                        new { @class = "form-label" }
+                        new { @class = "form-label required" }
                     )
-
-                    <span class="text-danger">*</span>
 
                     @Html.DropDownListFor(
                         m => m.grado,
@@ -207,15 +210,7 @@
                 </div>
 
                 <!-- BOTONES -->
-                <div class="d-flex gap-2 mt-4">
-
-                    <button type="submit"
-                            class="btn btn-primary"
-                            id="btnRenovar">
-
-                        Registrar renovación
-
-                    </button>
+                <div class="en-form-acciones mt-4">
 
                     @Html.ActionLink(
                         "Cancelar",
@@ -227,6 +222,14 @@
                             @class = "btn btn-outline-secondary"
                         }
                     )
+
+                    <button type="submit"
+                            class="btn btn-primary"
+                            id="btnRenovar">
+
+                        Registrar renovación
+
+                    </button>
 
                 </div>
             }

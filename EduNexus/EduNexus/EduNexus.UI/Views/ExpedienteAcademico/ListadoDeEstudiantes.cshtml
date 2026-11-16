@@ -4,13 +4,18 @@
     ViewBag.Title = "Expediente académico";
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Expediente académico</h1>
-        <p class="text-secondary mb-0">Historial, adecuaciones y ayudas de cada estudiante.</p>
-    </div>
-    <div class="col-auto">
-        @Html.ActionLink("Tipos de adecuación", "TiposDeAdecuacion", null, new { @class = "btn btn-outline-secondary" })
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Estudiantes</div>
+            <h2 class="page-title">Expediente académico</h2>
+            <div class="page-subtitle">Historial, adecuaciones y ayudas de cada estudiante.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink("Tipos de adecuación", "TiposDeAdecuacion", null, new { @class = "btn btn-outline-secondary" })
+            </div>
+        </div>
     </div>
 </div>
 
@@ -19,18 +24,16 @@
     <div class="alert alert-warning">No existe el rol "Estudiante". Créelo en Roles y asígnelo a los usuarios estudiantes.</div>
 }
 
-<div class="card shadow-sm">
+<div class="card">
     <div class="card-header">
-        <h3 class="card-title mb-0">Estudiantes</h3>
+        <h3 class="card-title">Estudiantes</h3>
     </div>
 
     @if (!Model.Any())
     {
-        <div class="card-body">
-            <div class="empty">
-                <p class="empty-title">No hay estudiantes registrados</p>
-                <p class="empty-subtitle text-secondary">Registre usuarios con el rol Estudiante en el módulo de Usuarios.</p>
-            </div>
+        <div class="empty">
+            <p class="empty-title">No hay estudiantes registrados</p>
+            <p class="empty-subtitle text-secondary">Registre usuarios con el rol Estudiante en el módulo de Usuarios.</p>
         </div>
     }
     else
@@ -45,7 +48,7 @@
                         <th>@Html.DisplayNameFor(model => model.adecuaciones_activas)</th>
                         <th>@Html.DisplayNameFor(model => model.ayudas_activas)</th>
                         <th>@Html.DisplayNameFor(model => model.estado)</th>
-                        <th class="w-1">Acciones</th>
+                        <th class="en-acciones">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -53,14 +56,16 @@
                     {
                         <tr>
                             <td class="fw-medium">@item.nombre_completo</td>
-                            <td>@item.identificacion</td>
+                            <td class="text-nowrap">@item.identificacion</td>
                             <td>@item.seccion_actual</td>
                             <td><span class="badge bg-blue-lt">@item.adecuaciones_activas</span></td>
-                            <td><span class="badge bg-green-lt">@item.ayudas_activas</span></td>
+                            <td><span class="badge bg-blue-lt">@item.ayudas_activas</span></td>
                             <td><span class="badge bg-@(item.estado == "Activo" ? "green" : "red")-lt">@item.estado</span></td>
-                            <td class="text-nowrap">
-                                @Html.ActionLink("Expediente", "Expediente", new { id = item.id_usuario }, new { @class = "btn btn-sm btn-primary me-1" })
-                                @Html.ActionLink("Historial", "HistorialAcademico", new { id = item.id_usuario }, new { @class = "btn btn-sm btn-outline-secondary" })
+                            <td class="en-acciones">
+                                <div class="btn-list">
+                                    @Html.ActionLink("Expediente", "Expediente", new { id = item.id_usuario }, new { @class = "btn btn-sm btn-outline-primary" })
+                                    @Html.ActionLink("Historial", "HistorialAcademico", new { id = item.id_usuario }, new { @class = "btn btn-sm btn-outline-secondary" })
+                                </div>
                             </td>
                         </tr>
                     }

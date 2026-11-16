@@ -34,8 +34,9 @@ namespace EduNexus.UI.Controllers
             }
 
             string estudiante;
+            string idUsuario;
 
-            if (!ExpedienteExiste(id_expediente.Value, out estudiante))
+            if (!ExpedienteExiste(id_expediente.Value, out estudiante, out idUsuario))
             {
                 return HttpNotFound();
             }
@@ -43,7 +44,8 @@ namespace EduNexus.UI.Controllers
             return View(new DocumentoExpedienteDto
             {
                 id_expediente = id_expediente.Value,
-                estudiante = estudiante
+                estudiante = estudiante,
+                id_usuario = idUsuario
             });
         }
 
@@ -65,13 +67,15 @@ namespace EduNexus.UI.Controllers
             // =========================================
 
             string estudiante;
+            string idUsuario;
 
-            if (!ExpedienteExiste(modelo.id_expediente, out estudiante))
+            if (!ExpedienteExiste(modelo.id_expediente, out estudiante, out idUsuario))
             {
                 return HttpNotFound();
             }
 
             modelo.estudiante = estudiante;
+            modelo.id_usuario = idUsuario;
 
             // =========================================
             // PASO 2: VALIDAR DATOS Y ARCHIVO
@@ -206,7 +210,7 @@ namespace EduNexus.UI.Controllers
             }
 
             TempData["Mensaje"] = "El documento se adjuntó correctamente al expediente.";
-            return RedirectToAction("HistorialDocumentos", new { id_expediente = modelo.id_expediente });
+            return AlExpediente(modelo.id_usuario);
         }
 
         // =========================================
@@ -215,6 +219,7 @@ namespace EduNexus.UI.Controllers
         // =========================================
 
         // GET: DocumentosExpediente/HistorialDocumentos?id_expediente=5
+        // Los documentos se ven en la pestaña "Documentos" del expediente unificado.
         [HttpGet]
         public ActionResult HistorialDocumentos(int? id_expediente)
         {
@@ -225,24 +230,26 @@ namespace EduNexus.UI.Controllers
             }
 
             string estudiante;
+            string idUsuario;
 
-            if (!ExpedienteExiste(id_expediente.Value, out estudiante))
+            if (!ExpedienteExiste(id_expediente.Value, out estudiante, out idUsuario))
             {
                 return HttpNotFound();
             }
 
-            int idExpediente = id_expediente.Value;
+            return AlExpediente(idUsuario);
+        }
 
-            ViewBag.IdExpediente = idExpediente;
-            ViewBag.Estudiante = estudiante;
-
-            List<DocumentoExpedienteDto> documentos =
-                (from d in db.DocumentosExpediente
-                 where d.fk_id_expediente == idExpediente
-                 join u in db.Usuarios on d.fk_id_usuario equals u.id_usuario into us
-                 from u in us.DefaultIfEmpty()
-                 orderby d.fecha_registro descending
-                 select new { d, nombre = u != null ? u.nombre : null, apellido = u != null ? u.apellido1 : null })
+        // Documentos de un expediente, del más reciente al más antiguo,
+        // con el nombre de quien lo subió.
+        internal static List<DocumentoExpedienteDto> ConsultarDocumentos(EduNexusDbContext db, int idExpediente)
+        {
+            return (from d in db.DocumentosExpediente
+                    where d.fk_id_expediente == idExpediente
+                    join u in db.Usuarios on d.fk_id_usuario equals u.id_usuario into us
+                    from u in us.DefaultIfEmpty()
+                    orderby d.fecha_registro descending
+                    select new { d, nombre = u != null ? u.nombre : null, apellido = u != null ? u.apellido1 : null })
                 .ToList()
                 .Select(x => new DocumentoExpedienteDto
                 {
@@ -257,8 +264,6 @@ namespace EduNexus.UI.Controllers
                     registrado_por = ((x.nombre ?? "") + " " + (x.apellido ?? "")).Trim()
                 })
                 .ToList();
-
-            return View(documentos);
         }
 
         // =========================================
@@ -293,7 +298,7 @@ namespace EduNexus.UI.Controllers
             if (ruta == null || !System.IO.File.Exists(ruta))
             {
                 TempData["Error"] = "El archivo del documento no está disponible en el servidor.";
-                return RedirectToAction("HistorialDocumentos", new { id_expediente = documento.fk_id_expediente });
+                return AlExpediente(ValidacionExpediente.IdUsuarioDeExpediente(db, documento.fk_id_expediente));
             }
 
             string tipo = AlmacenamientoDocumentoExpediente.TipoMime(
@@ -303,10 +308,93 @@ namespace EduNexus.UI.Controllers
         }
 
         // =========================================
+        // ELIMINAR DOCUMENTO
+        // Borra el registro y el archivo físico.
+        // =========================================
+
+        // POST: DocumentosExpediente/EliminarDocumento/7
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult EliminarDocumento(int? id)
+        {
+            if (!id.HasValue || id.Value <= 0)
+            {
+                return new HttpStatusCodeResult(400);
+            }
+
+            int idDocumento = id.Value;
+
+            DocumentoExpedienteEntity documento = db.DocumentosExpediente
+                .FirstOrDefault(d => d.id_documento == idDocumento);
+
+            if (documento == null)
+            {
+                return HttpNotFound();
+            }
+
+            int idExpediente = documento.fk_id_expediente;
+            string nombreInterno = documento.nombre_interno;
+            string idUsuario = ValidacionExpediente.IdUsuarioDeExpediente(db, idExpediente);
+
+            try
+            {
+                db.DocumentosExpediente.Remove(documento);
+
+                Auditoria.Registrar(
+                    db,
+                    "Eliminar documento del expediente",
+                    "Se eliminó el documento \"" + documento.nombre_documento + "\" del expediente #" + idExpediente + ".",
+                    new
+                    {
+                        expediente = idExpediente,
+                        documento.nombre_documento,
+                        documento.descripcion,
+                        documento.nombre_archivo,
+                        documento.tipo_archivo,
+                        documento.tamano_bytes,
+                        documento.fecha_registro
+                    },
+                    null);
+
+                db.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError("Error eliminando documento del expediente: " + ex);
+                TempData["Error"] = "No fue posible eliminar el documento. Intente de nuevo.";
+                return AlExpediente(idUsuario);
+            }
+
+            // El archivo se borra después de confirmar el cambio en la base de datos.
+            try
+            {
+                AlmacenamientoDocumentoExpediente.EliminarDocumento(idExpediente, nombreInterno);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError("No se pudo eliminar el archivo del documento: " + ex);
+            }
+
+            TempData["Mensaje"] = "El documento se eliminó del expediente.";
+            return AlExpediente(idUsuario);
+        }
+
+        // =========================================
         // MÉTODOS AUXILIARES
         // =========================================
 
-        private bool ExpedienteExiste(int idExpediente, out string estudiante)
+        // Vuelve al expediente unificado en la pestaña "Documentos".
+        private ActionResult AlExpediente(string idUsuario)
+        {
+            if (string.IsNullOrEmpty(idUsuario))
+            {
+                return RedirectToAction("Index", "Expedientes");
+            }
+
+            return RedirectToAction("Expediente", "Expedientes", new { id = idUsuario, tab = "documentos" });
+        }
+
+        private bool ExpedienteExiste(int idExpediente, out string estudiante, out string idUsuario)
         {
             var datos = (from e in db.Expedientes
                          where e.id_expediente == idExpediente
@@ -325,6 +413,10 @@ namespace EduNexus.UI.Controllers
                 ? null
                 : string.Join(" ", new[] { datos.nombre, datos.apellido1, datos.apellido2 }
                     .Where(x => !string.IsNullOrWhiteSpace(x)));
+
+            idUsuario = datos == null
+                ? null
+                : ValidacionExpediente.IdUsuarioDeExpediente(db, idExpediente);
 
             return datos != null;
         }

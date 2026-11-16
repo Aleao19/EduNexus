@@ -14,23 +14,24 @@ namespace EduNexus.UI.Controllers
     [AutorizarAdministrador]
     public class HorarioDocentesController : Controller
     {
-        private const string RolDocente = "Docente";
-
         // Búsqueda de docentes por nombre, identificación o correo
         public ActionResult BuscarDocente(string q)
         {
             using (var db = new EduNexusDbContext())
             {
                 string buscado = Normalizar(q);
+                // La cédula también se busca normalizada (0-0000-0000), aunque se haya escrito sin guiones
+                string cedulaBuscada = Cedula.Normalizar(q);
 
                 List<DocenteBusquedaDto> resultados = ObtenerDocentes(db)
                     .Where(u => buscado == "" ||
-                                Normalizar(NombreCompleto(u) + " " + u.identificacion + " " + u.email).Contains(buscado))
+                                (cedulaBuscada != null && Cedula.Iguales(u.identificacion, cedulaBuscada)) ||
+                                Normalizar(NombreCompleto(u) + " " + CedulaFormateada(u.identificacion) + " " + u.identificacion + " " + u.email).Contains(buscado))
                     .Select(u => new DocenteBusquedaDto
                     {
                         id_usuario = u.id_usuario,
                         nombre = NombreCompleto(u),
-                        identificacion = u.identificacion,
+                        identificacion = CedulaFormateada(u.identificacion),
                         email = u.email,
                         estado = u.estado ? "Activo" : "Inactivo"
                     })
@@ -77,7 +78,7 @@ namespace EduNexus.UI.Controllers
                 {
                     id_usuario = docente.id_usuario,
                     docente = NombreCompleto(docente),
-                    identificacion = docente.identificacion,
+                    identificacion = CedulaFormateada(docente.identificacion),
                     email = docente.email,
 
                     // Escenario 1: horario completo (día, hora, materia y sección)
@@ -110,8 +111,8 @@ namespace EduNexus.UI.Controllers
 
         private static List<UsuarioEntity> ObtenerDocentes(EduNexusDbContext db)
         {
-            string idRolDocente = db.Roles
-                .Where(r => r.nombre == RolDocente)
+            string idRolDocente = db.Roles.ToList()
+                .Where(r => RolesSistema.Es(r.nombre, RolesSistema.Docente))
                 .Select(r => r.id_rol)
                 .FirstOrDefault();
 
@@ -121,6 +122,11 @@ namespace EduNexus.UI.Controllers
             }
 
             return db.Usuarios.Where(u => u.rol == idRolDocente).OrderBy(u => u.nombre).ToList();
+        }
+
+        private static string CedulaFormateada(string cedula)
+        {
+            return Cedula.Normalizar(cedula) ?? cedula;
         }
 
         private static string NombreCompleto(UsuarioEntity u)

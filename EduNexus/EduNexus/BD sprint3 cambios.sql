@@ -51,3 +51,40 @@ DELETE FROM roles WHERE id_rol = @profesor;
 ALTER TABLE prematricula
     DROP INDEX uq_prematricula_identificacion,
     ADD UNIQUE KEY uq_prematricula_identificacion_periodo (identificacion_estudiante, fk_id_calendario);
+
+-- =========================================================
+-- Ronda 2 (comentarios de la profesora)
+-- Correr en MySQL Workbench. Las primeras líneas desactivan
+-- el "safe update mode" solo para esta sesión.
+-- =========================================================
+SET SQL_SAFE_UPDATES = 0;
+
+-- 1. Justificación de ausencias: motivo, quién la justificó y cuándo.
+ALTER TABLE asistencia
+    ADD COLUMN motivo_justificacion VARCHAR(500) NULL,
+    ADD COLUMN fk_id_justificado_por VARCHAR(128) NULL,
+    ADD COLUMN fecha_justificacion DATETIME NULL;
+
+ALTER TABLE asistencia
+    ADD CONSTRAINT fk_asistencia_justificado_por
+    FOREIGN KEY (fk_id_justificado_por) REFERENCES usuarios(id_usuario);
+
+-- 2. Cédulas existentes al formato estándar 0-0000-0000
+--    (solo las que tienen exactamente 9 dígitos; las demás no se tocan).
+UPDATE usuarios
+SET identificacion = CONCAT(
+        SUBSTRING(REGEXP_REPLACE(identificacion, '[^0-9]', ''), 1, 1), '-',
+        SUBSTRING(REGEXP_REPLACE(identificacion, '[^0-9]', ''), 2, 4), '-',
+        SUBSTRING(REGEXP_REPLACE(identificacion, '[^0-9]', ''), 6, 4))
+WHERE identificacion REGEXP '^[0-9 -]+$'
+  AND CHAR_LENGTH(REGEXP_REPLACE(identificacion, '[^0-9]', '')) = 9;
+
+UPDATE prematricula
+SET identificacion_estudiante = CONCAT(
+        SUBSTRING(REGEXP_REPLACE(identificacion_estudiante, '[^0-9]', ''), 1, 1), '-',
+        SUBSTRING(REGEXP_REPLACE(identificacion_estudiante, '[^0-9]', ''), 2, 4), '-',
+        SUBSTRING(REGEXP_REPLACE(identificacion_estudiante, '[^0-9]', ''), 6, 4))
+WHERE identificacion_estudiante REGEXP '^[0-9 -]+$'
+  AND CHAR_LENGTH(REGEXP_REPLACE(identificacion_estudiante, '[^0-9]', '')) = 9;
+
+SET SQL_SAFE_UPDATES = 1;

@@ -4,91 +4,77 @@
     ViewBag.Title = "Crear nuevo docente";
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Nuevo docente</h1>
-        <p class="text-secondary mb-0">Registra un nuevo docente en el sistema.</p>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Nuevo docente</h2>
+            <div class="page-subtitle">Registre un nuevo docente. Al guardarlo pasará a su ficha para asignarle materias y secciones.</div>
+        </div>
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        @using (Html.BeginForm("Create", "Docentes", FormMethod.Post, new { @class = "needs-validation", novalidate = "novalidate" }))
-        {
-            @Html.AntiForgeryToken()
+<div class="card">
+    @using (Html.BeginForm("Create", "Docentes", FormMethod.Post, new { @class = "needs-validation", novalidate = "novalidate" }))
+    {
+        @Html.AntiForgeryToken()
+        <div class="card-header">
+            <h3 class="card-title">Datos del docente</h3>
+        </div>
+        <div class="card-body">
             @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
 
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="mb-3">
-                        @Html.LabelFor(model => model.identificacion, new { @class = "form-label" })
-                        @Html.TextBoxFor(model => model.identificacion, new { @class = "form-control", placeholder = "Ej: 12345678", required = "required" })
-                        @Html.ValidationMessageFor(model => model.identificacion, "", new { @class = "text-danger" })
-                    </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.identificacion, new { @class = "form-label required" })
+                    @Html.TextBoxFor(model => model.identificacion, new { @class = "form-control", placeholder = EduNexus.UI.Models.Cedula.Formato, required = "required", maxlength = "11", pattern = "\\d-\\d{4}-\\d{4}", title = EduNexus.UI.Models.Cedula.MensajeFormato, autocomplete = "off" })
+                    <small class="form-hint">Formato 0-0000-0000. La cédula no se puede modificar después de registrada.</small>
+                    @Html.ValidationMessageFor(model => model.identificacion, "", new { @class = "text-danger" })
                 </div>
-            </div>
 
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="mb-3">
-                        @Html.LabelFor(model => model.nombre, new { @class = "form-label" })
-                        @Html.TextBoxFor(model => model.nombre, new { @class = "form-control", placeholder = "Nombre", required = "required" })
-                        @Html.ValidationMessageFor(model => model.nombre, "", new { @class = "text-danger" })
-                    </div>
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.nombre, new { @class = "form-label required" })
+                    @Html.TextBoxFor(model => model.nombre, new { @class = "form-control", placeholder = "Nombre", required = "required" })
+                    @Html.ValidationMessageFor(model => model.nombre, "", new { @class = "text-danger" })
                 </div>
-            </div>
 
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="mb-3">
-                        @Html.LabelFor(model => model.apellido1, new { @class = "form-label" })
-                        @Html.TextBoxFor(model => model.apellido1, new { @class = "form-control", placeholder = "Primer apellido", required = "required" })
-                        @Html.ValidationMessageFor(model => model.apellido1, "", new { @class = "text-danger" })
-                    </div>
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.apellido1, new { @class = "form-label required" })
+                    @Html.TextBoxFor(model => model.apellido1, new { @class = "form-control", placeholder = "Primer apellido", required = "required" })
+                    @Html.ValidationMessageFor(model => model.apellido1, "", new { @class = "text-danger" })
                 </div>
-                <div class="col-lg-6">
-                    <div class="mb-3">
-                        @Html.LabelFor(model => model.apellido2, new { @class = "form-label" })
-                        @Html.TextBoxFor(model => model.apellido2, new { @class = "form-control", placeholder = "Segundo apellido" })
-                        @Html.ValidationMessageFor(model => model.apellido2, "", new { @class = "text-danger" })
-                    </div>
-                </div>
-            </div>
 
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="mb-3">
-                        @Html.LabelFor(model => model.email, new { @class = "form-label" })
-                        @Html.TextBoxFor(model => model.email, new { @class = "form-control", type = "email", placeholder = "usuario@mep.go.cr", required = "required" })
-                        @Html.ValidationMessageFor(model => model.email, "", new { @class = "text-danger" })
-                    </div>
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.apellido2, new { @class = "form-label" })
+                    @Html.TextBoxFor(model => model.apellido2, new { @class = "form-control", placeholder = "Segundo apellido" })
+                    @Html.ValidationMessageFor(model => model.apellido2, "", new { @class = "text-danger" })
                 </div>
-                <div class="col-lg-6">
-                    <div class="mb-3">
-                        @Html.LabelFor(model => model.telefono, new { @class = "form-label" })
-                        @Html.TextBoxFor(model => model.telefono, new { @class = "form-control", type = "tel", placeholder = "8888-8888" })
-                        @Html.ValidationMessageFor(model => model.telefono, "", new { @class = "text-danger" })
-                    </div>
-                </div>
-            </div>
 
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="mb-3">
-                        @Html.LabelFor(model => model.contrasenna_temporal, new { @class = "form-label" })
-                        @Html.PasswordFor(model => model.contrasenna_temporal, new { @class = "form-control", required = "required", minlength = "8", autocomplete = "new-password" })
-                        <small class="form-hint">Mínimo 8 caracteres. El docente la usará para su primer ingreso.</small>
-                        @Html.ValidationMessageFor(model => model.contrasenna_temporal, "", new { @class = "text-danger" })
-                    </div>
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.email, new { @class = "form-label required" })
+                    @Html.TextBoxFor(model => model.email, new { @class = "form-control", type = "email", placeholder = "usuario@mep.go.cr", required = "required" })
+                    @Html.ValidationMessageFor(model => model.email, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.telefono, new { @class = "form-label" })
+                    @Html.TextBoxFor(model => model.telefono, new { @class = "form-control", type = "tel", placeholder = "8888-8888" })
+                    @Html.ValidationMessageFor(model => model.telefono, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.contrasenna_temporal, new { @class = "form-label required" })
+                    @Html.PasswordFor(model => model.contrasenna_temporal, new { @class = "form-control", required = "required", minlength = "8", autocomplete = "new-password" })
+                    <small class="form-hint">Mínimo 8 caracteres. El docente la usará para su primer ingreso.</small>
+                    @Html.ValidationMessageFor(model => model.contrasenna_temporal, "", new { @class = "text-danger" })
                 </div>
             </div>
-
-            <div class="form-footer">
-                <button type="submit" class="btn btn-primary">Guardar docente</button>
-                @Html.ActionLink("Cancelar", "ListadoDeDocentes", null, new { @class = "btn btn-outline-secondary" })
-            </div>
-        }
-    </div>
+        </div>
+        <div class="card-footer en-form-acciones">
+            @Html.ActionLink("Cancelar", "ListadoDeDocentes", null, new { @class = "btn btn-outline-secondary" })
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+    }
 </div>
 
 @section Scripts {
@@ -109,6 +95,20 @@
                     }, false);
                 });
             }, false);
+        })();
+    </script>
+    <script>
+        // Da formato 0-0000-0000 a la cédula mientras se escribe
+        (function () {
+            var campo = document.getElementById('identificacion');
+            if (!campo) return;
+            campo.addEventListener('input', function () {
+                var d = campo.value.replace(/\D/g, '').substring(0, 9);
+                var f = d.substring(0, 1);
+                if (d.length > 1) f += '-' + d.substring(1, 5);
+                if (d.length > 5) f += '-' + d.substring(5, 9);
+                campo.value = f;
+            });
         })();
     </script>
 }

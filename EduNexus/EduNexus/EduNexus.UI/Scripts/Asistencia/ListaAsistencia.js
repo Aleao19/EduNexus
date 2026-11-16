@@ -29,6 +29,23 @@
         setTexto('contSinMarcar', c.sin);
     }
 
+    // Muestra el campo de motivo (obligatorio) solo cuando la ausencia es justificada
+    var ESTADO_JUSTIFICADO = 'Ausencia justificada';
+
+    function actualizarMotivo(fila) {
+        var bloque = fila.querySelector('.asist-motivo');
+        if (!bloque) { return; }
+        var marcado = fila.querySelector('input[type=radio]:checked');
+        var justificada = !!marcado && marcado.value === ESTADO_JUSTIFICADO;
+        var campo = bloque.querySelector('textarea');
+
+        bloque.classList.toggle('d-none', !justificada);
+        if (campo) {
+            campo.required = justificada;
+            if (!justificada) { campo.classList.remove('is-invalid'); }
+        }
+    }
+
     function mostrar(html) {
         if (html === null) { return; }
         var destino = document.getElementById('listaAsistencia');
@@ -72,7 +89,10 @@
     document.addEventListener('change', function (e) {
         if (e.target.matches && e.target.matches('.asist-lista input[type=radio]')) {
             var fila = e.target.closest('tr');
-            if (fila) { fila.classList.remove('table-danger'); }
+            if (fila) {
+                fila.classList.remove('table-danger');
+                actualizarMotivo(fila);
+            }
             actualizarContadores();
         }
     });
@@ -85,6 +105,7 @@
             });
             document.querySelectorAll('.asist-lista tbody tr').forEach(function (f) {
                 f.classList.remove('table-danger');
+                actualizarMotivo(f);
             });
             actualizarContadores();
             return;

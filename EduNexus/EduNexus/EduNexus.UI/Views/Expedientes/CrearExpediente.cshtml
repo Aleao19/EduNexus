@@ -7,15 +7,18 @@
     bool datosCargados = Model != null && Model.id_matricula > 0 && !string.IsNullOrEmpty(Model.identificacion);
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Crear expediente</h1>
-        <p class="text-secondary mb-0">
-            Los datos personales se toman de la prematrícula aprobada del estudiante.
-        </p>
-    </div>
-    <div class="col-auto">
-        @Html.ActionLink("Regresar", "ListadoDeExpedientes", null, new { @class = "btn btn-outline-secondary" })
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Estudiantes</div>
+            <h2 class="page-title">Crear expediente</h2>
+            <div class="page-subtitle">Los datos personales se toman de la prematrícula aprobada del estudiante.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink("Regresar", "Index", "Expedientes", null, new { @class = "btn btn-outline-secondary" })
+            </div>
+        </div>
     </div>
 </div>
 
@@ -33,70 +36,70 @@
 
     @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
 
-    <div class="card shadow-sm mb-3">
+    <div class="card mb-3">
         <div class="card-header">
-            <h3 class="card-title mb-0">Matrícula del estudiante</h3>
+            <h3 class="card-title">Matrícula del estudiante</h3>
         </div>
         <div class="card-body">
             <div class="mb-3">
-                @Html.LabelFor(model => model.id_matricula, new { @class = "form-label" })
+                @Html.LabelFor(model => model.id_matricula, new { @class = "form-label required" })
                 @Html.DropDownListFor(
                     model => model.id_matricula,
                     matriculas ?? new SelectList(new List<SelectListItem>(), "Value", "Text"),
                     "Seleccione una matrícula aprobada",
                     new { @class = "form-select", id = "id_matricula", required = "required" })
                 @Html.ValidationMessageFor(model => model.id_matricula, "", new { @class = "text-danger" })
-                <div class="form-text">Al seleccionar la matrícula se muestran los datos personales registrados.</div>
+                <div class="form-hint">Al seleccionar la matrícula se muestran los datos personales registrados.</div>
             </div>
 
             @if (datosCargados)
             {
-                <div class="row">
-                    <div class="col-md-4 mb-2">
-                        <div class="text-secondary small">Identificación</div>
-                        <div class="fw-medium">@Model.identificacion</div>
+                <div class="row g-3">
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Cédula</div>
+                        <div class="en-dato-valor">@(EduNexus.UI.Models.Cedula.Normalizar(Model.identificacion) ?? Model.identificacion)</div>
                     </div>
-                    <div class="col-md-4 mb-2">
-                        <div class="text-secondary small">Nombre completo</div>
-                        <div class="fw-medium">@Model.nombre @Model.apellido1 @Model.apellido2</div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Nombre completo</div>
+                        <div class="en-dato-valor">@Model.nombre @Model.apellido1 @Model.apellido2</div>
                     </div>
-                    <div class="col-md-4 mb-2">
-                        <div class="text-secondary small">Género</div>
-                        <div>@(string.IsNullOrWhiteSpace(Model.genero) ? "No registrado" : Model.genero)</div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Género</div>
+                        <div class="en-dato-valor">@(string.IsNullOrWhiteSpace(Model.genero) ? "No registrado" : Model.genero)</div>
                     </div>
-                    <div class="col-md-4 mb-2">
-                        <div class="text-secondary small">Grado</div>
-                        <div>@Model.nombre_grado</div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Grado</div>
+                        <div class="en-dato-valor">@Model.nombre_grado</div>
                     </div>
-                    <div class="col-md-4 mb-2">
-                        <div class="text-secondary small">Fecha de nacimiento</div>
-                        <div>@Model.fecha_nacimiento.ToString("dd/MM/yyyy")</div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Fecha de nacimiento</div>
+                        <div class="en-dato-valor">@Model.fecha_nacimiento.ToString("dd/MM/yyyy")</div>
                     </div>
-                    <div class="col-md-4 mb-2">
-                        <div class="text-secondary small">Teléfono</div>
-                        <div>@(string.IsNullOrWhiteSpace(Model.telefono) ? "No registrado" : Model.telefono)</div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Teléfono</div>
+                        <div class="en-dato-valor">@(string.IsNullOrWhiteSpace(Model.telefono) ? "No registrado" : Model.telefono)</div>
                     </div>
-                    <div class="col-md-8 mb-2">
-                        <div class="text-secondary small">Dirección</div>
-                        <div>@(string.IsNullOrWhiteSpace(Model.direccion) ? "No registrada" : Model.direccion)</div>
+                    <div class="col-sm-6 col-md-8">
+                        <div class="en-dato-label">Dirección</div>
+                        <div class="en-dato-valor">@(string.IsNullOrWhiteSpace(Model.direccion) ? "No registrada" : Model.direccion)</div>
                     </div>
-                    <div class="col-md-4 mb-2">
-                        <div class="text-secondary small">Adecuación / discapacidad</div>
-                        <div>@(Model.tiene_adecuacion ? "Sí" : "No") / @(Model.tiene_discapacidad ? "Sí" : "No")</div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Adecuación / discapacidad</div>
+                        <div class="en-dato-valor">@(Model.tiene_adecuacion ? "Sí" : "No") / @(Model.tiene_discapacidad ? "Sí" : "No")</div>
                     </div>
                 </div>
             }
         </div>
     </div>
 
-    <div class="card shadow-sm mb-3">
+    <div class="card mb-3">
         <div class="card-header">
-            <h3 class="card-title mb-0">Información médica y de contacto</h3>
+            <h3 class="card-title">Información médica y de contacto</h3>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    @Html.LabelFor(model => model.grupo_sanguineo, new { @class = "form-label" })
+            <div class="row g-3">
+                <div class="col-md-4">
+                    @Html.LabelFor(model => model.grupo_sanguineo, new { @class = "form-label required" })
                     @Html.DropDownListFor(
                         model => model.grupo_sanguineo,
                         new SelectList(new[] { "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-" }, Model != null ? Model.grupo_sanguineo : null),
@@ -105,29 +108,29 @@
                     @Html.ValidationMessageFor(model => model.grupo_sanguineo, "", new { @class = "text-danger" })
                 </div>
 
-                <div class="col-md-8 mb-3">
+                <div class="col-md-8">
                     @Html.LabelFor(model => model.correo, new { @class = "form-label" })
                     @Html.TextBoxFor(model => model.correo, new { @class = "form-control", type = "email", maxlength = "256" })
                     @Html.ValidationMessageFor(model => model.correo, "", new { @class = "text-danger" })
-                    <div class="form-text">Si se deja vacío se usa el correo del usuario del estudiante.</div>
+                    <div class="form-hint">Si se deja vacío se usa el correo del usuario del estudiante.</div>
                 </div>
 
-                <div class="col-md-6 mb-3">
-                    @Html.LabelFor(model => model.alergias, new { @class = "form-label" })
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.alergias, new { @class = "form-label required" })
                     @Html.TextAreaFor(model => model.alergias, new { @class = "form-control", rows = "3", maxlength = "512", placeholder = "Indique las alergias o escriba Ninguna" })
                     @Html.ValidationMessageFor(model => model.alergias, "", new { @class = "text-danger" })
                 </div>
 
-                <div class="col-md-6 mb-3">
-                    @Html.LabelFor(model => model.contactoEmergencia, new { @class = "form-label" })
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.contactoEmergencia, new { @class = "form-label required" })
                     @Html.TextBoxFor(model => model.contactoEmergencia, new { @class = "form-control", maxlength = "256", placeholder = "Nombre y teléfono" })
                     @Html.ValidationMessageFor(model => model.contactoEmergencia, "", new { @class = "text-danger" })
                 </div>
             </div>
         </div>
-        <div class="card-footer">
-            <input type="submit" value="Crear expediente" class="btn btn-primary" />
-            @Html.ActionLink("Cancelar", "ListadoDeExpedientes", null, new { @class = "btn btn-outline-secondary ms-1" })
+        <div class="card-footer en-form-acciones">
+            @Html.ActionLink("Cancelar", "Index", "Expedientes", null, new { @class = "btn btn-outline-secondary" })
+            <input type="submit" value="Guardar" class="btn btn-primary" />
         </div>
     </div>
 }

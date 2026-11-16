@@ -18,47 +18,58 @@
         + "&pagina=" + p;
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Horarios</h1>
-        <p class="text-secondary mb-0">Busque o filtre los horarios por sección y por docente.</p>
-    </div>
-    <div class="col-auto">
-        @if (Model.id_seccion.HasValue)
-        {
-            @Html.ActionLink("Ver semana", "VisualizarHorario", new { id = Model.id_seccion }, new { @class = "btn btn-outline-secondary me-1" })
-            @Html.ActionLink("Asignar estudiantes", "HorarioParaAsignacion", new { id = Model.id_seccion }, new { @class = "btn btn-outline-secondary me-1" })
-        }
-        <a id="btnNuevoHorario"
-           href="@Url.Action("CrearHorario", new { id = Model.id_seccion })"
-           data-base="@Url.Content("~/Horarios/CrearHorario")"
-           class="btn btn-primary">+ Nuevo horario</a>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Horarios</h2>
+            <div class="page-subtitle">Busque o filtre los horarios por sección y por docente.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @if (Model.id_seccion.HasValue)
+                {
+                    @Html.ActionLink("Ver semana", "VisualizarHorario", new { id = Model.id_seccion }, new { @class = "btn btn-outline-secondary" })
+                    @Html.ActionLink("Asignar estudiantes", "HorarioParaAsignacion", new { id = Model.id_seccion }, new { @class = "btn btn-outline-secondary" })
+                }
+                <a id="btnNuevoHorario"
+                   href="@Url.Action("CrearHorario", new { id = Model.id_seccion })"
+                   data-base="@Url.Content("~/Horarios/CrearHorario")"
+                   class="btn btn-primary">Nuevo horario</a>
+            </div>
+        </div>
     </div>
 </div>
 
-<form method="get" action="@Url.Content("~/Horarios/ListadoDeHorarios")" class="row g-2 align-items-end mb-3">
-    <div class="col-md-4">
-        <label class="form-label" for="buscarHorario">Buscar</label>
-        <div class="hs-buscador">
-            <input type="text" id="buscarHorario" name="q" value="@Model.q" class="form-control" autocomplete="off"
-                   placeholder="Materia, docente, sección o día..."
-                   data-url="@Url.Content("~/Horarios/SugerenciasHorarios")" />
-            <div id="sugerenciasHorario" class="list-group hs-sugerencias"></div>
-        </div>
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" action="@Url.Content("~/Horarios/ListadoDeHorarios")" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label" for="buscarHorario">Buscar</label>
+                <div class="hs-buscador">
+                    <input type="text" id="buscarHorario" name="q" value="@Model.q" class="form-control" autocomplete="off"
+                           placeholder="Materia, docente, sección o día..."
+                           data-url="@Url.Content("~/Horarios/SugerenciasHorarios")" />
+                    <div id="sugerenciasHorario" class="list-group hs-sugerencias"></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="id">Sección</label>
+                @Html.DropDownList("id", (SelectList)ViewBag.Secciones, "Todas las secciones", new { @class = "form-select" })
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="docente">Docente</label>
+                @Html.DropDownList("docente", (SelectList)ViewBag.Docentes, "Todos los docentes", new { @class = "form-select" })
+            </div>
+            <div class="col-md-2">
+                <div class="btn-list">
+                    <a href="@Url.Content("~/Horarios/ListadoDeHorarios")" class="btn btn-outline-secondary">Limpiar</a>
+                    <button type="submit" class="btn btn-primary">Consultar</button>
+                </div>
+            </div>
+        </form>
     </div>
-    <div class="col-md-3">
-        <label class="form-label" for="id">Sección</label>
-        @Html.DropDownList("id", (SelectList)ViewBag.Secciones, "Todas las secciones", new { @class = "form-select" })
-    </div>
-    <div class="col-md-3">
-        <label class="form-label" for="docente">Docente</label>
-        @Html.DropDownList("docente", (SelectList)ViewBag.Docentes, "Todos los docentes", new { @class = "form-select" })
-    </div>
-    <div class="col-auto">
-        <button type="submit" class="btn btn-cyan">Consultar</button>
-        <a href="@Url.Content("~/Horarios/ListadoDeHorarios")" class="btn btn-outline-secondary">Limpiar</a>
-    </div>
-</form>
+</div>
 
 @if (!string.IsNullOrEmpty(Model.mensaje))
 {
@@ -66,7 +77,10 @@
 }
 else
 {
-    <div class="card shadow-sm">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Horarios registrados</h3>
+        </div>
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
                 <thead>
@@ -76,19 +90,25 @@ else
                         <th>Materia</th>
                         <th>Docente</th>
                         <th>Sección</th>
-                        <th class="w-1">Acciones</th>
+                        <th class="en-acciones">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @if (!Model.items.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-secondary py-4">No hay horarios que coincidan con la búsqueda.</td>
+                        </tr>
+                    }
                     @foreach (var item in Model.items)
                     {
                         <tr>
-                            <td>@item.dia_semana</td>
-                            <td>@item.inicio - @item.fin</td>
+                            <td><span class="badge bg-blue-lt">@item.dia_semana</span></td>
+                            <td class="text-nowrap">@item.inicio - @item.fin</td>
                             <td>@item.materia</td>
                             <td>@item.profesor</td>
                             <td>@item.seccion</td>
-                            <td class="text-nowrap">
+                            <td class="en-acciones">
                                 @Html.ActionLink("Editar", "EditarHorario", new { id = item.id_horario }, new { @class = "btn btn-sm btn-outline-secondary" })
                             </td>
                         </tr>
@@ -97,7 +117,7 @@ else
             </table>
         </div>
 
-        <div class="card-footer d-flex align-items-center">
+        <div class="card-footer d-flex flex-wrap align-items-center gap-2">
             <p class="m-0 text-secondary">
                 Mostrando <strong>@primero</strong> a <strong>@ultimo</strong> de <strong>@Model.totalRegistros</strong> horarios
             </p>

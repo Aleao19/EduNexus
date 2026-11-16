@@ -4,54 +4,44 @@
     ViewBag.Title = "Eliminar grado";
 }
 
-<h2>Eliminar grado</h2>
-
-<h4>¿Está seguro que desea eliminar este grado?</h4>
-
-<div>
-    <hr />
-    <div class="container my-2">
-        <div class="row">
-            <div class="col-md-8 offset-md-1">
-                <div class="form-group">
-                    <dl class="dl-horizontal">
-                        <dt>
-                            @Html.DisplayNameFor(model => model.grado)
-                        </dt>
-                        <dd>
-                            @Html.DisplayFor(model => model.grado)
-                        </dd>
-
-                        <dt>
-                            @Html.DisplayNameFor(model => model.descripcion)
-                        </dt>
-                        <dd>
-                            @Html.DisplayFor(model => model.descripcion)
-                        </dd>
-
-                        <dt>
-                            Secciones asociadas
-                        </dt>
-                        <dd>
-                            @ViewBag.CantidadSecciones
-                        </dd>
-                    </dl>
-                </div>
-
-                @using (Html.BeginForm())
-                {
-                    @Html.AntiForgeryToken()
-                    @Html.HiddenFor(model => model.id_grado)
-
-                    <div class="form-group my-3">
-                        <input type="submit" value="Eliminar" class="btn btn-danger" />
-                    </div>
-                }
-            </div>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Eliminar grado</h2>
+            <div class="page-subtitle">Revise la información antes de confirmar la eliminación.</div>
         </div>
     </div>
 </div>
 
-<div>
-    @Html.ActionLink("Regresar", "ListadoDeGrados")
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">¿Está seguro de que desea eliminar este grado?</h3>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="en-dato-label">@Html.DisplayNameFor(model => model.grado)</div>
+                <div class="en-dato-valor">@Html.DisplayFor(model => model.grado)</div>
+            </div>
+            <div class="col-md-4">
+                <div class="en-dato-label">@Html.DisplayNameFor(model => model.descripcion)</div>
+                <div class="en-dato-valor">@Html.DisplayFor(model => model.descripcion)</div>
+            </div>
+            <div class="col-md-4">
+                <div class="en-dato-label">Secciones asociadas</div>
+                <div class="en-dato-valor">@ViewBag.CantidadSecciones</div>
+            </div>
+        </div>
+    </div>
+    @using (Html.BeginForm())
+    {
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(model => model.id_grado)
+
+        <div class="card-footer en-form-acciones">
+            @Html.ActionLink("Cancelar", "ListadoDeGrados", null, new { @class = "btn btn-outline-secondary" })
+            <input type="submit" value="Eliminar" class="btn btn-danger" />
+        </div>
+    }
 </div>

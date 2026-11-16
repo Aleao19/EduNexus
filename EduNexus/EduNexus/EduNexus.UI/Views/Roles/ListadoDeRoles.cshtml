@@ -5,26 +5,30 @@
     int total = Model.Count();
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Roles</h1>
-        <p class="text-secondary mb-0">Roles precargados del sistema y sus permisos de acceso. Los permisos de cada rol son fijos.</p>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Seguridad</div>
+            <h2 class="page-title">Roles</h2>
+            <div class="page-subtitle">Roles precargados del sistema y sus permisos de acceso. Los permisos de cada rol son fijos.</div>
+        </div>
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-header d-flex align-items-center justify-content-between">
-        <h3 class="card-title mb-0">Listado</h3>
-        <div class="text-secondary small">@total rol(es)</div>
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Listado de roles</h3>
+        <div class="card-actions text-secondary small">@total rol(es)</div>
     </div>
 
     @if (!Model.Any())
     {
-        <div class="card-body">
-            <div class="empty">
-                <p class="empty-title">No hay roles registrados</p>
-                <p class="empty-subtitle text-secondary">Los roles se precargan en la base de datos.</p>
+        <div class="empty">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" /></svg>
             </div>
+            <p class="empty-title">No hay roles registrados</p>
+            <p class="empty-subtitle text-secondary">Los roles se precargan en la base de datos.</p>
         </div>
     }
     else

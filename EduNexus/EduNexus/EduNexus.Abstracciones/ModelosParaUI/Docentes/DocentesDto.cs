@@ -6,9 +6,10 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Docentes
     public class DocentesDto
     {
         public string id_docente { get; set; }
-        [Required(ErrorMessage = "La identificación es obligatoria.")]
-        [StringLength(20, ErrorMessage = "La identificación no puede superar los 20 caracteres.")]
-        [DisplayName("Identificación")]
+        // Cédula con formato 0-0000-0000; solo se captura al registrar (después no se modifica)
+        [Required(ErrorMessage = "La cédula es obligatoria.")]
+        [StringLength(20, ErrorMessage = "La cédula no puede superar los 20 caracteres.")]
+        [DisplayName("Cédula")]
         public string identificacion { get; set; }
         [Required(ErrorMessage = "El nombre es obligatorio.")]
         [DisplayName("Nombre")]

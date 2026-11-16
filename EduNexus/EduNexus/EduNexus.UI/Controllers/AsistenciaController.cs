@@ -117,6 +117,134 @@ namespace EduNexus.UI.Controllers
             return PartialView("_ListaAsistencia", modelo);
         }
 
+        // ===================== Historial por rango de fechas =====================
+
+        // Tabla estudiante x fecha, resumen por estudiante y justificaciones de una clase.
+        // Mismas reglas de acceso que Registrar: solo el docente de esa clase.
+        [HttpGet]
+        public ActionResult Historial(string clase, DateTime? desde, DateTime? hasta)
+        {
+            using (var db = new EduNexusDbContext())
+            {
+                var modelo = new AsistenciaHistorialDto { clase = clase };
+
+                List<ClaseDocente> clases = ObtenerClases(db, IdDocente());
+                ViewBag.Clases = new SelectList(clases.Select(c => new { c.valor, c.texto }).ToList(), "valor", "texto", clase);
+                modelo.sinClases = !clases.Any();
+
+                ClaseDocente seleccionada = string.IsNullOrEmpty(clase) ? null : clases.FirstOrDefault(c => c.valor == clase);
+
+                // Rango por defecto: del inicio del período lectivo de la clase hasta hoy
+                modelo.hasta = (hasta ?? DateTime.Today).Date;
+                modelo.desde = (desde
+                    ?? (seleccionada != null && seleccionada.inicio_periodo.HasValue
+                        ? seleccionada.inicio_periodo.Value
+                        : modelo.hasta.Value.AddDays(-30))).Date;
+
+                if (string.IsNullOrEmpty(clase))
+                {
+                    return View("Historial", modelo);
+                }
+
+                if (seleccionada == null)
+                {
+                    modelo.mensajeError = "La sección seleccionada no está asignada a usted.";
+                    return View("Historial", modelo);
+                }
+
+                modelo.titulo = seleccionada.texto;
+
+                if (modelo.desde > modelo.hasta)
+                {
+                    modelo.mensajeError = "La fecha inicial no puede ser posterior a la fecha final.";
+                    return View("Historial", modelo);
+                }
+
+                modelo.consultado = true;
+
+                int idSeccion = seleccionada.id_seccion;
+                int idMateria = seleccionada.id_materia;
+                DateTime inicio = modelo.desde.Value;
+                DateTime fin = modelo.hasta.Value;
+
+                List<AsistenciaEntity> registros = db.Asistencias
+                    .Where(a => a.fk_id_seccion == idSeccion && a.fk_id_materia == idMateria
+                                && a.fecha >= inicio && a.fecha <= fin)
+                    .ToList();
+
+                if (!registros.Any())
+                {
+                    return View("Historial", modelo);
+                }
+
+                // Estudiantes actuales de la sección y los que tienen registros (por si cambiaron de sección)
+                List<string> idsEstudiantes = db.SeccionesEstudiantes
+                    .Where(se => se.fk_id_seccion == idSeccion)
+                    .Select(se => se.fk_id_usuario).ToList()
+                    .Union(registros.Select(r => r.fk_id_usuario))
+                    .Distinct().ToList();
+
+                List<string> idsJustificadores = registros
+                    .Where(r => r.fk_id_justificado_por != null)
+                    .Select(r => r.fk_id_justificado_por).Distinct().ToList();
+
+                List<string> idsUsuarios = idsEstudiantes.Union(idsJustificadores).ToList();
+
+                Dictionary<string, UsuarioEntity> usuarios = db.Usuarios
+                    .Where(u => idsUsuarios.Contains(u.id_usuario)).ToList()
+                    .ToDictionary(u => u.id_usuario, u => u);
+
+                modelo.fechas = registros.Select(r => r.fecha.Date).Distinct().OrderBy(f => f).ToList();
+
+                modelo.estudiantes = idsEstudiantes
+                    .Select(id =>
+                    {
+                        UsuarioEntity u;
+                        usuarios.TryGetValue(id, out u);
+                        List<AsistenciaEntity> suyos = registros.Where(r => r.fk_id_usuario == id).ToList();
+
+                        var fila = new AsistenciaHistorialEstudianteDto
+                        {
+                            id_usuario = id,
+                            nombre = u != null ? HorarioServicio.NombreCompleto(u) : id,
+                            identificacion = u != null ? u.identificacion : null,
+                            presentes = suyos.Count(r => r.estado == "Presente"),
+                            tardias = suyos.Count(r => r.estado == "Tardía"),
+                            ausenciasJustificadas = suyos.Count(r => r.estado == AsistenciaFormDto.EstadoJustificado),
+                            ausenciasNoJustificadas = suyos.Count(r => r.estado == "Ausencia no justificada")
+                        };
+
+                        foreach (AsistenciaEntity r in suyos)
+                        {
+                            fila.estados[r.fecha.ToString("yyyy-MM-dd")] = r.estado;
+                        }
+
+                        return new { fila, apellido = u != null ? u.apellido1 : null, nombre = u != null ? u.nombre : id };
+                    })
+                    .OrderBy(x => x.apellido).ThenBy(x => x.nombre)
+                    .Select(x => x.fila)
+                    .ToList();
+
+                Dictionary<string, string> nombres = modelo.estudiantes.ToDictionary(e => e.id_usuario, e => e.nombre);
+
+                modelo.justificaciones = registros
+                    .Where(r => r.estado == AsistenciaFormDto.EstadoJustificado)
+                    .OrderBy(r => r.fecha)
+                    .ThenBy(r => nombres.ContainsKey(r.fk_id_usuario) ? nombres[r.fk_id_usuario] : r.fk_id_usuario)
+                    .Select(r => new AsistenciaJustificacionDto
+                    {
+                        fecha = r.fecha,
+                        estudiante = nombres.ContainsKey(r.fk_id_usuario) ? nombres[r.fk_id_usuario] : r.fk_id_usuario,
+                        motivo = r.motivo_justificacion,
+                        justificado_por = NombreUsuario(usuarios, r.fk_id_justificado_por),
+                        fecha_justificacion = r.fecha_justificacion
+                    })
+                    .ToList();
+
+                return View("Historial", modelo);
+            }
+        }
+
         // ===================== Lógica compartida =====================
 
         private ActionResult MostrarFormulario(string clase, DateTime? fecha, bool esEdicion)
@@ -149,10 +277,10 @@ namespace EduNexus.UI.Controllers
             {
                 modelo.fecha = (modelo.fecha ?? DateTime.Today).Date;
 
-                Dictionary<string, string> enviados = (modelo.estudiantes ?? new List<AsistenciaEstudianteDto>())
+                Dictionary<string, AsistenciaEstudianteDto> enviados = (modelo.estudiantes ?? new List<AsistenciaEstudianteDto>())
                     .Where(e => e.id_usuario != null)
                     .GroupBy(e => e.id_usuario)
-                    .ToDictionary(g => g.Key, g => g.First().estado);
+                    .ToDictionary(g => g.Key, g => g.First());
 
                 // Se reconstruye la lista desde la base de datos, no desde lo que envió el navegador
                 ModelState.Clear();
@@ -189,6 +317,34 @@ namespace EduNexus.UI.Controllers
                     return false;
                 }
 
+                // Trazabilidad: toda ausencia justificada debe tener su motivo (máx. 500 caracteres)
+                foreach (AsistenciaEstudianteDto est in modelo.estudiantes)
+                {
+                    if (est.estado != AsistenciaFormDto.EstadoJustificado)
+                    {
+                        est.motivo_justificacion = null;
+                        continue;
+                    }
+
+                    est.motivo_justificacion = string.IsNullOrWhiteSpace(est.motivo_justificacion) ? null : est.motivo_justificacion.Trim();
+
+                    if (est.motivo_justificacion == null)
+                    {
+                        est.errorMotivo = "Indique el motivo de la justificación.";
+                    }
+                    else if (est.motivo_justificacion.Length > AsistenciaFormDto.MaximoMotivo)
+                    {
+                        est.errorMotivo = "El motivo no puede superar los " + AsistenciaFormDto.MaximoMotivo + " caracteres.";
+                    }
+                }
+
+                if (modelo.estudiantes.Any(e => e.errorMotivo != null))
+                {
+                    ModelState.AddModelError("", "Las ausencias justificadas deben indicar el motivo de la justificación (máximo "
+                        + AsistenciaFormDto.MaximoMotivo + " caracteres). Revise los estudiantes resaltados.");
+                    return false;
+                }
+
                 // Escenario 1: se guarda la lista completa (o se actualiza si se está editando)
                 string[] partes = modelo.clase.Split('-');
                 int idSeccion = int.Parse(partes[0]);
@@ -208,32 +364,106 @@ namespace EduNexus.UI.Controllers
                     ? existentes.OrderBy(x => x.fk_id_usuario).Select(x => new
                     {
                         estudiante = porEstudiante.ContainsKey(x.fk_id_usuario) ? porEstudiante[x.fk_id_usuario].identificacion : x.fk_id_usuario,
-                        x.estado
+                        x.estado,
+                        x.motivo_justificacion
                     }).ToList()
                     : null;
+
+                DateTime ahora = DateTime.Now;
+                int justificadas = 0;
 
                 foreach (AsistenciaEstudianteDto est in modelo.estudiantes)
                 {
                     AsistenciaEntity fila = existentes.FirstOrDefault(x => x.fk_id_usuario == est.id_usuario);
+                    string estadoAnterior = fila != null ? fila.estado : null;
+                    string motivoAnterior = fila != null ? fila.motivo_justificacion : null;
 
                     if (fila == null)
                     {
-                        db.Asistencias.Add(new AsistenciaEntity
+                        fila = new AsistenciaEntity
                         {
                             fecha = fecha,
-                            estado = est.estado,
                             fk_id_seccion = idSeccion,
                             fk_id_materia = idMateria,
-                            fk_id_usuario = est.id_usuario,
-                            fk_id_registrado_por = idDocente,
-                            fecha_registro = DateTime.Now
-                        });
+                            fk_id_usuario = est.id_usuario
+                        };
+                        db.Asistencias.Add(fila);
+                    }
+
+                    fila.estado = est.estado;
+                    fila.fk_id_registrado_por = idDocente;
+                    fila.fecha_registro = ahora;
+
+                    bool esJustificada = est.estado == AsistenciaFormDto.EstadoJustificado;
+                    bool eraJustificada = estadoAnterior == AsistenciaFormDto.EstadoJustificado;
+
+                    if (esJustificada)
+                    {
+                        // Se registra quién y cuándo al justificar o al cambiar el motivo
+                        bool cambio = !eraJustificada || motivoAnterior != est.motivo_justificacion
+                            || string.IsNullOrEmpty(fila.fk_id_justificado_por);
+                        fila.motivo_justificacion = est.motivo_justificacion;
+
+                        if (cambio)
+                        {
+                            fila.fk_id_justificado_por = idDocente;
+                            fila.fecha_justificacion = ahora;
+                            justificadas++;
+
+                            Auditoria.Registrar(
+                                db,
+                                "Justificar ausencia",
+                                (eraJustificada ? "Se modificó el motivo de la ausencia justificada de " : "Se justificó la ausencia de ")
+                                    + est.nombre + " en " + modelo.titulo + " del " + fecha.ToString("dd/MM/yyyy") + ".",
+                                estadoAnterior == null ? null : new
+                                {
+                                    estudiante = est.identificacion ?? est.id_usuario,
+                                    fecha = fecha.ToString("yyyy-MM-dd"),
+                                    estado = estadoAnterior,
+                                    motivo_justificacion = motivoAnterior
+                                },
+                                new
+                                {
+                                    estudiante = est.identificacion ?? est.id_usuario,
+                                    fecha = fecha.ToString("yyyy-MM-dd"),
+                                    estado = est.estado,
+                                    motivo_justificacion = est.motivo_justificacion,
+                                    justificado_por = idDocente,
+                                    fecha_justificacion = ahora.ToString("yyyy-MM-dd HH:mm:ss")
+                                });
+                        }
                     }
                     else
                     {
-                        fila.estado = est.estado;
-                        fila.fk_id_registrado_por = idDocente;
-                        fila.fecha_registro = DateTime.Now;
+                        // Si deja de ser justificada se limpia la justificación
+                        if (eraJustificada)
+                        {
+                            Auditoria.Registrar(
+                                db,
+                                "Quitar justificación de ausencia",
+                                "Se quitó la justificación de la ausencia de " + est.nombre + " en " + modelo.titulo
+                                    + " del " + fecha.ToString("dd/MM/yyyy") + " (nuevo estado: " + est.estado + ").",
+                                new
+                                {
+                                    estudiante = est.identificacion ?? est.id_usuario,
+                                    fecha = fecha.ToString("yyyy-MM-dd"),
+                                    estado = estadoAnterior,
+                                    motivo_justificacion = motivoAnterior,
+                                    justificado_por = fila.fk_id_justificado_por,
+                                    fecha_justificacion = fila.fecha_justificacion.HasValue
+                                        ? fila.fecha_justificacion.Value.ToString("yyyy-MM-dd HH:mm:ss") : null
+                                },
+                                new
+                                {
+                                    estudiante = est.identificacion ?? est.id_usuario,
+                                    fecha = fecha.ToString("yyyy-MM-dd"),
+                                    estado = est.estado
+                                });
+                        }
+
+                        fila.motivo_justificacion = null;
+                        fila.fk_id_justificado_por = null;
+                        fila.fecha_justificacion = null;
                     }
                 }
 
@@ -248,7 +478,8 @@ namespace EduNexus.UI.Controllers
                     modelo.estudiantes.OrderBy(e => e.id_usuario).Select(e => new
                     {
                         estudiante = e.identificacion ?? e.id_usuario,
-                        e.estado
+                        e.estado,
+                        e.motivo_justificacion
                     }).ToList());
 
                 try
@@ -292,6 +523,8 @@ namespace EduNexus.UI.Controllers
                 modelo.urlEditar = Url.Action("Editar", "Asistencia", new { clase = modelo.clase, fecha = fecha });
                 modelo.urlCancelar = Url.Action("Registrar", "Asistencia", new { clase = modelo.clase, fecha = fecha });
             }
+
+            modelo.urlHistorial = Url.Action("Historial", "Asistencia", new { clase = modelo.clase });
         }
 
         private void CargarClases(EduNexusDbContext db, AsistenciaFormDto modelo)
@@ -303,7 +536,7 @@ namespace EduNexus.UI.Controllers
 
         // Carga los estudiantes de la sección. "enviados" trae lo marcado por el docente al guardar.
         // Si no se envía nada y la fecha ya tiene lista, se cargan los estados guardados.
-        private void CargarLista(EduNexusDbContext db, AsistenciaFormDto modelo, Dictionary<string, string> enviados)
+        private void CargarLista(EduNexusDbContext db, AsistenciaFormDto modelo, Dictionary<string, AsistenciaEstudianteDto> enviados)
         {
             ClaseDocente clase = ObtenerClases(db, IdDocente()).FirstOrDefault(c => c.valor == modelo.clase);
             if (clase == null)
@@ -348,27 +581,47 @@ namespace EduNexus.UI.Controllers
 
             modelo.yaRegistrado = existentes.Any();
 
+            // Nombres de quienes justificaron (para mostrar quién y cuándo)
+            List<string> idsJustificadores = existentes
+                .Where(x => x.fk_id_justificado_por != null)
+                .Select(x => x.fk_id_justificado_por).Distinct().ToList();
+            Dictionary<string, UsuarioEntity> justificadores = idsJustificadores.Any()
+                ? db.Usuarios.Where(u => idsJustificadores.Contains(u.id_usuario)).ToList().ToDictionary(u => u.id_usuario, u => u)
+                : new Dictionary<string, UsuarioEntity>();
+
             modelo.estudiantes = estudiantes.Select(u =>
             {
-                string estado = null;
-
-                if (enviados != null)
-                {
-                    enviados.TryGetValue(u.id_usuario, out estado);
-                }
-                else
-                {
-                    AsistenciaEntity fila = existentes.FirstOrDefault(x => x.fk_id_usuario == u.id_usuario);
-                    estado = fila != null ? fila.estado : null;
-                }
-
-                return new AsistenciaEstudianteDto
+                AsistenciaEntity fila = existentes.FirstOrDefault(x => x.fk_id_usuario == u.id_usuario);
+                var dto = new AsistenciaEstudianteDto
                 {
                     id_usuario = u.id_usuario,
                     nombre = HorarioServicio.NombreCompleto(u),
-                    identificacion = u.identificacion,
-                    estado = estado
+                    identificacion = u.identificacion
                 };
+
+                if (enviados != null)
+                {
+                    AsistenciaEstudianteDto enviado;
+                    if (enviados.TryGetValue(u.id_usuario, out enviado))
+                    {
+                        dto.estado = enviado.estado;
+                        dto.motivo_justificacion = enviado.motivo_justificacion;
+                    }
+                }
+                else if (fila != null)
+                {
+                    dto.estado = fila.estado;
+                    dto.motivo_justificacion = fila.motivo_justificacion;
+                }
+
+                // Quién y cuándo se justificó (lo guardado en la base de datos)
+                if (fila != null && fila.estado == AsistenciaFormDto.EstadoJustificado)
+                {
+                    dto.justificado_por = NombreUsuario(justificadores, fila.fk_id_justificado_por);
+                    dto.fecha_justificacion = fila.fecha_justificacion;
+                }
+
+                return dto;
             }).ToList();
         }
 
@@ -415,6 +668,16 @@ namespace EduNexus.UI.Controllers
             })
             .OrderBy(c => c.texto)
             .ToList();
+        }
+
+        private static string NombreUsuario(Dictionary<string, UsuarioEntity> usuarios, string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return null;
+            }
+            UsuarioEntity u;
+            return usuarios.TryGetValue(id, out u) ? HorarioServicio.NombreCompleto(u) : "Usuario no disponible";
         }
 
         private string IdDocente()

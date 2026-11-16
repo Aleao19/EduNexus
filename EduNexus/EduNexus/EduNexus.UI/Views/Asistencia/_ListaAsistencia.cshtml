@@ -5,6 +5,8 @@
     string[] colores = { "success", "warning", "danger", "info" };
     string fechaTexto = Model.fecha.HasValue ? Model.fecha.Value.ToString("yyyy-MM-dd") : "";
     bool soloLectura = Model.yaRegistrado && !Model.esEdicion;
+    string estadoJustificado = EduNexus.Abstracciones.ModelosParaUI.Asistencia.AsistenciaFormDto.EstadoJustificado;
+    int maximoMotivo = EduNexus.Abstracciones.ModelosParaUI.Asistencia.AsistenciaFormDto.MaximoMotivo;
 }
 
 @if (!string.IsNullOrEmpty(Model.mensajeError))
@@ -27,13 +29,19 @@ else if (!string.IsNullOrEmpty(Model.titulo))
     else if (soloLectura)
     {
         @* Escenario 3: la fecha ya tiene lista. Se muestra lo guardado y la opción de editar *@
-        <div class="alert alert-warning d-flex align-items-center">
+        <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2">
             <span>Ya existe una lista de asistencia para el @Model.fecha.Value.ToString("dd/MM/yyyy").</span>
             <a href="@Model.urlEditar" class="btn btn-primary btn-sm ms-auto asist-ajax">Editar lista de este día</a>
         </div>
 
-        <div class="card shadow-sm">
-            <div class="card-header"><h3 class="card-title mb-0">@Model.titulo - @Model.fecha.Value.ToString("dd/MM/yyyy")</h3></div>
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h3 class="card-title">@Model.titulo - @Model.fecha.Value.ToString("dd/MM/yyyy")</h3>
+                @if (!string.IsNullOrEmpty(Model.urlHistorial))
+                {
+                    <a href="@Model.urlHistorial" class="btn btn-outline-secondary btn-sm">Ver historial</a>
+                }
+            </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">
                     <thead>
@@ -49,7 +57,19 @@ else if (!string.IsNullOrEmpty(Model.titulo))
                             string color = posicion >= 0 ? colores[posicion] : "secondary";
                             <tr>
                                 <td>@est.nombre</td>
-                                <td><span class="@("badge bg-" + color + "-lt")">@est.estado</span></td>
+                                <td>
+                                    <span class="@("badge bg-" + color + "-lt")">@est.estado</span>
+                                    @if (est.estado == estadoJustificado)
+                                    {
+                                        string detalle = (est.justificado_por != null ? "Justificado por " + est.justificado_por : "Justificado")
+                                            + (est.fecha_justificacion.HasValue ? " el " + est.fecha_justificacion.Value.ToString("dd/MM/yyyy HH:mm") : "");
+                                        <div class="small mt-1" title="@detalle">
+                                            <span class="text-secondary">Motivo:</span>
+                                            @(string.IsNullOrEmpty(est.motivo_justificacion) ? "No registrado" : est.motivo_justificacion)
+                                        </div>
+                                        <div class="small text-secondary">@detalle</div>
+                                    }
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -65,16 +85,16 @@ else if (!string.IsNullOrEmpty(Model.titulo))
             <input type="hidden" name="fecha" value="@fechaTexto" />
             <input type="hidden" name="esEdicion" value="@Model.esEdicion.ToString().ToLower()" />
 
-            <div class="card shadow-sm">
+            <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <h3 class="card-title mb-0">
+                    <h3 class="card-title">
                         @Model.titulo - @Model.fecha.Value.ToString("dd/MM/yyyy")
                         @if (Model.esEdicion)
                         {
                             <span class="badge bg-azure-lt ms-2">Editando</span>
                         }
                     </h3>
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center flex-wrap gap-2">
                         <div class="small text-secondary">
                             Presentes: <span id="contPresentes" class="fw-bold text-success">0</span> ·
                             Tardías: <span id="contTardias" class="fw-bold text-warning">0</span> ·
@@ -82,6 +102,10 @@ else if (!string.IsNullOrEmpty(Model.titulo))
                             Sin marcar: <span id="contSinMarcar" class="fw-bold">0</span>
                         </div>
                         <button type="button" class="btn btn-outline-success btn-sm" id="btnTodosPresentes">Marcar todos presentes</button>
+                        @if (!string.IsNullOrEmpty(Model.urlHistorial))
+                        {
+                            <a href="@Model.urlHistorial" class="btn btn-outline-secondary btn-sm">Ver historial</a>
+                        }
                     </div>
                 </div>
 
@@ -98,20 +122,38 @@ else if (!string.IsNullOrEmpty(Model.titulo))
                             @for (int i = 0; i < Model.estudiantes.Count; i++)
                             {
                                 var est = Model.estudiantes[i];
-                                <tr class="@(est.sinMarcar ? "table-danger" : "")">
-                                    <td>@(i + 1)</td>
+                                bool muestraMotivo = est.estado == estadoJustificado;
+                                <tr class="@(est.sinMarcar || est.errorMotivo != null ? "table-danger" : "")">
+                                    <td class="text-secondary">@(i + 1)</td>
                                     <td>
                                         @est.nombre
                                         <input type="hidden" name="estudiantes[@i].id_usuario" value="@est.id_usuario" />
                                     </td>
                                     <td>
-                                        <div class="btn-group asistencia-grupo" role="group">
+                                        <div class="btn-group flex-wrap asistencia-grupo" role="group">
                                             @for (int k = 0; k < estados.Length; k++)
                                             {
                                                 string idRadio = "est_" + i + "_" + k;
                                                 <input type="radio" class="btn-check" name="estudiantes[@i].estado" id="@idRadio"
                                                        value="@estados[k]" autocomplete="off" @(est.estado == estados[k] ? "checked" : "") />
                                                 <label class="@("btn btn-sm btn-outline-" + colores[k])" for="@idRadio">@estados[k]</label>
+                                            }
+                                        </div>
+                                        @* Trazabilidad: el motivo es obligatorio cuando la ausencia es justificada *@
+                                        <div class="@("asist-motivo mt-2" + (muestraMotivo ? "" : " d-none"))">
+                                            <label class="form-label small mb-1" for="@("motivo_" + i)">Motivo de la justificación <span class="text-danger">*</span></label>
+                                            <textarea id="@("motivo_" + i)" name="estudiantes[@i].motivo_justificacion" rows="2" maxlength="@maximoMotivo"
+                                                      class="@("form-control form-control-sm" + (est.errorMotivo != null ? " is-invalid" : ""))"
+                                                      placeholder="Ej.: dictamen médico, cita, trámite familiar..." @(muestraMotivo ? "required" : "")>@est.motivo_justificacion</textarea>
+                                            @if (est.errorMotivo != null)
+                                            {
+                                                <div class="invalid-feedback d-block">@est.errorMotivo</div>
+                                            }
+                                            @if (est.justificado_por != null)
+                                            {
+                                                <div class="form-hint small">
+                                                    @("Justificado por " + est.justificado_por + (est.fecha_justificacion.HasValue ? " el " + est.fecha_justificacion.Value.ToString("dd/MM/yyyy HH:mm") : ""))
+                                                </div>
                                             }
                                         </div>
                                     </td>
@@ -121,12 +163,12 @@ else if (!string.IsNullOrEmpty(Model.titulo))
                     </table>
                 </div>
 
-                <div class="card-footer">
-                    <input type="submit" value="Guardar asistencia" class="btn btn-cyan" />
+                <div class="card-footer en-form-acciones">
                     @if (Model.esEdicion)
                     {
-                        <a href="@Model.urlCancelar" class="@("btn btn-outline-secondary ms-1" + (Model.modoAjax ? " asist-ajax" : ""))">Cancelar</a>
+                        <a href="@Model.urlCancelar" class="@("btn btn-outline-secondary" + (Model.modoAjax ? " asist-ajax" : ""))">Cancelar</a>
                     }
+                    <input type="submit" value="Guardar asistencia" class="btn btn-primary" />
                 </div>
             </div>
         </form>

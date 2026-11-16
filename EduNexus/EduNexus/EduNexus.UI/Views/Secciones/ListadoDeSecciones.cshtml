@@ -1,5 +1,4 @@
-﻿
-@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionesDto>
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Secciones.SeccionesDto>
 
 @{
     ViewBag.Title = "Listado de secciones";
@@ -7,21 +6,26 @@
     int cupoTotal = Model.Sum(x => x.cupo);
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Secciones</h1>
-        <p class="text-secondary mb-0">Gestión de secciones académicas por grado.</p>
-    </div>
-    <div class="col-auto">
-        @Html.ActionLink("Grados", "ListadoDeGrados", "Grados", null, new { @class = "btn btn-outline-secondary me-1" })
-        @Html.ActionLink("Cupos por grupo", "CuposPorGrupo", null, new { @class = "btn btn-outline-secondary me-1" })
-        @Html.ActionLink("+ Nueva sección", "CrearSeccion", null, new { @class = "btn btn-primary" })
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Secciones</h2>
+            <div class="page-subtitle">Gestión de secciones académicas por grado.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink("Grados", "ListadoDeGrados", "Grados", null, new { @class = "btn btn-outline-secondary" })
+                @Html.ActionLink("Cupos por grupo", "CuposPorGrupo", null, new { @class = "btn btn-outline-secondary" })
+                @Html.ActionLink("Nueva sección", "CrearSeccion", null, new { @class = "btn btn-primary" })
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="row row-cards g-3 mb-3">
     <div class="col-sm-4">
-        <div class="card card-sm shadow-sm">
+        <div class="card card-sm">
             <div class="card-body">
                 <div class="text-secondary small">Secciones activas</div>
                 <div class="h2 mb-0">@total</div>
@@ -29,7 +33,7 @@
         </div>
     </div>
     <div class="col-sm-4">
-        <div class="card card-sm shadow-sm">
+        <div class="card card-sm">
             <div class="card-body">
                 <div class="text-secondary small">Cupo total</div>
                 <div class="h2 mb-0">@cupoTotal</div>
@@ -37,28 +41,30 @@
         </div>
     </div>
     <div class="col-sm-4">
-        <div class="card card-sm shadow-sm">
+        <div class="card card-sm">
             <div class="card-body">
                 <div class="text-secondary small">Año lectivo</div>
-                <div class="h2 mb-0">2026</div>
+                <div class="h2 mb-0">@DateTime.Now.Year</div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="card shadow-sm">
+<div class="card">
     <div class="card-header">
-        <h3 class="card-title mb-0">Listado</h3>
+        <h3 class="card-title">Listado de secciones</h3>
     </div>
 
     @if (!Model.Any())
     {
-        <div class="card-body">
-            <div class="empty">
-                <p class="empty-title">No hay secciones registradas</p>
-                <div class="empty-action">
-                    @Html.ActionLink("+ Nueva sección", "CrearSeccion", null, new { @class = "btn btn-primary" })
-                </div>
+        <div class="empty">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2" /></svg>
+            </div>
+            <p class="empty-title">No hay secciones registradas</p>
+            <p class="empty-subtitle text-secondary">Cree una sección para poder asignarle estudiantes y horario.</p>
+            <div class="empty-action">
+                @Html.ActionLink("Nueva sección", "CrearSeccion", null, new { @class = "btn btn-primary" })
             </div>
         </div>
     }
@@ -73,7 +79,7 @@
                         <th>@Html.DisplayNameFor(model => model.grado)</th>
                         <th>@Html.DisplayNameFor(model => model.cupo)</th>
                         <th>Estudiantes</th>
-                        <th class="w-1">Acciones</th>
+                        <th class="en-acciones">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -96,11 +102,13 @@
                             <td>
                                 @item.estudiantes_matriculados / @item.cupo
                             </td>
-                            <td class="text-nowrap">
-                                @Html.ActionLink("Asignar estudiantes", "AsignarEstudiantes", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-success me-1" })
-                                @Html.ActionLink("Editar", "EditarSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
-                                @Html.ActionLink("Detalles", "DetalleDeSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-primary me-1" })
-                                @Html.ActionLink("Eliminar", "EliminarSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-outline-danger" })
+                            <td class="en-acciones">
+                                <div class="btn-list">
+                                    @Html.ActionLink("Asignar estudiantes", "AsignarEstudiantes", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-outline-success" })
+                                    @Html.ActionLink("Detalles", "DetalleDeSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-outline-primary" })
+                                    @Html.ActionLink("Editar", "EditarSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-outline-secondary" })
+                                    @Html.ActionLink("Eliminar", "EliminarSeccion", new { id = item.id_seccion }, new { @class = "btn btn-sm btn-outline-danger" })
+                                </div>
                             </td>
                         </tr>
                     }

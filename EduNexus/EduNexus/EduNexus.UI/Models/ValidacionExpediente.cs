@@ -53,11 +53,9 @@ namespace EduNexus.UI.Models
                     errores.Add("Solo se puede crear el expediente de una matrícula aprobada.");
                 }
 
-                string identificacion = prematricula.identificacion;
-
-                // Matrículas del mismo estudiante (nuevo ingreso y renovaciones)
-                List<int> idsMatriculas = db.Prematriculas
-                    .Where(p => p.identificacion == identificacion)
+                // Matrículas del mismo estudiante (nuevo ingreso y renovaciones),
+                // comparando la cédula normalizada (datos viejos sin guiones).
+                List<int> idsMatriculas = PrematriculasDe(db, prematricula.identificacion)
                     .Select(p => p.id_prematricula)
                     .ToList();
 
@@ -104,12 +102,125 @@ namespace EduNexus.UI.Models
                 return null;
             }
 
+            // La cédula se compara normalizada en memoria (datos viejos sin guiones).
             var coincidencias = db.Usuarios
-                .Where(u => u.identificacion == identificacion && u.rol == idRol)
+                .Where(u => u.rol == idRol && u.identificacion != null)
+                .ToList()
+                .Where(u => Cedula.Iguales(u.identificacion, identificacion))
                 .Take(2)
                 .ToList();
 
             return coincidencias.Count == 1 ? coincidencias[0] : null;
+        }
+
+        // =========================================
+        // PREMATRÍCULAS DE UN ESTUDIANTE (por cédula normalizada)
+        // =========================================
+
+        public static List<PrematriculaEntity> PrematriculasDe(
+            EduNexusDbContext db,
+            string identificacion)
+        {
+            if (string.IsNullOrWhiteSpace(identificacion))
+            {
+                return new List<PrematriculaEntity>();
+            }
+
+            return db.Prematriculas
+                .Where(p => p.identificacion != null)
+                .ToList()
+                .Where(p => Cedula.Iguales(p.identificacion, identificacion))
+                .ToList();
+        }
+
+        // =========================================
+        // EXPEDIENTE DE UN USUARIO ESTUDIANTE
+        // Primero por fk_id_usuario; si no, por las prematrículas
+        // con su misma cédula (expedientes viejos sin usuario).
+        // =========================================
+
+        public static ExpedienteEntity BuscarExpedienteDeUsuario(
+            EduNexusDbContext db,
+            UsuarioEntity usuario)
+        {
+            if (usuario == null)
+            {
+                return null;
+            }
+
+            string idUsuario = usuario.id_usuario;
+
+            ExpedienteEntity expediente = db.Expedientes
+                .Where(e => e.fk_id_usuario == idUsuario)
+                .OrderBy(e => e.id_expediente)
+                .FirstOrDefault();
+
+            if (expediente != null)
+            {
+                return expediente;
+            }
+
+            List<int> idsMatriculas = PrematriculasDe(db, usuario.identificacion)
+                .Select(p => p.id_prematricula)
+                .ToList();
+
+            if (!idsMatriculas.Any())
+            {
+                return null;
+            }
+
+            return db.Expedientes
+                .Where(e => e.fk_id_usuario == null && idsMatriculas.Contains(e.fk_id_matricula))
+                .OrderBy(e => e.id_expediente)
+                .FirstOrDefault();
+        }
+
+        // Usuario estudiante dueño de un expediente (null si no se puede determinar).
+        public static string IdUsuarioDeExpediente(
+            EduNexusDbContext db,
+            int idExpediente)
+        {
+            ExpedienteEntity expediente = db.Expedientes
+                .FirstOrDefault(e => e.id_expediente == idExpediente);
+
+            if (expediente == null)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrEmpty(expediente.fk_id_usuario))
+            {
+                return expediente.fk_id_usuario;
+            }
+
+            int idMatricula = expediente.fk_id_matricula;
+
+            PrematriculaEntity prematricula = db.Prematriculas
+                .FirstOrDefault(p => p.id_prematricula == idMatricula);
+
+            UsuarioEntity usuario = prematricula != null
+                ? BuscarUsuarioEstudiante(db, prematricula.identificacion)
+                : null;
+
+            return usuario != null ? usuario.id_usuario : null;
+        }
+
+        // Iniciales para el avatar: primera letra del nombre y del primer apellido.
+        public static string Iniciales(string nombre, string apellido1)
+        {
+            string iniciales = "";
+
+            if (!string.IsNullOrWhiteSpace(nombre))
+            {
+                iniciales += char.ToUpperInvariant(nombre.Trim()[0]);
+            }
+
+            if (!string.IsNullOrWhiteSpace(apellido1))
+            {
+                iniciales += char.ToUpperInvariant(apellido1.Trim()[0]);
+            }
+
+            return iniciales.Length > 0 ? iniciales : "?";
         }
 
         public static string ObtenerIdUsuarioEstudiante(

@@ -173,6 +173,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Models\Cedula.cs" />
+    <Compile Include="Models\DistribucionSecciones.cs" />
     <Compile Include="Models\Auditoria.cs" />
     <Compile Include="Models\RolesSistema.cs" />
     <Compile Include="Models\DocumentoExpedienteEntity.cs" />
@@ -231,6 +233,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Views\Asistencia\Historial.cshtml" />
     <Content Include="Scripts\Asistencia\ListaAsistencia.js" />
     <Content Include="Scripts\Horarios\ListadoDeHorarios.js" />
     <Content Include="Views\Asistencia\Registrar.cshtml" />

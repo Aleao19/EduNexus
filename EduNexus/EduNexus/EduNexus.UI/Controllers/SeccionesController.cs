@@ -48,6 +48,7 @@ namespace EduNexus.UI.Controllers
                     .Where(x => !grado.HasValue || x.grado == grado.Value)
                     .Where(x => !anio.HasValue || x.anio == anio.Value)
                     .ToList();
+                CompletarDistribucion(db, filtradas);
                 return View(filtradas);
             }
         }
@@ -253,8 +254,16 @@ namespace EduNexus.UI.Controllers
                 (r.nombre.Trim().Equals("Estudiante", StringComparison.OrdinalIgnoreCase) ||
                  r.nombre.Trim().Equals("Estudiantes", StringComparison.OrdinalIgnoreCase)));
 
-            var estudiantes = new List<object>();
+            var estudiantes = new List<EstudianteDisponibleVm>();
             var seccionActual = db.Secciones.FirstOrDefault(s => s.id_seccion == idSeccion);
+
+            // Secciones del mismo grado y año lectivo: sobre ellas se calcula la distribución
+            // por género y necesidades y la sección sugerida (Models/DistribucionSecciones.cs).
+            var seccionesGrado = seccionActual == null
+                ? new List<SeccionEntity>()
+                : db.Secciones.Where(s => s.fk_id_grado == seccionActual.fk_id_grado
+                                       && s.fk_id_calendario == seccionActual.fk_id_calendario).ToList();
+            var estados = DistribucionSecciones.EstadoDeSecciones(db, seccionesGrado);
 
             if (rolEstudiante != null)
             {
@@ -266,62 +275,127 @@ namespace EduNexus.UI.Controllers
                                             select e.fk_id_usuario).Distinct().ToList();
                 var asignadosSet = new HashSet<string>(yaAsignados);
 
-                estudiantes = db.Usuarios
+                var usuariosDisponibles = db.Usuarios
                     .Where(u => u.estado && u.rol == rolEstudiante.id_rol)
                     .OrderBy(u => u.nombre).ThenBy(u => u.apellido1)
                     .ToList()
                     .Where(u => !asignadosSet.Contains(u.id_usuario))
-                    .Select(u => (object)new
+                    .ToList();
+                var perfiles = DistribucionSecciones.Perfiles(db, usuariosDisponibles);
+
+                foreach (var u in usuariosDisponibles)
+                {
+                    var perfil = perfiles[u.id_usuario];
+                    var sugerencia = DistribucionSecciones.Elegir(perfil, estados.Values);
+                    estudiantes.Add(new EstudianteDisponibleVm
                     {
                         id_usuario = u.id_usuario,
-                        nombreCompleto = ((u.nombre ?? "") + " " +
-                                          (u.apellido1 ?? "") + " " +
-                                          (u.apellido2 ?? "")).Trim() +
-                                          " - " + (u.identificacion ?? "")
-                    })
-                    .ToList();
+                        texto = HorarioServicio.NombreCompleto(u)
+                                + " - " + (Cedula.Normalizar(u.identificacion) ?? u.identificacion ?? "")
+                                + " · Género: " + perfil.GeneroTexto
+                                + (perfil.TieneNecesidades ? " · Con necesidades" : ""),
+                        genero = perfil.GeneroTexto,
+                        tiene_necesidades = perfil.TieneNecesidades,
+                        id_seccion_sugerida = sugerencia != null ? sugerencia.Seccion.IdSeccion : (int?)null,
+                        seccion_sugerida = sugerencia != null ? sugerencia.Seccion.Etiqueta : null,
+                        motivo_sugerencia = sugerencia != null ? sugerencia.Motivo : null
+                    });
+                }
             }
 
-            ViewBag.EstudiantesDisponibles = new SelectList(
-                estudiantes,
-                "id_usuario",
-                "nombreCompleto");
+            ViewBag.EstudiantesDisponibles = estudiantes;
 
             ViewBag.ErrorRolEstudiante = rolEstudiante == null;
 
-            ViewBag.EstudiantesAsignados = (
+            // Mover: solo a secciones del mismo grado y año lectivo, con horario y con cupo
+            var conHorario = new HashSet<int>(db.Horarios.Select(h => h.fk_seccion).Distinct().ToList());
+            var candidatasMover = estados.Values
+                .Where(x => x.IdSeccion != idSeccion && conHorario.Contains(x.IdSeccion))
+                .ToList();
+
+            var filasAsignadas = (
                 from e in db.SeccionesEstudiantes
                 join u in db.Usuarios on e.fk_id_usuario equals u.id_usuario
                 where e.fk_id_seccion == idSeccion
                 orderby u.nombre, u.apellido1
-                select new EstudianteSeccionVm
+                select new { u, e.fecha_asignacion }).ToList();
+            var perfilesAsignados = DistribucionSecciones.Perfiles(db, filasAsignadas.Select(x => x.u));
+
+            ViewBag.EstudiantesAsignados = filasAsignadas.Select(x =>
+            {
+                var perfil = perfilesAsignados[x.u.id_usuario];
+                var sugerencia = DistribucionSecciones.Elegir(perfil, candidatasMover);
+                return new EstudianteSeccionVm
                 {
-                    id_usuario = u.id_usuario,
-                    nombreCompleto = ((u.nombre ?? "") + " " +
-                                      (u.apellido1 ?? "") + " " +
-                                      (u.apellido2 ?? "")).Trim(),
-                    identificacion = u.identificacion,
-                    fecha_asignacion = e.fecha_asignacion
+                    id_usuario = x.u.id_usuario,
+                    nombreCompleto = HorarioServicio.NombreCompleto(x.u),
+                    identificacion = Cedula.Normalizar(x.u.identificacion) ?? x.u.identificacion,
+                    fecha_asignacion = x.fecha_asignacion,
+                    genero = perfil.GeneroTexto,
+                    tiene_necesidades = perfil.TieneNecesidades,
+                    id_seccion_sugerida = sugerencia != null ? sugerencia.Seccion.IdSeccion : (int?)null,
+                    seccion_sugerida = sugerencia != null ? sugerencia.Seccion.Etiqueta : null,
+                    motivo_sugerencia = sugerencia != null ? sugerencia.Motivo : null
+                };
+            }).ToList();
+
+            ViewBag.DistribucionSecciones = estados.Values
+                .OrderBy(x => x.Etiqueta)
+                .Select(x => new DistribucionSeccionVm
+                {
+                    id_seccion = x.IdSeccion,
+                    texto = x.Etiqueta,
+                    cupo = x.Cupo,
+                    asignados = x.Total,
+                    disponibles = x.Libres,
+                    femenino = x.Femenino,
+                    masculino = x.Masculino,
+                    otro = x.Otro,
+                    sin_genero = x.SinGenero,
+                    con_necesidades = x.ConNecesidades,
+                    es_actual = x.IdSeccion == idSeccion
                 }).ToList();
 
-            var etiquetasSecciones = HorarioServicio.EtiquetasDeSecciones(db);
-
             // Secciones a las que se puede mover un estudiante: mismo grado y mismo año lectivo.
-            // Para permitir cualquier sección, quita la condición del .Where.
-            ViewBag.SeccionesDestino = seccionActual == null
-                ? new List<SeccionDestinoVm>()
-                : ObtenerSecciones(db, seccionActual.fk_id_grado, null, null)
-                    .Where(s => s.id_seccion != idSeccion && s.id_calendario == seccionActual.fk_id_calendario)
-                    .Select(s => new SeccionDestinoVm
-                    {
-                        id_seccion = s.id_seccion,
-                        texto = etiquetasSecciones.ContainsKey(s.id_seccion) ? etiquetasSecciones[s.id_seccion] : s.nombre_grado + " - " + s.nombre,
-                        disponibles = Math.Max(0, s.cupo - s.estudiantes_matriculados)
-                    }).ToList();
+            ViewBag.SeccionesDestino = estados.Values
+                .Where(x => x.IdSeccion != idSeccion)
+                .OrderBy(x => x.Etiqueta)
+                .Select(x => new SeccionDestinoVm
+                {
+                    id_seccion = x.IdSeccion,
+                    texto = x.Etiqueta,
+                    disponibles = x.Libres,
+                    resumen = x.Resumen,
+                    tiene_horario = conHorario.Contains(x.IdSeccion)
+                }).ToList();
 
             ViewBag.CupoMaximo = seccionActual != null ? seccionActual.cupo : 0;
             ViewBag.CantidadAsignada = db.SeccionesEstudiantes.Count(e =>
                 e.fk_id_seccion == idSeccion);
+        }
+
+        // Agrega a cada sección el conteo de estudiantes por género y con necesidades.
+        private static void CompletarDistribucion(EduNexusDbContext db, List<SeccionesDto> secciones)
+        {
+            if (secciones == null || !secciones.Any())
+            {
+                return;
+            }
+            var ids = secciones.Select(x => x.id_seccion).ToList();
+            var entidades = db.Secciones.Where(s => ids.Contains(s.id_seccion)).ToList();
+            var estados = DistribucionSecciones.EstadoDeSecciones(db, entidades);
+            foreach (var dto in secciones)
+            {
+                EstadoSeccionDistribucion estado;
+                if (estados.TryGetValue(dto.id_seccion, out estado))
+                {
+                    dto.estudiantes_femenino = estado.Femenino;
+                    dto.estudiantes_masculino = estado.Masculino;
+                    dto.estudiantes_otro = estado.Otro;
+                    dto.estudiantes_sin_genero = estado.SinGenero;
+                    dto.estudiantes_con_necesidades = estado.ConNecesidades;
+                }
+            }
         }
 
 
@@ -598,6 +672,8 @@ namespace EduNexus.UI.Controllers
                 SeccionesDto seccion = ObtenerSecciones(db, null, null, id.Value).FirstOrDefault();
                 if (seccion != null && incluirAuditoria)
                 {
+                    CompletarDistribucion(db, new List<SeccionesDto> { seccion });
+
                     // Última modificación registrada en la bitácora
                     string prefijo = DescripcionEvento(seccion.id_seccion);
                     var ultima = (from b in db.Bitacora

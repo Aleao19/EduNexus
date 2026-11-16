@@ -7,19 +7,24 @@
     int bloqueados = total - activos;
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Usuarios</h1>
-        <p class="text-secondary mb-0">Administra las cuentas de acceso al sistema.</p>
-    </div>
-    <div class="col-auto">
-        @Html.ActionLink("+ Nuevo usuario", "CrearUsuario", null, new { @class = "btn btn-primary" })
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Seguridad</div>
+            <h2 class="page-title">Usuarios</h2>
+            <div class="page-subtitle">Administre las cuentas de acceso al sistema.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink("Nuevo usuario", "CrearUsuario", null, new { @class = "btn btn-primary" })
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="row row-cards g-3 mb-3">
     <div class="col-sm-4">
-        <div class="card card-sm shadow-sm">
+        <div class="card card-sm">
             <div class="card-body">
                 <div class="text-secondary small">Total de usuarios</div>
                 <div class="h2 mb-0">@total</div>
@@ -27,7 +32,7 @@
         </div>
     </div>
     <div class="col-sm-4">
-        <div class="card card-sm shadow-sm">
+        <div class="card card-sm">
             <div class="card-body">
                 <div class="text-secondary small">Activos</div>
                 <div class="h2 mb-0 text-success">@activos</div>
@@ -35,7 +40,7 @@
         </div>
     </div>
     <div class="col-sm-4">
-        <div class="card card-sm shadow-sm">
+        <div class="card card-sm">
             <div class="card-body">
                 <div class="text-secondary small">Bloqueados/Inactivos</div>
                 <div class="h2 mb-0 text-danger">@bloqueados</div>
@@ -44,21 +49,22 @@
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-header d-flex align-items-center justify-content-between">
-        <h3 class="card-title mb-0">Listado</h3>
-        <div class="text-secondary small">@total usuario(s)</div>
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Listado de usuarios</h3>
+        <div class="card-actions text-secondary small">@total usuario(s)</div>
     </div>
 
     @if (!Model.Any())
     {
-        <div class="card-body">
-            <div class="empty">
-                <p class="empty-title">No hay usuarios registrados</p>
-                <p class="empty-subtitle text-secondary">Cuando agregues un usuario aparecerá en este listado.</p>
-                <div class="empty-action">
-                    @Html.ActionLink("+ Nuevo usuario", "CrearUsuario", null, new { @class = "btn btn-primary" })
-                </div>
+        <div class="empty">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></svg>
+            </div>
+            <p class="empty-title">No hay usuarios registrados</p>
+            <p class="empty-subtitle text-secondary">Cuando agregue un usuario aparecerá en este listado.</p>
+            <div class="empty-action">
+                @Html.ActionLink("Nuevo usuario", "CrearUsuario", null, new { @class = "btn btn-primary" })
             </div>
         </div>
     }
@@ -73,7 +79,7 @@
                         <th>@Html.DisplayNameFor(model => model.correo)</th>
                         <th>@Html.DisplayNameFor(model => model.nombreRol)</th>
                         <th>@Html.DisplayNameFor(model => model.estado)</th>
-                        <th class="w-1">Acciones</th>
+                        <th class="en-acciones">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -92,11 +98,17 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>@Html.DisplayFor(modelItem => item.cedula)</td>
+                            <td class="text-nowrap">@Html.DisplayFor(modelItem => item.cedula)</td>
                             <td><a href="mailto:@item.correo">@item.correo</a></td>
-                            <td>@item.nombreRol</td>
+                            <td>
+                                @item.nombreRol
+                                @if (EduNexus.UI.Models.RolesSistema.Es(item.nombreRol, EduNexus.UI.Models.RolesSistema.Docente))
+                                {
+                                    <div>@Html.ActionLink("Ver ficha del docente", "CargaAcademicaDocente", "Docentes", new { id = item.id_usuario }, new { @class = "small" })</div>
+                                }
+                            </td>
                             <td><span class="badge bg-@(estadoBadge)-lt">@item.estado</span></td>
-                            <td class="text-nowrap">
+                            <td class="en-acciones">
                                 @if (estaActivo)
                                 {
                                     using (Html.BeginForm("BloquearUsuario", "Usuarios", new { id = item.id_usuario }, FormMethod.Post, new { style = "display:inline" }))

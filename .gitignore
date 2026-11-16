@@ -5,3 +5,6 @@
 *.txt
 *.pdb
 *.dll
+
+# Documentos subidos a los expedientes (datos de estudiantes, no van al repo)
+/EduNexus/EduNexus/EduNexus.UI/App_Data/DocumentosExpedientes/

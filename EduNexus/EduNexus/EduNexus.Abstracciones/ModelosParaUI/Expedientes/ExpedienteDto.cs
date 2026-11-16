@@ -1,4 +1,6 @@
-﻿using System;
+﻿using EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -97,5 +99,39 @@ namespace EduNexus.Abstracciones.ModelosParaUI.Expedientes
         [StringLength(512, ErrorMessage = "Las alergias no pueden superar los 512 caracteres.")]
         [DisplayName("Alergias")]
         public string alergias { get; set; }
+    }
+
+    // =========================================
+    // EXPEDIENTE UNIFICADO DEL ESTUDIANTE
+    // Une el expediente estudiantil (datos personales, médicos,
+    // contacto y documentos) con el expediente académico
+    // (historial, adecuaciones y ayudas). Clave: id_usuario.
+    // =========================================
+
+    public class ExpedienteEstudianteDto
+    {
+        // Encabezado y contadores
+        public EstudianteResumenDto estudiante { get; set; }
+
+        // Expediente estudiantil; null si el estudiante todavía no tiene
+        public ExpedienteDto expediente { get; set; }
+
+        // Datos personales de la prematrícula (del expediente o, si no hay
+        // expediente, de la última prematrícula del estudiante); puede ser null
+        public ExpedienteDto datos_personales { get; set; }
+
+        // Pestaña activa: datos, medica, documentos, historial, apoyos
+        public string pestana { get; set; }
+
+        public List<DocumentoExpedienteDto> documentos { get; set; } = new List<DocumentoExpedienteDto>();
+
+        // Historial académico (filtrado por año si se indicó)
+        public List<HistorialAnioDto> historial { get; set; } = new List<HistorialAnioDto>();
+        public List<int> anios { get; set; } = new List<int>();
+        public int? anio_seleccionado { get; set; }
+        public bool sin_historial { get; set; }
+
+        public List<CasoApoyoDto> adecuaciones { get; set; } = new List<CasoApoyoDto>();
+        public List<CasoApoyoDto> ayudas { get; set; } = new List<CasoApoyoDto>();
     }
 }

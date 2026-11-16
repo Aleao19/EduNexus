@@ -27,97 +27,39 @@ namespace EduNexus.UI.Controllers
         // Estudiantes y expediente
         // =========================================================
 
-        // GET: ExpedienteAcademico/ListadoDeEstudiantes
+        // El expediente académico se unificó con el expediente estudiantil en
+        // Expedientes/Expediente/{id_usuario}. Las rutas viejas redirigen ahí.
+
+        // GET: ExpedienteAcademico/ListadoDeEstudiantes -> Expedientes
         public ActionResult ListadoDeEstudiantes()
         {
-            using (var db = new EduNexusDbContext())
-            {
-                RolEntity rolEstudiante = BuscarRolEstudiante(db);
-                ViewBag.SinRolEstudiante = rolEstudiante == null;
-                if (rolEstudiante == null)
-                {
-                    return View(new List<EstudianteResumenDto>());
-                }
-
-                List<UsuarioEntity> usuarios = db.Usuarios
-                    .Where(u => u.rol == rolEstudiante.id_rol)
-                    .OrderBy(u => u.nombre).ThenBy(u => u.apellido1)
-                    .ToList();
-
-                var adecuaciones = db.AdecuacionesEstudiantes.Where(a => a.estado == Activa && a.fk_id_usuario != null)
-                    .GroupBy(a => a.fk_id_usuario).Select(g => new { g.Key, n = g.Count() }).ToList()
-                    .ToDictionary(x => x.Key, x => x.n);
-                var ayudas = db.AyudasEstudiantes.Where(a => a.estado == Activa && a.fk_id_usuario != null)
-                    .GroupBy(a => a.fk_id_usuario).Select(g => new { g.Key, n = g.Count() }).ToList()
-                    .ToDictionary(x => x.Key, x => x.n);
-                Dictionary<string, string> secciones = SeccionActualPorEstudiante(db);
-
-                var lista = usuarios.Select(u => new EstudianteResumenDto
-                {
-                    id_usuario = u.id_usuario,
-                    identificacion = u.identificacion,
-                    nombre_completo = NombreCompleto(u),
-                    correo = u.email,
-                    estado = u.estado ? "Activo" : "Inactivo",
-                    seccion_actual = secciones.ContainsKey(u.id_usuario) ? secciones[u.id_usuario] : "Sin sección",
-                    adecuaciones_activas = adecuaciones.ContainsKey(u.id_usuario) ? adecuaciones[u.id_usuario] : 0,
-                    ayudas_activas = ayudas.ContainsKey(u.id_usuario) ? ayudas[u.id_usuario] : 0
-                }).ToList();
-
-                return View(lista);
-            }
+            return RedirectToAction("Index", "Expedientes");
         }
 
-        // GET: ExpedienteAcademico/Expediente/{id}
+        // GET: ExpedienteAcademico/Expediente/{id} -> Expedientes/Expediente/{id}?tab=apoyos
         public ActionResult Expediente(string id)
         {
-            using (var db = new EduNexusDbContext())
+            if (string.IsNullOrWhiteSpace(id))
             {
-                UsuarioEntity estudiante = BuscarEstudiante(db, id);
-                if (estudiante == null)
-                {
-                    return HttpNotFound();
-                }
-
-                ViewBag.Estudiante = AResumen(db, estudiante);
-                ViewBag.Adecuaciones = CasosDeAdecuacion(db, estudiante.id_usuario);
-                ViewBag.Ayudas = CasosDeAyuda(db, estudiante.id_usuario);
-                return View();
+                return RedirectToAction("Index", "Expedientes");
             }
+            return AlExpediente(id);
         }
 
-        // =========================================================
-        // REXP-02-007 Historial académico
-        // =========================================================
-
-        // GET: ExpedienteAcademico/HistorialAcademico/{id}?anio=2026
+        // GET: ExpedienteAcademico/HistorialAcademico/{id}?anio=2026 -> Expedientes/Expediente/{id}?tab=historial
         public ActionResult HistorialAcademico(string id, int? anio)
         {
-            using (var db = new EduNexusDbContext())
+            if (string.IsNullOrWhiteSpace(id))
             {
-                UsuarioEntity estudiante = BuscarEstudiante(db, id);
-                if (estudiante == null)
-                {
-                    return HttpNotFound();
-                }
-
-                List<HistorialAnioDto> historial = ObtenerHistorial(db, estudiante.id_usuario);
-
-                ViewBag.Estudiante = AResumen(db, estudiante);
-                // Escenario 2: estudiante sin historial previo
-                ViewBag.SinHistorial = !historial.Any();
-                ViewBag.Anios = historial.Select(h => h.anio).Distinct().OrderByDescending(a => a).ToList();
-                ViewBag.AnioSeleccionado = anio;
-
-                // Escenario 3: filtrado del historial por año lectivo
-                if (anio.HasValue)
-                {
-                    historial = historial.Where(h => h.anio == anio.Value).ToList();
-                }
-
-                // Escenario 1: progreso organizado por año lectivo
-                return View(historial);
+                return RedirectToAction("Index", "Expedientes");
             }
+            return RedirectToAction("Expediente", "Expedientes", new { id = id, tab = "historial", anio = anio });
+        }
+
+        // Vuelve al expediente unificado en la pestaña "Adecuaciones y ayudas".
+        private ActionResult AlExpediente(string idUsuario)
+        {
+            return RedirectToAction("Expediente", "Expedientes", new { id = idUsuario, tab = "apoyos" });
         }
 
         // =========================================================
@@ -256,7 +198,7 @@ namespace EduNexus.UI.Controllers
             TempData["Mensaje"] = modelo.id_tipo.HasValue
                 ? "La adecuación se registró y quedó reflejada en el expediente del estudiante."
                 : "El caso de adecuación se registró sin clasificar. Puede clasificarlo desde el expediente.";
-            return RedirectToAction("Expediente", new { id = modelo.id_usuario });
+            return AlExpediente(modelo.id_usuario);
         }
 
         // GET: ExpedienteAcademico/ClasificarAdecuacion/{id del caso}
@@ -272,7 +214,7 @@ namespace EduNexus.UI.Controllers
                 if (caso.estado == Finalizada)
                 {
                     TempData["Error"] = "No se puede clasificar un caso de adecuación finalizado.";
-                    return RedirectToAction("Expediente", new { id = caso.id_usuario });
+                    return AlExpediente(caso.id_usuario);
                 }
                 CargarTiposAdecuacion(db, caso.id_tipo);
                 return View(caso);
@@ -296,7 +238,7 @@ namespace EduNexus.UI.Controllers
                 if (caso.estado == Finalizada)
                 {
                     TempData["Error"] = "No se puede clasificar un caso de adecuación finalizado.";
-                    return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
+                    return AlExpediente(caso.fk_id_usuario);
                 }
 
                 CasoApoyoDto vista = CasosDeAdecuacion(db, null, id).First();
@@ -331,7 +273,7 @@ namespace EduNexus.UI.Controllers
                 db.SaveChanges();
 
                 TempData["Mensaje"] = "La adecuación se clasificó y quedó reflejada en el expediente del estudiante.";
-                return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
+                return AlExpediente(caso.fk_id_usuario);
             }
         }
 
@@ -350,7 +292,7 @@ namespace EduNexus.UI.Controllers
                 if (caso.estado == Finalizada)
                 {
                     TempData["Error"] = "La adecuación ya estaba finalizada.";
-                    return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
+                    return AlExpediente(caso.fk_id_usuario);
                 }
                 string estadoAnterior = caso.estado;
                 caso.estado = Finalizada;
@@ -358,7 +300,7 @@ namespace EduNexus.UI.Controllers
                     new { estado = estadoAnterior }, new { estado = Finalizada });
                 db.SaveChanges();
                 TempData["Mensaje"] = "La adecuación se marcó como finalizada.";
-                return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
+                return AlExpediente(caso.fk_id_usuario);
             }
         }
 
@@ -429,7 +371,7 @@ namespace EduNexus.UI.Controllers
             TempData["Mensaje"] = modelo.id_tipo.HasValue
                 ? "La ayuda se registró y quedó reflejada en el expediente del estudiante."
                 : "El caso de ayuda se registró sin clasificar. Puede clasificarlo desde el expediente.";
-            return RedirectToAction("Expediente", new { id = modelo.id_usuario });
+            return AlExpediente(modelo.id_usuario);
         }
 
         // GET: ExpedienteAcademico/ClasificarAyuda/{id del caso}
@@ -445,7 +387,7 @@ namespace EduNexus.UI.Controllers
                 if (caso.estado == Finalizada)
                 {
                     TempData["Error"] = "No se puede clasificar ni reclasificar un caso de ayuda finalizado.";
-                    return RedirectToAction("Expediente", new { id = caso.id_usuario });
+                    return AlExpediente(caso.id_usuario);
                 }
                 CargarTiposAyuda(db, caso.id_tipo);
                 ViewBag.Cambios = CambiosDeAyuda(db, caso.id_caso);
@@ -471,7 +413,7 @@ namespace EduNexus.UI.Controllers
                 if (caso.estado == Finalizada)
                 {
                     TempData["Error"] = "No se puede clasificar ni reclasificar un caso de ayuda finalizado.";
-                    return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
+                    return AlExpediente(caso.fk_id_usuario);
                 }
 
                 CasoApoyoDto vista = CasosDeAyuda(db, null, id).First();
@@ -510,7 +452,7 @@ namespace EduNexus.UI.Controllers
                 TempData["Mensaje"] = esReclasificacion
                     ? "El tipo de ayuda se actualizó y el cambio quedó registrado."
                     : "La ayuda se clasificó y quedó reflejada en el expediente del estudiante.";
-                return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
+                return AlExpediente(caso.fk_id_usuario);
             }
         }
 
@@ -529,7 +471,7 @@ namespace EduNexus.UI.Controllers
                 if (caso.estado == Finalizada)
                 {
                     TempData["Error"] = "La ayuda ya estaba finalizada.";
-                    return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
+                    return AlExpediente(caso.fk_id_usuario);
                 }
                 string estadoAnterior = caso.estado;
                 caso.estado = Finalizada;
@@ -537,7 +479,7 @@ namespace EduNexus.UI.Controllers
                     new { estado = estadoAnterior }, new { estado = Finalizada });
                 db.SaveChanges();
                 TempData["Mensaje"] = "La ayuda se marcó como finalizada.";
-                return RedirectToAction("Expediente", new { id = caso.fk_id_usuario });
+                return AlExpediente(caso.fk_id_usuario);
             }
         }
 
@@ -545,14 +487,14 @@ namespace EduNexus.UI.Controllers
         // Métodos auxiliares
         // =========================================================
 
-        private static RolEntity BuscarRolEstudiante(EduNexusDbContext db)
+        internal static RolEntity BuscarRolEstudiante(EduNexusDbContext db)
         {
             return db.Roles.ToList().FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.nombre) &&
                 (r.nombre.Trim().Equals("Estudiante", StringComparison.OrdinalIgnoreCase) ||
                  r.nombre.Trim().Equals("Estudiantes", StringComparison.OrdinalIgnoreCase)));
         }
 
-        private static UsuarioEntity BuscarEstudiante(EduNexusDbContext db, string id)
+        internal static UsuarioEntity BuscarEstudiante(EduNexusDbContext db, string id)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -566,18 +508,19 @@ namespace EduNexus.UI.Controllers
             return db.Usuarios.FirstOrDefault(u => u.id_usuario == id && u.rol == rol.id_rol);
         }
 
-        private static string NombreCompleto(UsuarioEntity u)
+        internal static string NombreCompleto(UsuarioEntity u)
         {
             return ((u.nombre ?? "") + " " + (u.apellido1 ?? "") + " " + (u.apellido2 ?? "")).Trim();
         }
 
-        private static EstudianteResumenDto AResumen(EduNexusDbContext db, UsuarioEntity u)
+        internal static EstudianteResumenDto AResumen(EduNexusDbContext db, UsuarioEntity u)
         {
             Dictionary<string, string> secciones = SeccionActualPorEstudiante(db, u.id_usuario);
             return new EstudianteResumenDto
             {
                 id_usuario = u.id_usuario,
-                identificacion = u.identificacion,
+                identificacion = Cedula.Normalizar(u.identificacion) ?? u.identificacion,
+                iniciales = ValidacionExpediente.Iniciales(u.nombre, u.apellido1),
                 nombre_completo = NombreCompleto(u),
                 correo = u.email,
                 estado = u.estado ? "Activo" : "Inactivo",
@@ -588,7 +531,7 @@ namespace EduNexus.UI.Controllers
         }
 
         // Sección del año lectivo más reciente de cada estudiante: "Primer Grado 1-A (2026)"
-        private static Dictionary<string, string> SeccionActualPorEstudiante(EduNexusDbContext db, string idUsuario = null)
+        internal static Dictionary<string, string> SeccionActualPorEstudiante(EduNexusDbContext db, string idUsuario = null)
         {
             var consulta = from se in db.SeccionesEstudiantes
                            join s in db.Secciones on se.fk_id_seccion equals s.id_seccion
@@ -619,7 +562,7 @@ namespace EduNexus.UI.Controllers
         }
 
         // REXP-02-007: secciones del estudiante por año lectivo con sus calificaciones
-        private static List<HistorialAnioDto> ObtenerHistorial(EduNexusDbContext db, string idUsuario)
+        internal static List<HistorialAnioDto> ObtenerHistorial(EduNexusDbContext db, string idUsuario)
         {
             List<int> idsSecciones = db.SeccionesEstudiantes.Where(e => e.fk_id_usuario == idUsuario)
                 .Select(e => e.fk_id_seccion)
@@ -746,7 +689,7 @@ namespace EduNexus.UI.Controllers
             return t != null ? t.nombre : "Sin clasificar";
         }
 
-        private static List<CasoApoyoDto> CasosDeAdecuacion(EduNexusDbContext db, string idUsuario, int? idCaso = null)
+        internal static List<CasoApoyoDto> CasosDeAdecuacion(EduNexusDbContext db, string idUsuario, int? idCaso = null)
         {
             var consulta = db.AdecuacionesEstudiantes.AsQueryable();
             if (idUsuario != null) consulta = consulta.Where(a => a.fk_id_usuario == idUsuario);
@@ -771,7 +714,7 @@ namespace EduNexus.UI.Controllers
                 }).ToList();
         }
 
-        private static List<CasoApoyoDto> CasosDeAyuda(EduNexusDbContext db, string idUsuario, int? idCaso = null)
+        internal static List<CasoApoyoDto> CasosDeAyuda(EduNexusDbContext db, string idUsuario, int? idCaso = null)
         {
             var consulta = db.AyudasEstudiantes.AsQueryable();
             if (idUsuario != null) consulta = consulta.Where(a => a.fk_id_usuario == idUsuario);

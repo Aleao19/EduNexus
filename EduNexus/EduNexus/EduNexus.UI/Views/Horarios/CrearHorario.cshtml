@@ -11,12 +11,20 @@
 }
 
 
-<div class="hz-wrap">
-    <div class="hz-title">
-        <h2 class="m-0">Crear horario</h2>
-        <span class="hz-badge">Sección @(ViewBag.NombreSeccion ?? "—")</span>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Crear horario</h2>
+            <div class="page-subtitle">Elija la materia y marque en la cuadrícula el bloque de la clase.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <span class="hz-badge">Sección @(ViewBag.NombreSeccion ?? "—")</span>
+        </div>
     </div>
+</div>
 
+<div class="hz-wrap">
     @using (Html.BeginForm("Create", "Horarios", FormMethod.Post, new { id = "formHorario" }))
     {
         @Html.AntiForgeryToken()
@@ -26,7 +34,7 @@
         <input type="hidden" name="hora_fin" id="hora_fin" value="@finPrevio" />
 
         <div class="hz-card">
-            <h5><span class="hz-step">1</span>Elija la materia</h5>
+            <h5><span class="hz-step">1</span>Elija la materia <span class="text-danger">*</span></h5>
             <div class="hz-materias">
                 @foreach (var m in materias)
                 {
@@ -37,8 +45,8 @@
         </div>
 
         <div class="hz-card">
-            <h5><span class="hz-step">2</span>Marque el bloque en la cuadrícula</h5>
-            <p class="text-muted mb-2" style="font-size:.85rem">
+            <h5><span class="hz-step">2</span>Marque el bloque en la cuadrícula <span class="text-danger">*</span></h5>
+            <p class="form-hint mb-2">
                 Primer clic: hora de inicio. Segundo clic en el mismo día: hora de fin. Un tercer clic reinicia la selección.
             </p>
             <div class="hz-scroll"><div class="hz-grid" id="grid" data-dia="@diaPrevio" data-inicio="@inicioPrevio" data-fin="@finPrevio"></div></div>
@@ -51,7 +59,7 @@
                 <div><small>Horario</small><strong id="resHora">—</strong></div>
                 <div class="hz-acciones">
                     @Html.ActionLink("Cancelar", "ListadoDeHorarios", new { id = Model.seccion }, new { @class = "btn btn-outline-secondary" })
-                    <button type="submit" class="btn btn-primary">Guardar horario</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
                 </div>
             </div>
             <div class="alert alert-danger hz-error" id="errorBox"></div>

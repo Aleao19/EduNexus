@@ -10,6 +10,8 @@ namespace EduNexus.UI.Controllers
 {
     // RMAT-05-002 Como administrador quiero configurar las materias que se impartirán en cada sección
     // Tablas: secciones_materias, materia, secciones, grados, calendario, asignaciones (notas), asistencia
+    // Es la MISMA asignación (secciones_materias.fk_id_profesor) que se gestiona en la ficha del docente
+    // (Docentes/CargaAcademicaDocente), vista aquí desde la sección y con las mismas reglas.
     [AutorizarAdministrador]
     public class SeccionMateriasController : Controller
     {
@@ -63,6 +65,10 @@ namespace EduNexus.UI.Controllers
                 .ThenBy(x => x.materia)
                 .ToList();
 
+                // Docente de cada fila, para enlazar a su ficha (MateriaSeccionDto no trae el id)
+                ViewBag.DocentePorFila = asignaciones
+                    .Where(a => a.fk_id_profesor != null && profesores.ContainsKey(a.fk_id_profesor))
+                    .ToDictionary(a => a.id_seccion_materia, a => a.fk_id_profesor);
                 ViewBag.Secciones = new SelectList(etiquetas.OrderBy(x => x.Value).ToList(), "Key", "Value", seccion);
                 return View(modelo);
             }
@@ -115,23 +121,31 @@ namespace EduNexus.UI.Controllers
                     ModelState.AddModelError("id_materia", "La materia seleccionada no está registrada en el sistema.");
                     return View(modelo);
                 }
-                UsuarioEntity docente = HorarioServicio.ObtenerDocentes(db)
+                // Mismas reglas que Docentes/AsignarDocente: usuario con rol Docente, activo y sin choque de horario
+                UsuarioEntity docente = ObtenerDocentes(db)
                     .FirstOrDefault(u => u.id_usuario == modelo.id_docente);
                 if (docente == null)
                 {
-                    ModelState.AddModelError("id_docente", "El docente debe estar registrado en el sistema.");
+                    ModelState.AddModelError("id_docente", "El docente debe estar registrado en el sistema con el rol Docente.");
                     return View(modelo);
                 }
                 if (!docente.estado)
                 {
-                    ModelState.AddModelError("id_docente", "El docente seleccionado está inactivo.");
+                    ModelState.AddModelError("id_docente", "El docente seleccionado está inactivo; actívelo antes de asignarle materias.");
                     return View(modelo);
                 }
 
                 // Escenario 2: la materia ya está asignada a esa sección
                 if (db.SeccionesMaterias.Any(x => x.fk_id_seccion == idSeccion && x.fk_id_materia == idMateria))
                 {
-                    ModelState.AddModelError("", "La materia ya está asignada a esa sección.");
+                    ModelState.AddModelError("", "La materia ya está asignada a esa sección. Para cambiar el docente, abra la ficha del nuevo docente y use \"Asignar materia y sección\".");
+                    return View(modelo);
+                }
+
+                string choque = HorarioServicio.BuscarChoqueDocente(db, docente.id_usuario, idSeccion, idMateria);
+                if (choque != null)
+                {
+                    ModelState.AddModelError("", choque);
                     return View(modelo);
                 }
 
@@ -146,12 +160,12 @@ namespace EduNexus.UI.Controllers
 
                 string nombreMateria = db.Materias.Where(m => m.id_materia == idMateria).Select(m => m.nombre).FirstOrDefault();
                 string etiquetaSeccion = EtiquetasDeSecciones(db)[idSeccion];
-                Auditoria.Registrar(db, "Asignación de materia a sección",
+                Auditoria.Registrar(db, "Asignación de docente",
                     "Materia " + nombreMateria + " asignada a " + etiquetaSeccion + " con el docente " + NombreCompleto(docente) + ".",
                     null, new { id_seccion = idSeccion, seccion = etiquetaSeccion, id_materia = idMateria, materia = nombreMateria, id_profesor = docente.id_usuario });
                 db.SaveChanges();
 
-                TempData["Mensaje"] = "La materia se asignó correctamente a la sección.";
+                TempData["Mensaje"] = "La materia " + nombreMateria + " se asignó a " + etiquetaSeccion + " con el docente " + NombreCompleto(docente) + "; ya aparece también en la ficha del docente.";
                 return RedirectToAction("ListadoDeAsignaciones", new { seccion = idSeccion });
             }
         }
@@ -212,10 +226,23 @@ namespace EduNexus.UI.Controllers
 
             ViewBag.EtiquetasSecciones = EtiquetasDeSecciones(db).Values.OrderBy(x => x).ToList();
             ViewBag.Docentes = new SelectList(
-                HorarioServicio.ObtenerDocentes(db)
+                ObtenerDocentes(db)
                     .Where(u => u.estado)
                     .Select(u => new { u.id_usuario, nombre = HorarioServicio.NombreCompleto(u) }).ToList(),
                 "id_usuario", "nombre");
+        }
+
+        // Usuarios con rol Docente (nombre del rol comparado sin tildes ni mayúsculas)
+        private static List<UsuarioEntity> ObtenerDocentes(EduNexusDbContext db)
+        {
+            List<string> idsRol = db.Roles.ToList()
+                .Where(r => RolesSistema.Es(r.nombre, RolesSistema.Docente))
+                .Select(r => r.id_rol).ToList();
+            if (!idsRol.Any())
+            {
+                return new List<UsuarioEntity>();
+            }
+            return db.Usuarios.Where(u => idsRol.Contains(u.rol)).OrderBy(u => u.nombre).ThenBy(u => u.apellido1).ToList();
         }
 
         private static Dictionary<int, string> EtiquetasDeSecciones(EduNexusDbContext db)

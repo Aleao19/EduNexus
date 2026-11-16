@@ -38,9 +38,9 @@
         body {
             margin: 0;
             padding: 30px 16px;
-            background: #f3f5f9;
+            background: #f5f7fb;
             color: #263247;
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
         .contenedor {
@@ -48,13 +48,33 @@
             margin: auto;
             padding: 30px;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e6e8ef;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        }
+
+        .marca {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1d273b;
+        }
+
+        .marca span {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: #206bc4;
         }
 
         h1 {
             margin-top: 0;
-            color: #193b68;
+            font-size: 1.5rem;
+            color: #1d273b;
         }
 
         .descripcion {
@@ -112,8 +132,8 @@
         select:focus,
         textarea:focus {
             outline: none;
-            border-color: #2458a6;
-            box-shadow: 0 0 0 2px rgba(36, 88, 166, 0.12);
+            border-color: #206bc4;
+            box-shadow: 0 0 0 2px rgba(32, 107, 196, 0.15);
         }
 
         .opcion {
@@ -129,6 +149,7 @@
         .acciones {
             display: flex;
             flex-wrap: wrap;
+            justify-content: flex-end;
             gap: 10px;
             margin-top: 25px;
         }
@@ -138,7 +159,7 @@
             padding: 11px 18px;
             border: 0;
             border-radius: 6px;
-            background: #2458a6;
+            background: #206bc4;
             color: white;
             text-decoration: none;
             cursor: pointer;
@@ -146,7 +167,7 @@
         }
 
         .boton:hover {
-            background: #193b68;
+            background: #1a569d;
         }
 
         .boton:disabled {
@@ -155,8 +176,9 @@
         }
 
         .boton-secundario {
-            background: #e5eaf1;
-            color: #263247;
+            background: white;
+            border: 1px solid #c7ced8;
+            color: #49566c;
         }
 
         .boton-secundario:hover {
@@ -182,7 +204,7 @@
             margin-top: 18px;
             padding: 14px;
             background: #edf4ff;
-            border-left: 4px solid #2458a6;
+            border-left: 4px solid #206bc4;
             border-radius: 6px;
             color: #365476;
             font-size: 13px;
@@ -219,6 +241,8 @@
 
     <main class="contenedor">
 
+        <div class="marca"><span aria-hidden="true"></span>EduNexus</div>
+
         <h1>Registrar prematrícula</h1>
 
         <p class="descripcion">
@@ -230,7 +254,7 @@
 
         @if (TempData["Mensaje"] != null)
         {
-            <div class="mensaje mensaje-exito" role="alert">
+            <div class="alert alert-success mensaje mensaje-exito" role="alert">
                 @TempData["Mensaje"]
             </div>
         }
@@ -239,7 +263,7 @@
 
         @if (TempData["Error"] != null)
         {
-            <div class="mensaje mensaje-error" role="alert">
+            <div class="alert alert-danger mensaje mensaje-error" role="alert">
                 @TempData["Error"]
             </div>
         }
@@ -275,10 +299,16 @@
                         new
                         {
                             required = "required",
-                            maxlength = "50",
+                            maxlength = "11",
+                            placeholder = EduNexus.UI.Models.Cedula.Formato,
+                            pattern = EduNexus.UI.Models.Cedula.Patron,
+                            title = EduNexus.UI.Models.Cedula.MensajeFormato,
+                            inputmode = "numeric",
                             autocomplete = "off"
                         }
                     )
+
+                    <small>Formato 0-0000-0000. Una vez registrada, la cédula no se puede modificar.</small>
 
                     @Html.ValidationMessageFor(
                         m => m.identificacion,
@@ -566,6 +596,13 @@
             <!-- BOTONES -->
             <div class="acciones">
 
+                <a href="@Url.Action("Index", "Home")"
+                   class="boton boton-secundario">
+
+                    Cancelar
+
+                </a>
+
                 <button type="submit"
                         class="boton"
                         id="btnRegistrar">
@@ -573,13 +610,6 @@
                     Registrar prematrícula
 
                 </button>
-
-                <a href="@Url.Action("Index", "Home")"
-                   class="boton boton-secundario">
-
-                    Cancelar
-
-                </a>
 
             </div>
 

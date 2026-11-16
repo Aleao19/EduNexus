@@ -4,12 +4,13 @@
     ViewBag.Title = "Editar expediente";
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Editar expediente #@Model.id_expediente</h1>
-        <p class="text-secondary mb-0">
-            Los cambios en los datos personales se aplican a las matrículas del estudiante.
-        </p>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Estudiantes</div>
+            <h2 class="page-title">Editar expediente #@Model.id_expediente</h2>
+            <div class="page-subtitle">Los cambios en los datos personales se aplican a las matrículas del estudiante.</div>
+        </div>
     </div>
 </div>
 
@@ -20,38 +21,39 @@
 
     @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
 
-    <div class="card shadow-sm mb-3">
+    <div class="card mb-3">
         <div class="card-header">
-            <h3 class="card-title mb-0">Información personal</h3>
+            <h3 class="card-title">Información personal</h3>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label" for="identificacionConsulta">Identificación</label>
-                    <input type="text" id="identificacionConsulta" class="form-control" value="@Model.identificacion" readonly />
-                    <div class="form-text">La identificación no se puede modificar.</div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    @* Sin atributo name: la cédula no se envía en el POST y el controlador la toma de la BD. *@
+                    <label class="form-label" for="identificacionConsulta">Cédula</label>
+                    <input type="text" id="identificacionConsulta" class="form-control" value="@(EduNexus.UI.Models.Cedula.Normalizar(Model.identificacion) ?? Model.identificacion)" readonly disabled />
+                    <div class="form-hint">La cédula no se puede modificar.</div>
                 </div>
 
-                <div class="col-md-4 mb-3">
-                    @Html.LabelFor(model => model.nombre, new { @class = "form-label" })
+                <div class="col-md-4">
+                    @Html.LabelFor(model => model.nombre, new { @class = "form-label required" })
                     @Html.TextBoxFor(model => model.nombre, new { @class = "form-control", maxlength = "256" })
                     @Html.ValidationMessageFor(model => model.nombre, "", new { @class = "text-danger" })
                 </div>
 
-                <div class="col-md-4 mb-3">
-                    @Html.LabelFor(model => model.apellido1, new { @class = "form-label" })
+                <div class="col-md-4">
+                    @Html.LabelFor(model => model.apellido1, new { @class = "form-label required" })
                     @Html.TextBoxFor(model => model.apellido1, new { @class = "form-control", maxlength = "256" })
                     @Html.ValidationMessageFor(model => model.apellido1, "", new { @class = "text-danger" })
                 </div>
 
-                <div class="col-md-4 mb-3">
+                <div class="col-md-4">
                     @Html.LabelFor(model => model.apellido2, new { @class = "form-label" })
                     @Html.TextBoxFor(model => model.apellido2, new { @class = "form-control", maxlength = "256" })
                     @Html.ValidationMessageFor(model => model.apellido2, "", new { @class = "text-danger" })
                 </div>
 
-                <div class="col-md-4 mb-3">
-                    @Html.LabelFor(model => model.genero, new { @class = "form-label" })
+                <div class="col-md-4">
+                    @Html.LabelFor(model => model.genero, new { @class = "form-label required" })
                     @Html.DropDownListFor(
                         model => model.genero,
                         new SelectList(new[] { "Femenino", "Masculino", "Otro" }, Model.genero),
@@ -60,14 +62,14 @@
                     @Html.ValidationMessageFor(model => model.genero, "", new { @class = "text-danger" })
                 </div>
 
-                <div class="col-md-4 mb-3">
+                <div class="col-md-4">
                     @Html.LabelFor(model => model.correo, new { @class = "form-label" })
                     @Html.TextBoxFor(model => model.correo, new { @class = "form-control", type = "email", maxlength = "256" })
                     @Html.ValidationMessageFor(model => model.correo, "", new { @class = "text-danger" })
                 </div>
 
-                <div class="col-md-8 mb-3">
-                    @Html.LabelFor(model => model.contactoEmergencia, new { @class = "form-label" })
+                <div class="col-md-8">
+                    @Html.LabelFor(model => model.contactoEmergencia, new { @class = "form-label required" })
                     @Html.TextBoxFor(model => model.contactoEmergencia, new { @class = "form-control", maxlength = "256" })
                     @Html.ValidationMessageFor(model => model.contactoEmergencia, "", new { @class = "text-danger" })
                 </div>
@@ -75,14 +77,14 @@
         </div>
     </div>
 
-    <div class="card shadow-sm mb-3">
+    <div class="card mb-3">
         <div class="card-header">
-            <h3 class="card-title mb-0">Información médica</h3>
+            <h3 class="card-title">Información médica</h3>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    @Html.LabelFor(model => model.grupo_sanguineo, new { @class = "form-label" })
+            <div class="row g-3">
+                <div class="col-md-4">
+                    @Html.LabelFor(model => model.grupo_sanguineo, new { @class = "form-label required" })
                     @Html.DropDownListFor(
                         model => model.grupo_sanguineo,
                         new SelectList(new[] { "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-" }, Model.grupo_sanguineo),
@@ -91,16 +93,23 @@
                     @Html.ValidationMessageFor(model => model.grupo_sanguineo, "", new { @class = "text-danger" })
                 </div>
 
-                <div class="col-md-8 mb-3">
-                    @Html.LabelFor(model => model.alergias, new { @class = "form-label" })
+                <div class="col-md-8">
+                    @Html.LabelFor(model => model.alergias, new { @class = "form-label required" })
                     @Html.TextAreaFor(model => model.alergias, new { @class = "form-control", rows = "3", maxlength = "512", placeholder = "Indique las alergias o escriba Ninguna" })
                     @Html.ValidationMessageFor(model => model.alergias, "", new { @class = "text-danger" })
                 </div>
             </div>
         </div>
-        <div class="card-footer">
-            <input type="submit" value="Guardar cambios" class="btn btn-primary" />
-            @Html.ActionLink("Cancelar", "DetalleDeExpediente", "Expedientes", new { id = Model.id_expediente }, new { @class = "btn btn-outline-secondary ms-1" })
+        <div class="card-footer en-form-acciones">
+            @if (!string.IsNullOrEmpty(Model.id_usuario))
+            {
+                @Html.ActionLink("Cancelar", "Expediente", "Expedientes", new { id = Model.id_usuario, tab = "medica" }, new { @class = "btn btn-outline-secondary" })
+            }
+            else
+            {
+                @Html.ActionLink("Cancelar", "DetalleDeExpediente", "Expedientes", new { id = Model.id_expediente, tab = "medica" }, new { @class = "btn btn-outline-secondary" })
+            }
+            <input type="submit" value="Guardar" class="btn btn-primary" />
         </div>
     </div>
 }

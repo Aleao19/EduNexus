@@ -9,6 +9,7 @@ namespace EduNexus.UI.Controllers
 {
     // RSEG-01-002 Registrar usuarios con cédula, nombre, apellidos, estado, correo y rol.
     // RSEG-01-003 Bloquear o desactivar usuarios.
+    // Los docentes NO se registran aquí: tienen su propio flujo en Académico → Docentes.
     [AutorizarAdministrador]
     public class UsuariosController : Controller
     {
@@ -59,11 +60,11 @@ namespace EduNexus.UI.Controllers
                     return View(usuario);
                 }
 
-                // Escenario 1: registro exitoso del usuario
+                // Escenario 1: registro exitoso del usuario (cédula guardada con formato 0-0000-0000)
                 var nuevo = new UsuarioEntity
                 {
                     id_usuario = Guid.NewGuid().ToString(),
-                    identificacion = usuario.cedula.Trim(),
+                    identificacion = Cedula.Normalizar(usuario.cedula),
                     nombre = usuario.nombre.Trim(),
                     apellido1 = usuario.apellido1.Trim(),
                     apellido2 = string.IsNullOrWhiteSpace(usuario.apellido2) ? null : usuario.apellido2.Trim(),
@@ -167,15 +168,24 @@ namespace EduNexus.UI.Controllers
                 }
             }
 
-            // Escenario 3: registro con cédula ya existente
+            // Cédula con formato 0-0000-0000
+            // Escenario 3: registro con cédula ya existente (se compara normalizada, en memoria)
             if (!string.IsNullOrWhiteSpace(usuario.cedula))
             {
-                string cedula = usuario.cedula.Trim();
-                bool existe = db.Usuarios.Select(u => u.identificacion).ToList()
-                    .Any(c => c != null && c.Trim().Equals(cedula, StringComparison.OrdinalIgnoreCase));
-                if (existe)
+                string cedula = Cedula.Normalizar(usuario.cedula);
+                if (cedula == null)
                 {
-                    ModelState.AddModelError("cedula", "La cédula ya está asociada a otro usuario.");
+                    ModelState.AddModelError("cedula", Cedula.MensajeFormato);
+                }
+                else
+                {
+                    usuario.cedula = cedula;
+                    bool existe = db.Usuarios.Select(u => u.identificacion).ToList()
+                        .Any(c => c != null && Cedula.Iguales(c, cedula));
+                    if (existe)
+                    {
+                        ModelState.AddModelError("cedula", "La cédula ya está asociada a otro usuario.");
+                    }
                 }
             }
 
@@ -188,9 +198,15 @@ namespace EduNexus.UI.Controllers
                 {
                     ModelState.AddModelError("id_rol", "Debe seleccionar un rol válido.");
                 }
+                else if (RolesSistema.Es(rol.nombre, RolesSistema.Docente))
+                {
+                    // Los docentes tienen un flujo único en Académico → Docentes
+                    ModelState.AddModelError("id_rol", "Los docentes se registran en Académico → Docentes.");
+                    rol = null;
+                }
             }
 
-            // Escenario 5: correo no institucional del MEP para Administrador, Director o Docente
+            // Escenario 5: correo no institucional del MEP para Administrador o Director
             if (rol != null && !string.IsNullOrWhiteSpace(usuario.correo) &&
                 RolesQueRequierenCorreoInstitucional.Any(r => RolesSistema.Es(rol.nombre, r)) &&
                 !usuario.correo.Trim().EndsWith(DominioInstitucional, StringComparison.OrdinalIgnoreCase))
@@ -199,11 +215,15 @@ namespace EduNexus.UI.Controllers
             }
         }
 
+        // Combo de roles sin el rol Docente (los docentes se registran en Académico → Docentes)
         private void CargarRolesEnViewBag()
         {
             using (var db = new EduNexusDbContext())
             {
-                ViewBag.Roles = new SelectList(db.Roles.OrderBy(r => r.nombre).ToList(), "id_rol", "nombre");
+                var roles = db.Roles.OrderBy(r => r.nombre).ToList()
+                    .Where(r => !RolesSistema.Es(r.nombre, RolesSistema.Docente))
+                    .ToList();
+                ViewBag.Roles = new SelectList(roles, "id_rol", "nombre");
             }
         }
 
@@ -212,7 +232,8 @@ namespace EduNexus.UI.Controllers
             return new UsuarioDto
             {
                 id_usuario = u.id_usuario,
-                cedula = u.identificacion,
+                // Siempre con formato 0-0000-0000 (datos viejos pueden venir sin guiones)
+                cedula = Cedula.Normalizar(u.identificacion) ?? u.identificacion,
                 nombre = u.nombre,
                 apellido1 = u.apellido1,
                 apellido2 = u.apellido2,

@@ -3,37 +3,45 @@
     ViewBag.Title = "Registrar adecuación";
 }
 
-<div class="row justify-content-center">
-    <div class="col-12 col-md-8">
-        <h1 class="mb-1">Registrar adecuación</h1>
-        <p class="text-secondary mb-4">Estudiante: <strong>@Model.estudiante</strong></p>
-        <div class="card shadow-sm mb-3">
-            <div class="card-body">
-                @using (Html.BeginForm())
-                {
-                    @Html.AntiForgeryToken()
-                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-                    @Html.HiddenFor(m => m.id_usuario)
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Estudiantes</div>
+            <h2 class="page-title">Registrar adecuación</h2>
+            <div class="page-subtitle">Estudiante: <strong>@Model.estudiante</strong></div>
+        </div>
+    </div>
+</div>
 
-                    <div class="mb-3">
-                        <label class="form-label" for="id_tipo">Tipo de adecuación</label>
-                        @Html.DropDownListFor(m => m.id_tipo, (SelectList)ViewBag.Tipos, "Sin clasificar (clasificar después)", new { @class = "form-select" })
-                        @Html.ValidationMessageFor(m => m.id_tipo, "", new { @class = "text-danger" })
-                    </div>
-                    <div class="mb-3">
-                        @Html.LabelFor(m => m.descripcion, new { @class = "form-label" })
-                        @Html.TextAreaFor(m => m.descripcion, 3, 60, new { @class = "form-control", placeholder = "Ej: Requiere apoyo en lectura y más tiempo en las pruebas" })
-                        @Html.ValidationMessageFor(m => m.descripcion, "", new { @class = "text-danger" })
-                    </div>
-                    <div class="form-footer d-flex justify-content-between">
-                        @Html.ActionLink("Cancelar", "Expediente", new { id = Model.id_usuario }, new { @class = "btn btn-outline-secondary" })
-                        <button type="submit" class="btn btn-primary">Registrar</button>
-                    </div>
-                }
+<div class="card">
+    @using (Html.BeginForm())
+    {
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(m => m.id_usuario)
+        <div class="card-header">
+            <h3 class="card-title">Datos del caso</h3>
+        </div>
+        <div class="card-body">
+            @Html.ValidationSummary(true, "", new { @class = "text-danger mb-3" })
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="id_tipo">Tipo de adecuación</label>
+                    @Html.DropDownListFor(m => m.id_tipo, (SelectList)ViewBag.Tipos, "Sin clasificar (clasificar después)", new { @class = "form-select" })
+                    <small class="form-hint">Puede dejarlo sin clasificar y clasificarlo más adelante.</small>
+                    @Html.ValidationMessageFor(m => m.id_tipo, "", new { @class = "text-danger" })
+                </div>
+                <div class="col-12">
+                    @Html.LabelFor(m => m.descripcion, new { @class = "form-label required" })
+                    @Html.TextAreaFor(m => m.descripcion, 3, 60, new { @class = "form-control", placeholder = "Ej: Requiere apoyo en lectura y más tiempo en las pruebas" })
+                    @Html.ValidationMessageFor(m => m.descripcion, "", new { @class = "text-danger" })
+                </div>
             </div>
         </div>
-
-    </div>
+        <div class="card-footer en-form-acciones">
+            @Html.ActionLink("Cancelar", "Expediente", "Expedientes", new { id = Model.id_usuario, tab = "apoyos" }, new { @class = "btn btn-outline-secondary" })
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+    }
 </div>
 
 @section Scripts {

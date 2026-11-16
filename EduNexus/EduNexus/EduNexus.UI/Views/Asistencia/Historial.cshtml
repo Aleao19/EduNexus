@@ -1,0 +1,166 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Asistencia.AsistenciaHistorialDto
+
+@{
+    ViewBag.Title = "Historial de asistencia";
+    string[] estados = EduNexus.Abstracciones.ModelosParaUI.Asistencia.AsistenciaFormDto.Estados;
+    string[] colores = { "success", "warning", "danger", "info" };
+    string[] abreviaturas = { "P", "T", "AN", "AJ" };
+    string desdeTexto = Model.desde.HasValue ? Model.desde.Value.ToString("yyyy-MM-dd") : "";
+    string hastaTexto = Model.hasta.HasValue ? Model.hasta.Value.ToString("yyyy-MM-dd") : "";
+}
+
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Asistencia</div>
+            <h2 class="page-title">@ViewBag.Title</h2>
+            <div class="page-subtitle">Consulte la asistencia de una clase por rango de fechas, con el resumen por estudiante y las justificaciones registradas.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                <a href="@Url.Action("Registrar", "Asistencia", new { clase = Model.clase })" class="btn btn-outline-secondary">Volver a Asistencia</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.sinClases)
+{
+    <div class="alert alert-info">No tiene secciones asignadas para el período lectivo actual.</div>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            @using (Html.BeginForm("Historial", "Asistencia", FormMethod.Get, new { @class = "row g-3 align-items-end" }))
+            {
+                <div class="col-md-5">
+                    <label class="form-label required" for="clase">Sección y materia</label>
+                    @Html.DropDownList("clase", (SelectList)ViewBag.Clases, "-- Seleccione --", new { @class = "form-select", required = "required" })
+                </div>
+                <div class="col-sm-6 col-md-2">
+                    <label class="form-label required" for="desde">Desde</label>
+                    <input type="date" id="desde" name="desde" value="@desdeTexto" class="form-control" required />
+                </div>
+                <div class="col-sm-6 col-md-2">
+                    <label class="form-label required" for="hasta">Hasta</label>
+                    <input type="date" id="hasta" name="hasta" value="@hastaTexto" class="form-control" required />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">Consultar</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.mensajeError))
+{
+    <div class="alert alert-danger">@Model.mensajeError</div>
+}
+else if (Model.consultado)
+{
+    if (!Model.fechas.Any())
+    {
+        <div class="alert alert-info">No hay registros de asistencia para el período seleccionado.</div>
+    }
+    else
+    {
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h3 class="card-title">@Model.titulo - del @Model.desde.Value.ToString("dd/MM/yyyy") al @Model.hasta.Value.ToString("dd/MM/yyyy")</h3>
+                <div class="small text-secondary">
+                    @for (int k = 0; k < estados.Length; k++)
+                    {
+                        <span class="@("badge bg-" + colores[k] + "-lt me-1")">@abreviaturas[k]</span>@estados[k]<span class="me-2"></span>
+                    }
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter table-sm card-table">
+                    <thead>
+                        <tr>
+                            <th>Estudiante</th>
+                            @foreach (var f in Model.fechas)
+                            {
+                                <th class="text-center">@f.ToString("dd/MM")</th>
+                            }
+                            <th class="text-center">Presentes</th>
+                            <th class="text-center">Tardías</th>
+                            <th class="text-center">Aus. justificadas</th>
+                            <th class="text-center">Aus. no justificadas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var est in Model.estudiantes)
+                        {
+                            <tr>
+                                <td>@est.nombre</td>
+                                @foreach (var f in Model.fechas)
+                                {
+                                    string estado;
+                                    est.estados.TryGetValue(f.ToString("yyyy-MM-dd"), out estado);
+                                    int posicion = Array.IndexOf(estados, estado);
+                                    <td class="text-center">
+                                        @if (posicion >= 0)
+                                        {
+                                            <span class="@("badge bg-" + colores[posicion] + "-lt")" title="@estado">@abreviaturas[posicion]</span>
+                                        }
+                                        else if (!string.IsNullOrEmpty(estado))
+                                        {
+                                            <span class="badge bg-secondary-lt" title="@estado">?</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-secondary" title="Sin registro">-</span>
+                                        }
+                                    </td>
+                                }
+                                <td class="text-center">@est.presentes</td>
+                                <td class="text-center">@est.tardias</td>
+                                <td class="text-center">@est.ausenciasJustificadas</td>
+                                <td class="text-center">@est.ausenciasNoJustificadas</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Justificaciones del período</h3></div>
+            @if (!Model.justificaciones.Any())
+            {
+                <div class="card-body text-secondary text-center py-4">No hay ausencias justificadas en el período seleccionado.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Estudiante</th>
+                                <th>Motivo</th>
+                                <th>Justificado por</th>
+                                <th>Fecha de justificación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var j in Model.justificaciones)
+                            {
+                                <tr>
+                                    <td class="text-nowrap">@j.fecha.ToString("dd/MM/yyyy")</td>
+                                    <td>@j.estudiante</td>
+                                    <td class="text-wrap">@(string.IsNullOrEmpty(j.motivo) ? "No registrado" : j.motivo)</td>
+                                    <td>@(j.justificado_por ?? "No registrado")</td>
+                                    <td>@(j.fecha_justificacion.HasValue ? j.fecha_justificacion.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+}

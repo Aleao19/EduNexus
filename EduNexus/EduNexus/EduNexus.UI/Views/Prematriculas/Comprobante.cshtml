@@ -68,8 +68,8 @@
         }
 
         body {
-            background: #f1f4f8;
-            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: #253247;
             margin: 0;
             padding: 30px;
@@ -80,19 +80,19 @@
             max-width: 850px;
             margin: auto;
             padding: 40px;
-            border-radius: 10px;
+            border-radius: 8px;
             box-shadow: 0 3px 15px rgba(0,0,0,.08);
         }
 
         .encabezado {
             text-align: center;
-            border-bottom: 2px solid #234b7a;
+            border-bottom: 2px solid #1a569d;
             padding-bottom: 20px;
             margin-bottom: 25px;
         }
 
         .encabezado h1 {
-            color: #234b7a;
+            color: #1a569d;
             margin-bottom: 5px;
             font-size: 32px;
         }
@@ -109,7 +109,7 @@
         .numero-comprobante {
             display: inline-block;
             background: #eef4fc;
-            color: #234b7a;
+            color: #1a569d;
             padding: 10px 18px;
             border-radius: 6px;
             margin-top: 10px;
@@ -118,7 +118,7 @@
 
         .periodo {
             background: #eef4fc;
-            border-left: 4px solid #234b7a;
+            border-left: 4px solid #1a569d;
             padding: 15px;
             margin-top: 20px;
             border-radius: 5px;
@@ -126,7 +126,7 @@
         }
 
         .periodo strong {
-            color: #234b7a;
+            color: #1a569d;
         }
 
         .seccion {
@@ -134,7 +134,7 @@
         }
 
         .seccion h3 {
-            color: #234b7a;
+            color: #1a569d;
             border-bottom: 1px solid #ddd;
             padding-bottom: 8px;
             font-size: 18px;
@@ -167,12 +167,12 @@
         }
 
         .cuota h3 {
-            color: #234b7a;
+            color: #1a569d;
             margin-top: 0;
         }
 
         .cuota h2 {
-            color: #234b7a;
+            color: #1a569d;
             font-size: 24px;
         }
 
@@ -183,7 +183,7 @@
         .nota {
             margin-top: 25px;
             padding: 15px;
-            border-left: 4px solid #234b7a;
+            border-left: 4px solid #1a569d;
             background: #f8fafc;
             font-size: 14px;
             line-height: 1.6;
@@ -222,12 +222,12 @@
         }
 
         .btn-imprimir {
-            background: #2458a6;
+            background: #206bc4;
             color: white;
         }
 
         .btn-imprimir:hover {
-            background: #1b447f;
+            background: #1a569d;
         }
 
         .btn-regresar {
@@ -314,7 +314,7 @@
     {
         <div class="comprobante">
 
-            <div class="mensaje-error">
+            <div class="alert alert-danger mensaje-error">
 
                 <h2>Comprobante no disponible</h2>
 
@@ -365,7 +365,7 @@
 
                 <div class="dato">
                     <strong>Identificación:</strong>
-                    @Model.identificacion
+                    @(EduNexus.UI.Models.Cedula.Normalizar(Model.identificacion) ?? Model.identificacion)
                 </div>
 
                 <div class="dato">

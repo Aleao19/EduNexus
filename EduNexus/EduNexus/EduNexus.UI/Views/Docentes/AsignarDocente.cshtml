@@ -18,14 +18,17 @@
         (d, k) => d.ContainsKey(k) ? d[k] : "";
 }
 
-<!-- Header -->
-<div class="row align-items-center mb-4">
-    <div class="col">
-        <h1 class="page-title mb-2">Asignar materia y sección</h1>
-        <p class="text-secondary">
-            Selecciona una materia y sección para el docente:
-            <strong>@ViewBag.NombreDocente</strong>
-        </p>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Asignar materia y sección</h2>
+            <div class="page-subtitle">
+                Seleccione una materia y sección para el docente:
+                <strong><a href="@Url.Action("CargaAcademicaDocente", new { id = Model.id_docente })">@ViewBag.NombreDocente</a></strong>.
+                Si la clase ya tenía otro docente, este lo reemplaza.
+            </div>
+        </div>
     </div>
 </div>
 
@@ -36,18 +39,21 @@
     @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
 
     <!-- Contenedor principal -->
-    <div class="row">
+    <div class="row g-3">
         <div class="col-lg-8">
             <!-- Cards de selección -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body p-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-title">Datos de la asignación</h3>
+                </div>
+                <div class="card-body">
 
                     <!-- Paso 1: Seleccionar Materia -->
-                    <div class="mb-4">
-                        <div class="d-flex align-items-center mb-3">
-                            <span class="badge badge-lg bg-blue rounded-circle fw-bold me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">1</span>
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="hz-step">1</span>
                             <div>
-                                <h6 class="mb-1">Selecciona la materia</h6>
+                                <h4 class="mb-1">Materia <span class="text-danger">*</span></h4>
                                 <p class="text-secondary small mb-0">¿Cuál es la materia que impartirá?</p>
                             </div>
                         </div>
@@ -55,21 +61,21 @@
                             @Html.DropDownListFor(
                                 model => model.id_materia,
                                 materias,
-                                "-- Selecciona una materia --",
-                                new { @class = "form-select form-select-lg", @id = "selectMateria" }
+                                "-- Seleccione una materia --",
+                                new { @class = "form-select", @id = "selectMateria" }
                             )
                             @Html.ValidationMessageFor(model => model.id_materia, "", new { @class = "text-danger small mt-2" })
                         </div>
                     </div>
 
-                    <hr class="my-4">
+                    <hr class="my-3">
 
                     <!-- Paso 2: Seleccionar Sección -->
-                    <div class="mb-4">
-                        <div class="d-flex align-items-center mb-3">
-                            <span class="badge badge-lg bg-blue rounded-circle fw-bold me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">2</span>
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="hz-step">2</span>
                             <div>
-                                <h6 class="mb-1">Selecciona la sección</h6>
+                                <h4 class="mb-1">Sección <span class="text-danger">*</span></h4>
                                 <p class="text-secondary small mb-0">¿A cuál sección le impartirá esta materia?</p>
                             </div>
                         </div>
@@ -77,39 +83,39 @@
                             @Html.DropDownListFor(
                                 model => model.id_seccion,
                                 secciones,
-                                "-- Selecciona una sección --",
-                                new { @class = "form-select form-select-lg", @id = "selectSeccion" }
+                                "-- Seleccione una sección --",
+                                new { @class = "form-select", @id = "selectSeccion" }
                             )
                             @Html.ValidationMessageFor(model => model.id_seccion, "", new { @class = "text-danger small mt-2" })
                         </div>
                     </div>
 
-                    <hr class="my-4">
+                    <hr class="my-3">
 
                     <!-- Paso 3: Ver horarios disponibles -->
-                    <div class="mb-4">
-                        <div class="d-flex align-items-center mb-3">
-                            <span class="badge badge-lg bg-blue rounded-circle fw-bold me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">3</span>
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="hz-step">3</span>
                             <div>
-                                <h6 class="mb-1">Revisa el horario de la clase</h6>
-                                <p class="text-secondary small mb-0">Al asignar se verifica que el docente no tenga choques con estos bloques</p>
+                                <h4 class="mb-1">Horario de la clase</h4>
+                                <p class="text-secondary small mb-0">Al asignar se verifica que el docente no tenga choques con estos bloques.</p>
                             </div>
                         </div>
 
                         <!-- Estado inicial -->
                         <div id="hdInicio" class="alert alert-info">
-                            <span>Selecciona materia y sección para ver el horario registrado de esa clase</span>
+                            <span>Seleccione materia y sección para ver el horario registrado de esa clase.</span>
                         </div>
 
                         <!-- Tabla de horarios -->
                         <div class="table-responsive" id="hdTabla" style="display:none;">
-                            <table class="table table-vcenter table-hover card-table">
+                            <table class="table table-vcenter card-table border">
                                 <thead>
                                     <tr>
-                                        <th><strong>Día</strong></th>
-                                        <th><strong>Hora</strong></th>
-                                        <th><strong>Materia</strong></th>
-                                        <th><strong>Sección</strong></th>
+                                        <th>Día</th>
+                                        <th>Hora</th>
+                                        <th>Materia</th>
+                                        <th>Sección</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -117,7 +123,7 @@
                                     {
                                         <tr class="hd-fila" data-materia="@h.materia" data-seccion="@h.seccion" style="display:none;">
                                             <td class="text-nowrap">
-                                                <span class="badge bg-light-primary">@h.dia_semana</span>
+                                                <span class="badge bg-blue-lt">@h.dia_semana</span>
                                             </td>
                                             <td class="text-nowrap">
                                                 <strong>@EduNexus.UI.Models.HorarioServicio.Hora(h.hora_inicio)</strong> - <small>@EduNexus.UI.Models.HorarioServicio.Hora(h.hora_fin)</small>
@@ -144,41 +150,43 @@
             </div>
 
             <!-- Botones de acción -->
-            <div class="d-flex gap-2 mb-4">
-                <button type="submit" id="hdAsignar" class="btn btn-primary btn-lg" disabled>
-                    ✓ Asignar materia
-                </button>
-                <a href="@Url.Action("ListadoDeDocentes")" class="btn btn-outline-secondary btn-lg">
+            <div class="en-form-acciones mb-3">
+                <a href="@Url.Action("CargaAcademicaDocente", new { id = Model.id_docente })" class="btn btn-outline-secondary">
                     Cancelar
                 </a>
+                <button type="submit" id="hdAsignar" class="btn btn-primary" disabled>
+                    Guardar
+                </button>
             </div>
         </div>
 
         <!-- Panel lateral: Resumen -->
         <div class="col-lg-4">
-            <div class="card bg-light shadow-sm sticky-top" style="top: 20px;">
+            <div class="card sticky-lg-top" style="top: 20px;">
+                <div class="card-header">
+                    <h3 class="card-title">Resumen de la asignación</h3>
+                </div>
                 <div class="card-body">
-                    <h6 class="card-title mb-3">📋 Resumen de la asignación</h6>
 
                     <div class="mb-3">
-                        <small class="text-secondary">Docente:</small>
+                        <div class="en-dato-label">Docente</div>
                         <p class="mb-0 fw-bold">@ViewBag.NombreDocente</p>
                     </div>
 
                     <div class="mb-3">
-                        <small class="text-secondary">Materia seleccionada:</small>
+                        <div class="en-dato-label">Materia seleccionada</div>
                         <p id="resumenMateria" class="mb-0 fw-bold text-muted">No seleccionada</p>
                     </div>
 
                     <div class="mb-3">
-                        <small class="text-secondary">Sección seleccionada:</small>
+                        <div class="en-dato-label">Sección seleccionada</div>
                         <p id="resumenSeccion" class="mb-0 fw-bold text-muted">No seleccionada</p>
                     </div>
 
                     <hr>
 
                     <div class="alert alert-success mb-0" id="alertaConfirmacion" style="display:none;">
-                        <strong>✓ ¡Listo!</strong> Puedes confirmar la asignación.
+                        <strong>¡Listo!</strong> Puede confirmar la asignación.
                     </div>
                 </div>
             </div>

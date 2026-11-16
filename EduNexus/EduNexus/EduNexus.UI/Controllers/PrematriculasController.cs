@@ -64,6 +64,24 @@ namespace EduNexus.UI.Controllers
 
             modelo.esNuevoIngreso = true;
 
+            // La cédula se valida y se guarda siempre con el formato 0-0000-0000.
+            if (!string.IsNullOrWhiteSpace(modelo.identificacion))
+            {
+                string cedulaNormalizada =
+                    Cedula.Normalizar(modelo.identificacion);
+
+                if (cedulaNormalizada == null)
+                {
+                    ModelState.AddModelError(
+                        "identificacion",
+                        Cedula.MensajeFormato);
+                }
+                else
+                {
+                    modelo.identificacion = cedulaNormalizada;
+                }
+            }
+
             if (!ModelState.IsValid)
             {
                 CargarGrados();
@@ -96,11 +114,12 @@ namespace EduNexus.UI.Controllers
                 }
 
                 string identificacion =
-                    modelo.identificacion.Trim();
+                    modelo.identificacion;
 
+                // Los registros viejos pueden tener la cédula sin guiones:
+                // se compara normalizando ambos lados (en memoria).
                 bool solicitudPendiente =
-                    db.Prematriculas.Any(p =>
-                        p.identificacion == identificacion &&
+                    PrematriculasDe(identificacion).Any(p =>
                         p.estado == "Pendiente");
 
                 if (solicitudPendiente)
@@ -114,8 +133,7 @@ namespace EduNexus.UI.Controllers
                 }
 
                 bool estudianteRegistrado =
-                    db.Prematriculas.Any(p =>
-                        p.identificacion == identificacion &&
+                    PrematriculasDe(identificacion).Any(p =>
                         p.estado == "Aprobada");
 
                 if (estudianteRegistrado)
@@ -133,11 +151,9 @@ namespace EduNexus.UI.Controllers
                         IsolationLevel.Serializable))
                 {
                     bool duplicada =
-                        db.Prematriculas.Any(p =>
-                            p.identificacion ==
-                                identificacion &&
-                            (p.estado == "Pendiente" ||
-                             p.estado == "Aprobada"));
+                        PrematriculasDe(identificacion).Any(p =>
+                            p.estado == "Pendiente" ||
+                            p.estado == "Aprobada");
 
                     if (duplicada)
                     {
@@ -309,6 +325,13 @@ namespace EduNexus.UI.Controllers
                 modelo.fk_id_calendario =
                     existente.fk_id_calendario;
 
+                // La cédula NO es modificable: se ignora cualquier valor
+                // enviado y se conserva la guardada en la base de datos.
+                modelo.identificacion =
+                    existente.identificacion;
+
+                ModelState.Remove("identificacion");
+
                 if (!ModelState.IsValid)
                 {
                     CargarGrados();
@@ -326,14 +349,17 @@ namespace EduNexus.UI.Controllers
                 }
 
                 string identificacion =
-                    modelo.identificacion.Trim();
+                    existente.identificacion;
 
                 int idActual = existente.id_prematricula;
 
+                var otrasDelEstudiante =
+                    PrematriculasDe(identificacion)
+                        .Where(p => p.id_prematricula != idActual)
+                        .ToList();
+
                 bool identificacionDuplicada =
-                    db.Prematriculas.Any(p =>
-                        p.identificacion == identificacion &&
-                        p.id_prematricula != idActual &&
+                    otrasDelEstudiante.Any(p =>
                         p.estado == "Pendiente");
 
                 if (identificacionDuplicada)
@@ -352,9 +378,7 @@ namespace EduNexus.UI.Controllers
                 if (existente.es_nuevo_ingreso)
                 {
                     bool yaAprobado =
-                        db.Prematriculas.Any(p =>
-                            p.identificacion == identificacion &&
-                            p.id_prematricula != idActual &&
+                        otrasDelEstudiante.Any(p =>
                             p.estado == "Aprobada");
 
                     if (yaAprobado)
@@ -368,22 +392,8 @@ namespace EduNexus.UI.Controllers
                     }
                 }
 
-                if (!existente.es_nuevo_ingreso &&
-                    existente.identificacion != identificacion)
-                {
-                    ModelState.AddModelError(
-                        "identificacion",
-                        "No se puede cambiar la identificación de una solicitud de renovación.");
-
-                    CargarGrados();
-                    return View(modelo);
-                }
-
                 bool aprobadaMismoPeriodo =
-                    db.Prematriculas.Any(p =>
-                        p.identificacion == identificacion &&
-                        p.id_prematricula !=
-                            existente.id_prematricula &&
+                    otrasDelEstudiante.Any(p =>
                         p.fk_id_calendario ==
                             existente.fk_id_calendario &&
                         p.estado == "Aprobada");
@@ -423,8 +433,7 @@ namespace EduNexus.UI.Controllers
 
                     var antes = DatosAuditoria(existente);
 
-                    existente.identificacion =
-                        identificacion;
+                    // La identificación no se modifica (se conserva la de BD).
                     existente.nombre =
                         modelo.nombre.Trim();
                     existente.apellido1 =
@@ -500,6 +509,7 @@ namespace EduNexus.UI.Controllers
             try
             {
                 bool usuarioCreado = false;
+                string textoSeccion = null;
 
                 using (var transaccion =
                     db.Database.BeginTransaction(
@@ -576,10 +586,14 @@ namespace EduNexus.UI.Controllers
                     string identificacionSolicitud =
                         solicitud.identificacion;
 
+                    // Se compara la cédula normalizada (en memoria): los
+                    // usuarios viejos pueden tenerla sin guiones.
                     var usuariosConIdentificacion = db.Usuarios
+                        .ToList()
                         .Where(u =>
-                            u.identificacion ==
-                            identificacionSolicitud)
+                            Cedula.Iguales(
+                                u.identificacion,
+                                identificacionSolicitud))
                         .ToList();
 
                     var usuario = usuariosConIdentificacion
@@ -616,7 +630,9 @@ namespace EduNexus.UI.Controllers
                             nombre = solicitud.nombre,
                             apellido1 = solicitud.apellido1,
                             apellido2 = solicitud.apellido2,
-                            identificacion = identificacionSolicitud,
+                            identificacion =
+                                Cedula.Normalizar(identificacionSolicitud) ??
+                                identificacionSolicitud,
                             estado = true,
                             telefono = solicitud.telefono,
                             rol = idRolEstudiante,
@@ -629,10 +645,11 @@ namespace EduNexus.UI.Controllers
                         usuarioCreado = true;
                     }
 
+                    var prematriculasEstudiante =
+                        PrematriculasDe(identificacionSolicitud);
+
                     bool aprobada =
-                        db.Prematriculas.Any(p =>
-                            p.identificacion ==
-                                solicitud.identificacion &&
+                        prematriculasEstudiante.Any(p =>
                             p.id_prematricula !=
                                 solicitud.id_prematricula &&
                             p.fk_id_calendario ==
@@ -686,24 +703,43 @@ namespace EduNexus.UI.Controllers
                         return RedirectToAction("Listado");
                     }
 
-                    int? seccionDisponible = null;
+                    // Distribución equilibrada (género y necesidades):
+                    // ver Models/DistribucionSecciones.cs.
+                    bool adecuacionActiva =
+                        !usuarioCreado &&
+                        db.AdecuacionesEstudiantes
+                            .Where(a =>
+                                a.fk_id_usuario ==
+                                    usuario.id_usuario)
+                            .Select(a => a.estado)
+                            .ToList()
+                            .Any(e => string.Equals(
+                                (e ?? "").Trim(),
+                                "Activa",
+                                StringComparison.OrdinalIgnoreCase));
 
-                    foreach (var seccion in secciones)
-                    {
-                        int ocupados =
-                            db.SeccionesEstudiantes.Count(e =>
-                                e.fk_id_seccion ==
-                                    seccion.id_seccion);
-
-                        if (seccion.cupo > 0 &&
-                            ocupados < seccion.cupo)
+                    var perfilEstudiante =
+                        new PerfilDistribucion
                         {
-                            seccionDisponible =
-                                seccion.id_seccion;
+                            Genero =
+                                DistribucionSecciones.NormalizarGenero(
+                                    solicitud.genero),
+                            TieneNecesidades =
+                                solicitud.tiene_adecuacion ||
+                                solicitud.tiene_discapacidad ||
+                                adecuacionActiva
+                        };
 
-                            break;
-                        }
-                    }
+                    var eleccion = DistribucionSecciones.Elegir(
+                        perfilEstudiante,
+                        DistribucionSecciones
+                            .EstadoDeSecciones(db, secciones)
+                            .Values);
+
+                    int? seccionDisponible =
+                        eleccion != null
+                            ? eleccion.Seccion.IdSeccion
+                            : (int?)null;
 
                     if (!seccionDisponible.HasValue)
                     {
@@ -715,7 +751,11 @@ namespace EduNexus.UI.Controllers
 
                     if (usuarioCreado)
                     {
+                        // Se guarda primero el usuario: en la BD, secciones_estudiantes y
+                        // expediente_estudiantes tienen llave foránea hacia usuarios, y EF no
+                        // garantiza el orden de inserción si todo va en un solo SaveChanges.
                         db.Usuarios.Add(usuario);
+                        db.SaveChanges();
                     }
 
                     var asignacion =
@@ -734,10 +774,7 @@ namespace EduNexus.UI.Controllers
                     string idUsuarioEstudiante =
                         usuario.id_usuario;
 
-                    var idsMatriculas = db.Prematriculas
-                        .Where(p =>
-                            p.identificacion ==
-                                identificacionSolicitud)
+                    var idsMatriculas = prematriculasEstudiante
                         .Select(p => p.id_prematricula)
                         .ToList();
 
@@ -776,12 +813,17 @@ namespace EduNexus.UI.Controllers
                             identificacionSolicitud + "." +
                             (usuarioCreado
                                 ? " Se creó su usuario estudiante."
-                                : ""),
+                                : "") +
+                            " Sección asignada: " +
+                            eleccion.Seccion.Etiqueta +
+                            " (" + eleccion.Motivo + ").",
                         new { estado = "Pendiente" },
                         new
                         {
                             estado = "Aprobada",
                             seccion = seccionDisponible.Value,
+                            seccion_nombre = eleccion.Seccion.Etiqueta,
+                            criterio = eleccion.Motivo,
                             usuario = usuario.id_usuario,
                             usuario_creado = usuarioCreado,
                             expediente_creado = !tieneExpediente
@@ -789,11 +831,16 @@ namespace EduNexus.UI.Controllers
 
                     db.SaveChanges();
                     transaccion.Commit();
+
+                    textoSeccion =
+                        eleccion.Seccion.Etiqueta + ": " +
+                        eleccion.Motivo;
                 }
 
-                TempData["Mensaje"] = usuarioCreado
-                    ? "La solicitud fue aprobada, se creó el usuario del estudiante y fue asignado a una sección."
-                    : "La solicitud fue aprobada y el estudiante fue asignado a una sección.";
+                TempData["Mensaje"] = (usuarioCreado
+                    ? "La solicitud fue aprobada, se creó el usuario del estudiante y fue asignado a la sección "
+                    : "La solicitud fue aprobada y el estudiante fue asignado a la sección ") +
+                    textoSeccion + ".";
             }
             catch (Exception ex)
             {
@@ -923,10 +970,11 @@ namespace EduNexus.UI.Controllers
                     "EstudiantesActivos");
             }
 
-            var anterior = db.Prematriculas
+            var prematriculasEstudiante =
+                PrematriculasDe(usuario.identificacion);
+
+            var anterior = prematriculasEstudiante
                 .Where(p =>
-                    p.identificacion ==
-                        usuario.identificacion &&
                     p.estado == "Aprobada")
                 .OrderByDescending(
                     p => p.fecha_prematricula)
@@ -972,9 +1020,7 @@ namespace EduNexus.UI.Controllers
                 }
             }
 
-            bool duplicada = db.Prematriculas.Any(p =>
-                p.identificacion ==
-                    usuario.identificacion &&
+            bool duplicada = prematriculasEstudiante.Any(p =>
                 p.fk_id_calendario ==
                     calendarioDestino.id_calendario &&
                 (p.estado == "Pendiente" ||
@@ -1052,19 +1098,28 @@ namespace EduNexus.UI.Controllers
                 string identificacionAnterior =
                     anterior.identificacion;
 
-                anterior = db.Prematriculas
+                var prematriculasEstudiante =
+                    PrematriculasDe(identificacionAnterior);
+
+                anterior = prematriculasEstudiante
                     .Where(p =>
-                        p.identificacion ==
-                            identificacionAnterior &&
                         p.estado == "Aprobada")
                     .OrderByDescending(
                         p => p.fecha_prematricula)
                     .FirstOrDefault() ?? anterior;
 
+                string idRolEstudiante =
+                    ValidacionExpediente.IdRolEstudiante(db);
+
                 var usuario = db.Usuarios
-                    .FirstOrDefault(u =>
-                        u.identificacion ==
-                            anterior.identificacion);
+                    .ToList()
+                    .Where(u =>
+                        Cedula.Iguales(
+                            u.identificacion,
+                            anterior.identificacion))
+                    .OrderByDescending(u =>
+                        u.rol == idRolEstudiante)
+                    .FirstOrDefault();
 
                 if (usuario == null)
                 {
@@ -1153,9 +1208,7 @@ namespace EduNexus.UI.Controllers
                 }
 
                 bool solicitudPendiente =
-                    db.Prematriculas.Any(p =>
-                        p.identificacion ==
-                            anterior.identificacion &&
+                    prematriculasEstudiante.Any(p =>
                         p.fk_id_calendario ==
                             calendarioDestino.id_calendario &&
                         (p.estado == "Pendiente" ||
@@ -1189,9 +1242,7 @@ namespace EduNexus.UI.Controllers
                         IsolationLevel.Serializable))
                 {
                     bool duplicada =
-                        db.Prematriculas.Any(p =>
-                            p.identificacion ==
-                                anterior.identificacion &&
+                        PrematriculasDe(anterior.identificacion).Any(p =>
                             p.fk_id_calendario ==
                                 calendarioDestino.id_calendario &&
                             (p.estado == "Pendiente" ||
@@ -1380,16 +1431,10 @@ namespace EduNexus.UI.Controllers
 
             if (calendarioDestino != null)
             {
-                var identificaciones = estudiantes
-                    .Select(e => e.identificacion)
-                    .Where(i => i != null)
-                    .Distinct()
-                    .ToList();
-
+                // Se empareja por cédula normalizada (en memoria):
+                // los registros viejos pueden no tener guiones.
                 var renovaciones = db.Prematriculas
                     .Where(p =>
-                        identificaciones.Contains(
-                            p.identificacion) &&
                         p.fk_id_calendario ==
                             calendarioDestino.id_calendario &&
                         !p.es_nuevo_ingreso &&
@@ -1401,8 +1446,9 @@ namespace EduNexus.UI.Controllers
                 {
                     var renovacion = renovaciones
                         .Where(p =>
-                            p.identificacion ==
-                                estudiante.identificacion)
+                            Cedula.Iguales(
+                                p.identificacion,
+                                estudiante.identificacion))
                         .OrderByDescending(p =>
                             p.estado == "Aprobada")
                         .ThenByDescending(p =>
@@ -1433,6 +1479,20 @@ namespace EduNexus.UI.Controllers
             return RolesSistema.Es(
                 usuario,
                 RolesSistema.Padre);
+        }
+
+        // Prematrículas de una cédula, sin importar si se guardó
+        // con o sin guiones (comparación en memoria).
+        private List<PrematriculaEntity> PrematriculasDe(
+            string identificacion)
+        {
+            return db.Prematriculas
+                .ToList()
+                .Where(p =>
+                    Cedula.Iguales(
+                        p.identificacion,
+                        identificacion))
+                .ToList();
         }
 
         private bool GradoExiste(int idGrado)

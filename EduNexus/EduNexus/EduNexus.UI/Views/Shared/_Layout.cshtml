@@ -20,6 +20,22 @@
     bool veAulaVirtual = esAdministrador || esDirector || esDocente || esEstudiante;
     // RHOR-09-006 y 007: Mi horario (Docente y Estudiante).
     bool veMiHorario = esDocente || esEstudiante;
+
+    // Solo presentación: resaltar en el menú la sección en la que se encuentra el usuario.
+    string controladorActual = (ViewContext.RouteData.Values["controller"] ?? "").ToString();
+    string accionActual = (ViewContext.RouteData.Values["action"] ?? "").ToString();
+    Func<string[], string> activoSi = nombres => nombres.Any(n => string.Equals(n, controladorActual, StringComparison.OrdinalIgnoreCase)) ? " active" : "";
+    string activoInicio = (controladorActual == "Home" && accionActual != "Bitacora") ? " active" : "";
+    string activoAcademico = activoSi(new[] { "Grados", "Secciones", "SeccionMaterias", "Materias", "Docentes", "HorarioDocentes", "Horarios" });
+    string activoEstudiantes = activoSi(new[] { "Prematriculas", "Expedientes", "ExpedienteAcademico", "DocumentosExpediente" });
+    string activoSeguridad = (activoSi(new[] { "Usuarios", "Roles" }) != "" || accionActual == "Bitacora") ? " active" : "";
+
+    string iniciales = "";
+    if (estaAutenticado)
+    {
+        iniciales = ((string.IsNullOrEmpty(usuarioSesion.nombre) ? "" : usuarioSesion.nombre.Substring(0, 1))
+                   + (string.IsNullOrEmpty(usuarioSesion.apellido1) ? "" : usuarioSesion.apellido1.Substring(0, 1))).ToUpper();
+    }
 }
 
 <!DOCTYPE html>
@@ -83,27 +99,27 @@
                     {
                         <!-- INICIO (todos los roles) -->
                         <li class="nav-item">
-                            @Html.ActionLink("Inicio", "Index", "Home", new { area = "" }, new { @class = "nav-link" })
+                            @Html.ActionLink("Inicio", "Index", "Home", new { area = "" }, new { @class = "nav-link" + activoInicio })
                         </li>
 
                         if (veAulaVirtual)
                         {
                             <li class="nav-item">
-                                @Html.ActionLink("Aula Virtual", "AulaVirtual", "AulaVirtual", new { area = "" }, new { @class = "nav-link" })
+                                @Html.ActionLink("Aula Virtual", "AulaVirtual", "AulaVirtual", new { area = "" }, new { @class = "nav-link" + activoSi(new[] { "AulaVirtual" }) })
                             </li>
                         }
 
                         if (veMiHorario)
                         {
                             <li class="nav-item">
-                                @Html.ActionLink("Mi horario", "MiHorario", "MiHorario", new { area = "" }, new { @class = "nav-link" })
+                                @Html.ActionLink("Mi horario", "MiHorario", "MiHorario", new { area = "" }, new { @class = "nav-link" + activoSi(new[] { "MiHorario" }) })
                             </li>
                         }
 
                         if (esDocente)
                         {
                             <li class="nav-item">
-                                @Html.ActionLink("Asistencia", "Registrar", "Asistencia", new { area = "" }, new { @class = "nav-link" })
+                                @Html.ActionLink("Asistencia", "Registrar", "Asistencia", new { area = "" }, new { @class = "nav-link" + activoSi(new[] { "Asistencia" }) })
                             </li>
                         }
 
@@ -111,7 +127,7 @@
                         if (esAdministrador)
                         {
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Académico</a>
+                                <a class="nav-link dropdown-toggle@(activoAcademico)" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Académico</a>
                                 <ul class="dropdown-menu">
                                     <li>@Html.ActionLink("Grados", "ListadoDeGrados", "Grados", new { area = "" }, new { @class = "dropdown-item" })</li>
                                     <li>@Html.ActionLink("Secciones", "ListadoDeSecciones", "Secciones", new { area = "" }, new { @class = "dropdown-item" })</li>
@@ -121,16 +137,15 @@
                                 </ul>
                             </li>
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Estudiantes</a>
+                                <a class="nav-link dropdown-toggle@(activoEstudiantes)" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Estudiantes</a>
                                 <ul class="dropdown-menu">
                                     <li>@Html.ActionLink("Solicitudes de prematrícula", "Listado", "Prematriculas", new { area = "" }, new { @class = "dropdown-item" })</li>
                                     <li>@Html.ActionLink("Renovaciones", "EstudiantesActivos", "Prematriculas", new { area = "" }, new { @class = "dropdown-item" })</li>
-                                    <li>@Html.ActionLink("Expedientes", "ListadoDeExpedientes", "Expedientes", new { area = "" }, new { @class = "dropdown-item" })</li>
-                                    <li>@Html.ActionLink("Expediente académico", "ListadoDeEstudiantes", "ExpedienteAcademico", new { area = "" }, new { @class = "dropdown-item" })</li>
+                                    <li>@Html.ActionLink("Expedientes", "Index", "Expedientes", new { area = "" }, new { @class = "dropdown-item" })</li>
                                 </ul>
                             </li>
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Seguridad</a>
+                                <a class="nav-link dropdown-toggle@(activoSeguridad)" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Seguridad</a>
                                 <ul class="dropdown-menu">
                                     <li>@Html.ActionLink("Usuarios", "ListadoDeUsuarios", "Usuarios", new { area = "" }, new { @class = "dropdown-item" })</li>
                                     <li>@Html.ActionLink("Roles", "ListadoDeRoles", "Roles", new { area = "" }, new { @class = "dropdown-item" })</li>
@@ -143,7 +158,7 @@
                         if (esCoordinador)
                         {
                             <li class="nav-item">
-                                @Html.ActionLink("Horarios", "ListadoDeHorarios", "Horarios", new { area = "" }, new { @class = "nav-link" })
+                                @Html.ActionLink("Horarios", "ListadoDeHorarios", "Horarios", new { area = "" }, new { @class = "nav-link" + activoSi(new[] { "Horarios" }) })
                             </li>
                         }
 
@@ -159,15 +174,19 @@
                 </ul>
 
                 <!-- INFORMACIÓN DE SESIÓN -->
-                <div class="navbar-nav flex-row align-items-center ms-auto">
+                <div class="navbar-nav flex-row align-items-center ms-lg-auto gap-2">
 
                     @if (estaAutenticado)
                     {
-                        <span class="nav-link text-white-50">
+                        <span class="nav-link en-usuario">
 
-                            @usuarioSesion.nombre
-                            @usuarioSesion.apellido1
-                            (@usuarioSesion.nombreRol)
+                            <span class="avatar avatar-sm bg-primary-lt rounded-circle">@iniciales</span>
+
+                            <span class="en-usuario-texto">
+                                @usuarioSesion.nombre
+                                @usuarioSesion.apellido1
+                                <small>@usuarioSesion.nombreRol</small>
+                            </span>
 
                         </span>
 
@@ -176,13 +195,13 @@
                             "CerrarSesion",
                             "Home",
                             new { area = "" },
-                            new { @class = "nav-link" }
+                            new { @class = "btn btn-sm btn-outline-light" }
                         )
                     }
                     else
                     {
                         @Html.ActionLink(
-                            "Iniciar Sesión",
+                            "Iniciar sesión",
                             "Login",
                             "Home",
                             new { area = "" },
@@ -267,18 +286,20 @@
 
         @RenderBody()
 
-        <hr />
-
-        <!-- PIE DE PÁGINA -->
-        <footer>
-
-            <p>
-                &copy; @DateTime.Now.Year - EduNexus
-            </p>
-
-        </footer>
-
     </div>
+
+    <!-- PIE DE PÁGINA -->
+    <footer class="en-footer d-print-none">
+
+        <div class="container-xl d-flex flex-wrap justify-content-between gap-2">
+
+            <span>&copy; @DateTime.Now.Year EduNexus</span>
+
+            <span>Sistema de gestión escolar</span>
+
+        </div>
+
+    </footer>
 
     <!-- SCRIPTS -->
     @Scripts.Render("~/bundles/jquery")

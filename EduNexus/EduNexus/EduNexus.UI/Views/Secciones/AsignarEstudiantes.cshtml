@@ -7,68 +7,136 @@
     int cantidadAsignada = ViewBag.CantidadAsignada ?? 0;
     int cupoMaximo = ViewBag.CupoMaximo ?? 0;
     int cuposDisponibles = cupoMaximo - cantidadAsignada;
+    var disponibles = ViewBag.EstudiantesDisponibles as List<EduNexus.Abstracciones.ModelosParaUI.Secciones.EstudianteDisponibleVm>
+                      ?? new List<EduNexus.Abstracciones.ModelosParaUI.Secciones.EstudianteDisponibleVm>();
+    var distribucion = ViewBag.DistribucionSecciones as List<EduNexus.Abstracciones.ModelosParaUI.Secciones.DistribucionSeccionVm>
+                       ?? new List<EduNexus.Abstracciones.ModelosParaUI.Secciones.DistribucionSeccionVm>();
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col-auto">
-        @{
-            var usuarioActual = Session[EduNexus.UI.Models.AutorizarAdministradorAttribute.ClaveSesion]
-                as EduNexus.Abstracciones.ModelosParaUI.Usuarios.UsuarioDto;
-            bool esAdminActual = EduNexus.UI.Models.RolesSistema.Es(usuarioActual, EduNexus.UI.Models.RolesSistema.Administrador);
-        }
+@{
+    var usuarioActual = Session[EduNexus.UI.Models.AutorizarAdministradorAttribute.ClaveSesion]
+        as EduNexus.Abstracciones.ModelosParaUI.Usuarios.UsuarioDto;
+    bool esAdminActual = EduNexus.UI.Models.RolesSistema.Es(usuarioActual, EduNexus.UI.Models.RolesSistema.Administrador);
+}
 
-        @if (esAdminActual)
-        {
-            @Html.ActionLink("Volver a secciones", "ListadoDeSecciones", null,
-                new { @class = "btn btn-outline-secondary" })
-        }
-        else
-        {
-            @Html.ActionLink("Volver al horario", "HorarioParaAsignacion", "Horarios",
-                new { id = Model.id_seccion }, new { @class = "btn btn-outline-secondary" })
-        }
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Asignar estudiantes</h2>
+            <div class="page-subtitle">Agregue estudiantes a la sección @Model.nombre o muévalos a otra sección del mismo grado.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @if (esAdminActual)
+                {
+                    @Html.ActionLink("Volver a secciones", "ListadoDeSecciones", null,
+                        new { @class = "btn btn-outline-secondary" })
+                }
+                else
+                {
+                    @Html.ActionLink("Volver al horario", "HorarioParaAsignacion", "Horarios",
+                        new { id = Model.id_seccion }, new { @class = "btn btn-outline-secondary" })
+                }
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="card shadow-sm mb-3">
+<div class="card mb-3">
     <div class="card-header">
-        <h3 class="card-title mb-0">Información de la sección</h3>
+        <h3 class="card-title">Información de la sección</h3>
     </div>
     <div class="card-body">
         <div class="row g-3">
             <div class="col-md-6">
-                <div class="text-secondary small">Sección</div>
-                <div class="fw-bold">@Model.nombre</div>
+                <div class="en-dato-label">Sección</div>
+                <div class="en-dato-valor">@Model.nombre</div>
             </div>
             <div class="col-md-6">
-                <div class="text-secondary small">Grado</div>
-                <div class="fw-bold">@Model.nombre_grado</div>
+                <div class="en-dato-label">Grado</div>
+                <div class="en-dato-valor">@Model.nombre_grado</div>
             </div>
             <div class="col-md-4">
-                <div class="text-secondary small">Año lectivo</div>
-                <div class="fw-bold">@(Model.anio.HasValue ? Model.anio.Value.ToString() : "No disponible")</div>
+                <div class="en-dato-label">Año lectivo</div>
+                <div class="en-dato-valor">@(Model.anio.HasValue ? Model.anio.Value.ToString() : "No disponible")</div>
             </div>
             <div class="col-md-4">
-                <div class="text-secondary small">Estudiantes asignados</div>
+                <div class="en-dato-label">Estudiantes asignados</div>
                 <div class="h3 mb-0">@cantidadAsignada</div>
             </div>
             <div class="col-md-4">
-                <div class="text-secondary small">Cupos disponibles</div>
+                <div class="en-dato-label">Cupos disponibles</div>
                 <div class="h3 mb-0">@cuposDisponibles</div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="card shadow-sm mb-3">
+<div class="card mb-3">
     <div class="card-header">
-        <h3 class="card-title mb-0">Agregar estudiante</h3>
+        <h3 class="card-title">Distribución de las secciones del grado</h3>
+    </div>
+    @if (!distribucion.Any())
+    {
+        <div class="empty">
+            <p class="empty-title">Sin otras secciones</p>
+            <p class="empty-subtitle text-secondary">No hay secciones del mismo grado y año lectivo.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Sección</th>
+                        <th>Asignados / cupo</th>
+                        <th>Femenino</th>
+                        <th>Masculino</th>
+                        <th>Otro</th>
+                        <th>Con necesidades</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in distribucion)
+                    {
+                        <tr class="@(d.es_actual ? "table-active" : "")">
+                            <td>
+                                @d.texto
+                                @if (d.es_actual)
+                                {
+                                    <span class="badge bg-blue-lt ms-1">Esta sección</span>
+                                }
+                            </td>
+                            <td>@d.asignados / @d.cupo</td>
+                            <td>@d.femenino</td>
+                            <td>@d.masculino</td>
+                            <td>@d.otro</td>
+                            <td>@d.con_necesidades</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        if (distribucion.Any(d => d.sin_genero > 0))
+        {
+            <div class="card-footer text-secondary small">
+                Algunos estudiantes no tienen género registrado en su prematrícula y no se cuentan en F/M/Otro.
+            </div>
+        }
+    }
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title">Agregar estudiante</h3>
     </div>
     <div class="card-body">
         @if (ViewBag.ErrorRolEstudiante == true)
         {
             <div class="alert alert-warning">
-                No se encontró el rol Estudiante. Verifica el nombre del rol registrado.
+                No se encontró el rol Estudiante. Verifique el nombre del rol registrado.
             </div>
         }
         else if (cuposDisponibles <= 0)
@@ -85,35 +153,48 @@
                 @Html.Hidden("id", Model.id_seccion)
 
                 <div class="mb-3">
-                    @Html.Label("idUsuario", "Selecciona un estudiante",
-                        new { @class = "form-label" })
+                    @Html.Label("idUsuario", "Seleccione un estudiante",
+                        new { @class = "form-label required" })
 
-                    @Html.DropDownList(
-                        "idUsuario",
-                        (SelectList)ViewBag.EstudiantesDisponibles,
-                        "-- Seleccione un estudiante --",
-                        new { @class = "form-select", required = "required" })
+                    <select id="idUsuario" name="idUsuario" class="form-select" required>
+                        <option value="">-- Seleccione un estudiante --</option>
+                        @foreach (var e in disponibles)
+                        {
+                            <option value="@e.id_usuario"
+                                    data-sugerida="@(e.seccion_sugerida ?? "")"
+                                    data-motivo="@(e.motivo_sugerencia ?? "")"
+                                    data-actual="@(e.id_seccion_sugerida == Model.id_seccion ? "1" : "0")"
+                                    data-url="@(e.id_seccion_sugerida.HasValue ? Url.Action("AsignarEstudiantes", "Secciones", new { id = e.id_seccion_sugerida.Value }) : "")">@e.texto</option>
+                        }
+                    </select>
+                    <div class="form-hint">Se muestra el género y si el estudiante tiene necesidades (adecuación o discapacidad).</div>
                 </div>
 
-                <button type="submit" class="btn btn-primary">
-                    Asignar estudiante
-                </button>
+                <div id="seccionSugerida" class="alert alert-info d-none" role="status"></div>
+
+                <div class="en-form-acciones">
+                    <button type="submit" class="btn btn-primary">
+                        Asignar estudiante
+                    </button>
+                </div>
             }
         }
     </div>
 </div>
 
-<div class="card shadow-sm">
+<div class="card">
     <div class="card-header">
-        <h3 class="card-title mb-0">Estudiantes de esta sección</h3>
+        <h3 class="card-title">Estudiantes de esta sección</h3>
     </div>
 
     @if (cantidadAsignada == 0)
     {
-        <div class="card-body">
-            <p class="text-secondary mb-0">
-                Todavía no hay estudiantes asignados a esta sección.
-            </p>
+        <div class="empty">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></svg>
+            </div>
+            <p class="empty-title">Sin estudiantes asignados</p>
+            <p class="empty-subtitle text-secondary">Todavía no hay estudiantes asignados a esta sección. Use el formulario «Agregar estudiante».</p>
         </div>
     }
     else
@@ -124,8 +205,10 @@
                     <tr>
                         <th>Nombre completo</th>
                         <th>Identificación</th>
+                        <th>Género</th>
+                        <th>Necesidades</th>
                         <th>Fecha de asignación</th>
-                        <th>Mover a otra sección</th>
+                        <th class="text-end">Mover a otra sección</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -134,7 +217,18 @@
                         <tr>
                             <td>@estudiante.nombreCompleto</td>
                             <td>@estudiante.identificacion</td>
-                            <td>@(((DateTime)estudiante.fecha_asignacion).ToString("dd/MM/yyyy"))</td>
+                            <td>@estudiante.genero</td>
+                            <td>
+                                @if (estudiante.tiene_necesidades)
+                                {
+                                    <span class="badge bg-orange-lt">Sí</span>
+                                }
+                                else
+                                {
+                                    <span class="text-secondary">No</span>
+                                }
+                            </td>
+                            <td class="text-nowrap">@(((DateTime)estudiante.fecha_asignacion).ToString("dd/MM/yyyy"))</td>
                             <td>
                                 @if (!destinos.Any())
                                 {
@@ -142,7 +236,7 @@
                                 }
                                 else
                                 {
-                                    using (Html.BeginForm("MoverEstudiante", "Secciones", FormMethod.Post, new { @class = "d-flex gap-2 align-items-center", onsubmit = "return confirm('¿Desea mover a este estudiante a la sección seleccionada?');" }))
+                                    using (Html.BeginForm("MoverEstudiante", "Secciones", FormMethod.Post, new { @class = "d-flex gap-2 align-items-center justify-content-end", onsubmit = "return confirm('¿Desea mover a este estudiante a la sección seleccionada?');" }))
                                     {
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@Model.id_seccion" />
@@ -151,11 +245,21 @@
                                             <option value="">-- Sección destino --</option>
                                             @foreach (var d in destinos)
                                             {
-                                                <option value="@d.id_seccion" disabled="@(d.disponibles <= 0)">@d.texto (@d.disponibles cupo(s))</option>
+                                                <option value="@d.id_seccion" disabled="@(d.disponibles <= 0 || !d.tiene_horario)">@d.texto (@d.disponibles cupo(s) · @d.resumen)@(d.tiene_horario ? "" : " · sin horario")@(estudiante.id_seccion_sugerida == d.id_seccion ? " · sugerida" : "")</option>
                                             }
                                         </select>
                                         <button type="submit" class="btn btn-sm btn-outline-primary">Mover</button>
                                     }
+                                    <div class="small text-secondary mt-1">
+                                        @if (estudiante.id_seccion_sugerida.HasValue)
+                                        {
+                                            @:Sección sugerida: <strong>@estudiante.seccion_sugerida</strong> (@estudiante.motivo_sugerencia)
+                                        }
+                                        else
+                                        {
+                                            @:Sin sección sugerida: no hay otra sección con cupo y horario.
+                                        }
+                                    </div>
                                 }
                             </td>
                         </tr>
@@ -165,3 +269,43 @@
         </div>
     }
 </div>
+
+@section scripts
+{
+    <script>
+        (function () {
+            var combo = document.getElementById('idUsuario');
+            var aviso = document.getElementById('seccionSugerida');
+            if (!combo || !aviso) { return; }
+            function actualizar() {
+                var op = combo.options[combo.selectedIndex];
+                aviso.textContent = '';
+                if (!op || !op.value) { aviso.classList.add('d-none'); return; }
+                var sugerida = op.getAttribute('data-sugerida');
+                var motivo = op.getAttribute('data-motivo');
+                if (!sugerida) {
+                    aviso.textContent = 'Sin sección sugerida: no hay secciones del grado con cupo.';
+                } else {
+                    aviso.appendChild(document.createTextNode('Sección sugerida: '));
+                    var fuerte = document.createElement('strong');
+                    fuerte.textContent = sugerida;
+                    aviso.appendChild(fuerte);
+                    aviso.appendChild(document.createTextNode(' (' + motivo + ').'));
+                    if (op.getAttribute('data-actual') === '1') {
+                        aviso.appendChild(document.createTextNode(' Es esta sección.'));
+                    } else {
+                        aviso.appendChild(document.createTextNode(' Puede asignarlo aquí de todos modos o '));
+                        var enlace = document.createElement('a');
+                        enlace.href = op.getAttribute('data-url');
+                        enlace.textContent = 'ir a la sección sugerida';
+                        aviso.appendChild(enlace);
+                        aviso.appendChild(document.createTextNode('.'));
+                    }
+                }
+                aviso.classList.remove('d-none');
+            }
+            combo.addEventListener('change', actualizar);
+            actualizar();
+        })();
+    </script>
+}
