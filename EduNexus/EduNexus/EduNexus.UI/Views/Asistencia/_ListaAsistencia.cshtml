@@ -1,4 +1,5 @@
-﻿@model EduNexus.Abstracciones.ModelosParaUI.Asistencia.AsistenciaFormDto
+﻿
+@model EduNexus.Abstracciones.ModelosParaUI.Asistencia.AsistenciaFormDto
 
 @{
     string[] estados = EduNexus.Abstracciones.ModelosParaUI.Asistencia.AsistenciaFormDto.Estados;
@@ -123,6 +124,7 @@ else if (!string.IsNullOrEmpty(Model.titulo))
                             {
                                 var est = Model.estudiantes[i];
                                 bool muestraMotivo = est.estado == estadoJustificado;
+
                                 <tr class="@(est.sinMarcar || est.errorMotivo != null ? "table-danger" : "")">
                                     <td class="text-secondary">@(i + 1)</td>
                                     <td>
@@ -130,25 +132,36 @@ else if (!string.IsNullOrEmpty(Model.titulo))
                                         <input type="hidden" name="estudiantes[@i].id_usuario" value="@est.id_usuario" />
                                     </td>
                                     <td>
-                                        <div class="btn-group flex-wrap asistencia-grupo" role="group">
+                                        <select name="estudiantes[@i].estado"
+                                                class="form-select form-select-sm asist-estado"
+                                                required>
+                                            <option value="">-- Seleccione un estado --</option>
                                             @for (int k = 0; k < estados.Length; k++)
                                             {
-                                                string idRadio = "est_" + i + "_" + k;
-                                                <input type="radio" class="btn-check" name="estudiantes[@i].estado" id="@idRadio"
-                                                       value="@estados[k]" autocomplete="off" @(est.estado == estados[k] ? "checked" : "") />
-                                                <label class="@("btn btn-sm btn-outline-" + colores[k])" for="@idRadio">@estados[k]</label>
+                                                <option value="@estados[k]" @(est.estado == estados[k] ? "selected" : "")>
+                                                    @estados[k]
+                                                </option>
                                             }
-                                        </div>
-                                        @* Trazabilidad: el motivo es obligatorio cuando la ausencia es justificada *@
+                                        </select>
+
+                                        @* El motivo es obligatorio cuando la ausencia es justificada *@
                                         <div class="@("asist-motivo mt-2" + (muestraMotivo ? "" : " d-none"))">
-                                            <label class="form-label small mb-1" for="@("motivo_" + i)">Motivo de la justificación <span class="text-danger">*</span></label>
-                                            <textarea id="@("motivo_" + i)" name="estudiantes[@i].motivo_justificacion" rows="2" maxlength="@maximoMotivo"
+                                            <label class="form-label small mb-1" for="@("motivo_" + i)">
+                                                Motivo de la justificación <span class="text-danger">*</span>
+                                            </label>
+                                            <textarea id="@("motivo_" + i)"
+                                                      name="estudiantes[@i].motivo_justificacion"
+                                                      rows="2"
+                                                      maxlength="@maximoMotivo"
                                                       class="@("form-control form-control-sm" + (est.errorMotivo != null ? " is-invalid" : ""))"
-                                                      placeholder="Ej.: dictamen médico, cita, trámite familiar..." @(muestraMotivo ? "required" : "")>@est.motivo_justificacion</textarea>
+                                                      placeholder="Ej.: dictamen médico, cita, trámite familiar..."
+                                                      @(muestraMotivo ? "required" : "")>@est.motivo_justificacion</textarea>
+
                                             @if (est.errorMotivo != null)
                                             {
                                                 <div class="invalid-feedback d-block">@est.errorMotivo</div>
                                             }
+
                                             @if (est.justificado_por != null)
                                             {
                                                 <div class="form-hint small">
