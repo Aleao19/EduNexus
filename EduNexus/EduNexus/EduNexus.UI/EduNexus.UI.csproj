@@ -170,9 +170,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Models\Cedula.cs" />
     <Compile Include="Models\DistribucionSecciones.cs" />
     <Compile Include="Models\Auditoria.cs" />
+    <Compile Include="Models\ForgotPasswordModel.cs" />
+    <Compile Include="Models\ResetPasswordModel.cs" />
     <Compile Include="Models\RolesSistema.cs" />
     <Compile Include="Models\DocumentoExpedienteEntity.cs" />
     <Compile Include="Controllers\AsistenciaController.cs" />
@@ -418,6 +421,10 @@
     <Content Include="Views\Docentes\CrearDocente.cshtml" />
     <Content Include="Views\Docentes\EditarDocente.cshtml" />
     <Content Include="Views\Materias\CrearMateria.cshtml" />
+    <Content Include="Views\Account\ForgotPassword.cshtml" />
+    <Content Include="Views\Account\ForgotPasswordSuccess.cshtml" />
+    <Content Include="Views\Account\ResetPassword.cshtml" />
+    <Content Include="Views\Account\ResetPasswordSuccess.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
