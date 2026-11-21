@@ -2,130 +2,151 @@
 
 @{
     ViewBag.Title = "Crear expediente";
+    var matriculas = ViewBag.Matriculas as SelectList;
+    bool hayMatriculas = matriculas != null && matriculas.Any();
+    bool datosCargados = Model != null && Model.id_matricula > 0 && !string.IsNullOrEmpty(Model.identificacion);
 }
 
-<h2>Crear nuevo expediente</h2>
-
-@using (Html.BeginForm())
-{
-    @Html.AntiForgeryToken()
-
-    <div class="form-horizontal">
-        <hr />
-        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        <div class="container">
-            <div class="row row-cols-3">
-                <div class="col">
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.identificacion, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.EditorFor(model => model.identificacion, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.identificacion, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.nombre, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.EditorFor(model => model.nombre, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.nombre, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.apellido1, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.EditorFor(model => model.apellido1, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.apellido1, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.apellido2, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.EditorFor(model => model.apellido2, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.apellido2, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.genero, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.DropDownListFor(model => model.genero, new SelectList(new[] { "Masculino", "Femenino" }), "Seleccione", new { @class = "form-control" })
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.grado, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.EditorFor(model => model.grado, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.grado, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.telefono, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.EditorFor(model => model.telefono, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.telefono, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.fecha_nacimiento, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.EditorFor(model => model.fecha_nacimiento, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.fecha_nacimiento, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.tiene_adecuacion, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.DropDownList("tiene_adecuacion", new SelectList(new[] { "No", "Sí" }), new { @class = "form-control" })
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.tiene_discapacidad, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.DropDownList("tiene_discapacidad", new SelectList(new[] { "No", "Sí" }), new { @class = "form-control" })
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.contactoEmergencia, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.EditorFor(model => model.contactoEmergencia, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.contactoEmergencia, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.direccion, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.EditorFor(model => model.direccion, new { htmlAttributes = new { @class = "form-control" } })
-                            @Html.ValidationMessageFor(model => model.direccion, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <div class="col-md-offset-2 col-md-10 my-3">
-                        <input type="submit" value="Crear" class="btn btn-cyan" />
-                    </div>
-                </div>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Estudiantes</div>
+            <h2 class="page-title">Crear expediente</h2>
+            <div class="page-subtitle">Los datos personales se toman de la prematrícula aprobada del estudiante.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink("Regresar", "Index", "Expedientes", null, new { @class = "btn btn-outline-secondary" })
             </div>
         </div>
     </div>
+</div>
 
+@if (!hayMatriculas && !datosCargados)
+{
+    <div class="alert alert-info">
+        No hay matrículas aprobadas pendientes de expediente.
+        Todos los estudiantes aprobados ya tienen su expediente registrado.
+    </div>
 }
 
-<div>
-    @Html.ActionLink("Regresar", "ListadoDeExpedientes")
-</div>
+@using (Html.BeginForm("CrearExpediente", "Expedientes", FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+
+    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="card-title">Matrícula del estudiante</h3>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                @Html.LabelFor(model => model.id_matricula, new { @class = "form-label required" })
+                @Html.DropDownListFor(
+                    model => model.id_matricula,
+                    matriculas ?? new SelectList(new List<SelectListItem>(), "Value", "Text"),
+                    "Seleccione una matrícula aprobada",
+                    new { @class = "form-select", id = "id_matricula", required = "required" })
+                @Html.ValidationMessageFor(model => model.id_matricula, "", new { @class = "text-danger" })
+                <div class="form-hint">Al seleccionar la matrícula se muestran los datos personales registrados.</div>
+            </div>
+
+            @if (datosCargados)
+            {
+                <div class="row g-3">
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Cédula</div>
+                        <div class="en-dato-valor">@(EduNexus.UI.Models.Cedula.Normalizar(Model.identificacion) ?? Model.identificacion)</div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Nombre completo</div>
+                        <div class="en-dato-valor">@Model.nombre @Model.apellido1 @Model.apellido2</div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Género</div>
+                        <div class="en-dato-valor">@(string.IsNullOrWhiteSpace(Model.genero) ? "No registrado" : Model.genero)</div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Grado</div>
+                        <div class="en-dato-valor">@Model.nombre_grado</div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Fecha de nacimiento</div>
+                        <div class="en-dato-valor">@Model.fecha_nacimiento.ToString("dd/MM/yyyy")</div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Teléfono</div>
+                        <div class="en-dato-valor">@(string.IsNullOrWhiteSpace(Model.telefono) ? "No registrado" : Model.telefono)</div>
+                    </div>
+                    <div class="col-sm-6 col-md-8">
+                        <div class="en-dato-label">Dirección</div>
+                        <div class="en-dato-valor">@(string.IsNullOrWhiteSpace(Model.direccion) ? "No registrada" : Model.direccion)</div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <div class="en-dato-label">Adecuación / discapacidad</div>
+                        <div class="en-dato-valor">@(Model.tiene_adecuacion ? "Sí" : "No") / @(Model.tiene_discapacidad ? "Sí" : "No")</div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="card-title">Información médica y de contacto</h3>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    @Html.LabelFor(model => model.grupo_sanguineo, new { @class = "form-label required" })
+                    @Html.DropDownListFor(
+                        model => model.grupo_sanguineo,
+                        new SelectList(new[] { "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-" }, Model != null ? Model.grupo_sanguineo : null),
+                        "Seleccione",
+                        new { @class = "form-select" })
+                    @Html.ValidationMessageFor(model => model.grupo_sanguineo, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="col-md-8">
+                    @Html.LabelFor(model => model.correo, new { @class = "form-label" })
+                    @Html.TextBoxFor(model => model.correo, new { @class = "form-control", type = "email", maxlength = "256" })
+                    @Html.ValidationMessageFor(model => model.correo, "", new { @class = "text-danger" })
+                    <div class="form-hint">Si se deja vacío se usa el correo del usuario del estudiante.</div>
+                </div>
+
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.alergias, new { @class = "form-label required" })
+                    @Html.TextAreaFor(model => model.alergias, new { @class = "form-control", rows = "3", maxlength = "512", placeholder = "Indique las alergias o escriba Ninguna" })
+                    @Html.ValidationMessageFor(model => model.alergias, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.contactoEmergencia, new { @class = "form-label required" })
+                    @Html.TextBoxFor(model => model.contactoEmergencia, new { @class = "form-control", maxlength = "256", placeholder = "Nombre y teléfono" })
+                    @Html.ValidationMessageFor(model => model.contactoEmergencia, "", new { @class = "text-danger" })
+                </div>
+            </div>
+        </div>
+        <div class="card-footer en-form-acciones">
+            @Html.ActionLink("Cancelar", "Index", "Expedientes", null, new { @class = "btn btn-outline-secondary" })
+            <input type="submit" value="Guardar" class="btn btn-primary" />
+        </div>
+    </div>
+}
 
 @section Scripts {
     @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        // Al elegir la matrícula se recarga la página para mostrar sus datos personales.
+        document.addEventListener("DOMContentLoaded", function () {
+            var lista = document.getElementById("id_matricula");
+            if (!lista) { return; }
+            lista.addEventListener("change", function () {
+                if (lista.value) {
+                    window.location.href = "@Url.Action("CrearExpediente", "Expedientes")?id_matricula=" + encodeURIComponent(lista.value);
+                }
+            });
+        });
+    </script>
 }

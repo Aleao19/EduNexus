@@ -9,5 +9,6 @@ namespace EduNexus.UI.Models.Identity
         public int fk_id_seccion { get; set; }
         public int fk_id_materia { get; set; }
         public DateTime fecha_asignacion { get; set; }
+        public string fk_id_profesor { get; set; }
     }
 }

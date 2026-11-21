@@ -9,7 +9,8 @@
         var resumen = document.getElementById("resumenCambios");
         var texto = document.getElementById("textoResumen");
 
-        if (!nombreInput || !profesorSelect || !descInput || !resumen || !texto) {
+        // Se usa en Crear y Editar materia: en Crear solo existe el contador de la descripción
+        if (!nombreInput || !profesorSelect || !descInput) {
             return;
         }
 
@@ -20,6 +21,10 @@
         function actualizar() {
             if (contador) {
                 contador.textContent = descInput.value.length;
+            }
+
+            if (!resumen || !texto) {
+                return;
             }
 
             var cambios = [];

@@ -2,196 +2,39 @@
 @{
     ViewBag.Title = "Crear horario";
     var materias = (System.Collections.Generic.IEnumerable<System.Web.Mvc.SelectListItem>)ViewBag.Materias;
+
+    // Si la validación falla se conserva el bloque elegido (día y horas) para no perder la selección
+    bool tieneBloque = !string.IsNullOrEmpty(Model.dia_semana) && Model.hora_fin > Model.hora_inicio;
+    string diaPrevio = tieneBloque ? Model.dia_semana : "";
+    string inicioPrevio = tieneBloque ? EduNexus.UI.Models.HorarioServicio.Hora(Model.hora_inicio) : "";
+    string finPrevio = tieneBloque ? EduNexus.UI.Models.HorarioServicio.Hora(Model.hora_fin) : "";
 }
 
-<style>
-    .hz-wrap {
-        max-width: 1000px;
-        margin: 1.5rem auto;
-    }
 
-    .hz-title {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: .5rem;
-        margin-bottom: 1rem;
-    }
-
-    .hz-badge {
-        background: #e7f5ff;
-        color: #0b5ed7;
-        padding: .25rem .75rem;
-        border-radius: 999px;
-        font-weight: 600;
-        font-size: .9rem;
-    }
-
-    .hz-card {
-        background: #fff;
-        border: 1px solid #e3e6ea;
-        border-radius: 12px;
-        padding: 1rem 1.25rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,.04);
-    }
-
-        .hz-card h5 {
-            margin: 0 0 .75rem;
-            font-size: 1rem;
-            font-weight: 700;
-        }
-
-    .hz-step {
-        display: inline-flex;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background: #0b5ed7;
-        color: #fff;
-        align-items: center;
-        justify-content: center;
-        font-size: .8rem;
-        margin-right: .5rem;
-    }
-
-    .hz-materias {
-        display: flex;
-        flex-wrap: wrap;
-        gap: .5rem;
-    }
-
-        .hz-materias input {
-            display: none;
-        }
-
-        .hz-materias label {
-            cursor: pointer;
-            padding: .5rem 1rem;
-            border: 2px solid #dee2e6;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: .15s;
-            margin: 0;
-        }
-
-            .hz-materias label:hover {
-                border-color: #74c0fc;
-            }
-
-        .hz-materias input:checked + label {
-            background: #0b5ed7;
-            border-color: #0b5ed7;
-            color: #fff;
-        }
-
-    .hz-grid {
-        display: grid;
-        grid-template-columns: 70px repeat(5, 1fr);
-        gap: 3px;
-        user-select: none;
-        overflow-x: auto;
-        min-width: 560px;
-    }
-
-    .hz-scroll {
-        overflow-x: auto;
-    }
-
-    .hz-head {
-        text-align: center;
-        font-weight: 700;
-        padding: .4rem 0;
-        background: #f1f3f5;
-        border-radius: 6px;
-    }
-
-    .hz-hora {
-        font-size: .75rem;
-        color: #6c757d;
-        text-align: right;
-        padding-right: .5rem;
-        line-height: 26px;
-    }
-
-    .hz-cell {
-        height: 26px;
-        background: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: .1s;
-    }
-
-        .hz-cell:hover {
-            background: #d0ebff;
-        }
-
-        .hz-cell.hz-sel {
-            background: #0b5ed7;
-            border-color: #0b5ed7;
-        }
-
-        .hz-cell.hz-anchor {
-            background: #4dabf7;
-            border-color: #4dabf7;
-        }
-
-    .hz-resumen {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1.5rem;
-        align-items: center;
-    }
-
-        .hz-resumen div small {
-            display: block;
-            color: #6c757d;
-            font-size: .75rem;
-            text-transform: uppercase;
-            letter-spacing: .04em;
-        }
-
-        .hz-resumen div strong {
-            font-size: 1.05rem;
-        }
-
-    .hz-acciones {
-        display: flex;
-        gap: .5rem;
-        margin-left: auto;
-    }
-
-    .hz-error {
-        display: none;
-        margin-top: .75rem;
-    }
-
-    @@media (max-width: 600px) {
-        .hz-acciones {
-            margin-left: 0;
-            width: 100%;
-        }
-    }
-</style>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Crear horario</h2>
+            <div class="page-subtitle">Elija la materia y marque en la cuadrícula el bloque de la clase.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <span class="hz-badge">Sección @(ViewBag.NombreSeccion ?? "—")</span>
+        </div>
+    </div>
+</div>
 
 <div class="hz-wrap">
-    <div class="hz-title">
-        <h2 class="m-0">Crear horario</h2>
-        <span class="hz-badge">Sección @(ViewBag.NombreSeccion ?? "—")</span>
-    </div>
-
     @using (Html.BeginForm("Create", "Horarios", FormMethod.Post, new { id = "formHorario" }))
     {
         @Html.AntiForgeryToken()
         @Html.HiddenFor(m => m.seccion)
-        <input type="hidden" name="dia_semana" id="dia_semana" />
-        <input type="hidden" name="hora_inicio" id="hora_inicio" />
-        <input type="hidden" name="hora_fin" id="hora_fin" />
+        <input type="hidden" name="dia_semana" id="dia_semana" value="@diaPrevio" />
+        <input type="hidden" name="hora_inicio" id="hora_inicio" value="@inicioPrevio" />
+        <input type="hidden" name="hora_fin" id="hora_fin" value="@finPrevio" />
 
         <div class="hz-card">
-            <h5><span class="hz-step">1</span>Elija la materia</h5>
+            <h5><span class="hz-step">1</span>Elija la materia <span class="text-danger">*</span></h5>
             <div class="hz-materias">
                 @foreach (var m in materias)
                 {
@@ -202,11 +45,11 @@
         </div>
 
         <div class="hz-card">
-            <h5><span class="hz-step">2</span>Marque el bloque en la cuadrícula</h5>
-            <p class="text-muted mb-2" style="font-size:.85rem">
+            <h5><span class="hz-step">2</span>Marque el bloque en la cuadrícula <span class="text-danger">*</span></h5>
+            <p class="form-hint mb-2">
                 Primer clic: hora de inicio. Segundo clic en el mismo día: hora de fin. Un tercer clic reinicia la selección.
             </p>
-            <div class="hz-scroll"><div class="hz-grid" id="grid"></div></div>
+            <div class="hz-scroll"><div class="hz-grid" id="grid" data-dia="@diaPrevio" data-inicio="@inicioPrevio" data-fin="@finPrevio"></div></div>
         </div>
 
         <div class="hz-card">
@@ -216,10 +59,14 @@
                 <div><small>Horario</small><strong id="resHora">—</strong></div>
                 <div class="hz-acciones">
                     @Html.ActionLink("Cancelar", "ListadoDeHorarios", new { id = Model.seccion }, new { @class = "btn btn-outline-secondary" })
-                    <button type="submit" class="btn btn-primary">Guardar horario</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
                 </div>
             </div>
             <div class="alert alert-danger hz-error" id="errorBox"></div>
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mt-3">@Html.ValidationSummary(false)</div>
+            }
         </div>
     }
 </div>

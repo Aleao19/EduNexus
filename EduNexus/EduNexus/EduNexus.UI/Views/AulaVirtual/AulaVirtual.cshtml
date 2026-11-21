@@ -5,18 +5,26 @@
     string[] colores = { "blue", "green", "purple", "orange", "teal", "red", "yellow", "azure" };
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Aula Virtual</h1>
-        <p class="text-secondary mb-0">Selecciona una materia para gestionar asignaciones, notas y asistencia.</p>
-    </div>
-    <div class="col-auto">
-        <input type="text" id="buscarMateria" class="form-control" placeholder="Buscar materia..." onkeyup="filtrarMaterias()" />
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Aula Virtual</div>
+            <h2 class="page-title">Clases</h2>
+            <div class="page-subtitle">Seleccione una clase para ver sus asignaciones, estudiantes y asistencia.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="input-icon">
+                <span class="input-icon-addon">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
+                </span>
+                <input type="text" id="buscarMateria" class="form-control" placeholder="Buscar materia..." onkeyup="filtrarMaterias()" />
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="container-xl p-0">
-    <div class="row row-cards g-4" id="gridMaterias">
+<div>
+    <div class="row row-cards g-3" id="gridMaterias">
         @if (Model != null && Model.Any())
         {
             int i = 0;
@@ -25,8 +33,8 @@
                 string color = colores[i % colores.Length];
                 bool sinProfesor = string.IsNullOrEmpty(materia.profesor);
                 i++;
-                <div class="col-sm-6 col-lg-4 col-xl-3 tarjeta-materia" data-nombre="@materia.nombre.ToLower()">
-                    <div class="card d-flex flex-column h-100 shadow-sm" style="border-top: 3px solid var(--tblr-@(color))">
+                <div class="col-sm-6 col-lg-4 col-xl-3 tarjeta-materia" data-nombre="@((materia.nombre ?? "").ToLower())">
+                    <div class="card d-flex flex-column h-100" style="border-top: 3px solid var(--tblr-@(color))">
                         <div class="card-body d-flex flex-column">
                             <div class="d-flex align-items-center justify-content-between">
                                 <span class="badge bg-@(color)-lt">Materia</span>
@@ -41,16 +49,16 @@
                             </div>
 
                             <h3 class="card-title mt-2 mb-1">
-                                <a href="@Url.Action("Materia", "AulaVirtual", new { id = materia.id_materia })" class="text-body">
+                                <a href="@Url.Action("Materia", "AulaVirtual", new { id = materia.id_materia, seccion = materia.id_seccion })" class="text-body">
                                     @materia.nombre
                                 </a>
                             </h3>
 
-                            <div class="text-secondary small mb-3">Sección: 3-B</div>
+                            <div class="text-secondary small mb-3">@materia.seccion</div>
 
                             <div class="d-flex align-items-center pt-2 mt-auto border-top">
                                 <span class="avatar avatar-sm rounded-circle @(sinProfesor ? "bg-red-lt" : "bg-" + color + "-lt") fw-bold">
-                                    @(sinProfesor ? "?" : materia.profesor.Substring(0, 1).ToUpper())
+                                    @(sinProfesor || string.IsNullOrWhiteSpace(materia.profesor) ? "?" : materia.profesor.Trim().Substring(0, 1).ToUpper())
                                 </span>
 
                                 <div class="ms-2 flex-fill">
@@ -59,8 +67,7 @@
                                     </div>
                                     <div class="text-secondary small">Profesor titular</div>
                                 </div>
-
-                                <a href="@Url.Action("Materia", "AulaVirtual", new { id = materia.id_materia })" class="btn btn-sm btn-icon btn-ghost-secondary" title="Entrar al aula">
+                                <a href="@Url.Action("Materia", "AulaVirtual", new { id = materia.id_materia, seccion = materia.id_seccion })" class="btn btn-sm btn-icon btn-ghost-secondary" title="Entrar al aula">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
                                         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                                         <path d="M5 12l14 0" />
@@ -77,12 +84,13 @@
         else
         {
             <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <div class="empty">
-                            <p class="empty-title">No hay materias registradas</p>
-                            <p class="empty-subtitle text-secondary">Cuando se asignen materias aparecerán aquí.</p>
+                <div class="card">
+                    <div class="empty">
+                        <div class="empty-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6v13" /><path d="M12 6v13" /><path d="M21 6v13" /></svg>
                         </div>
+                        <p class="empty-title">No hay clases para mostrar</p>
+                        <p class="empty-subtitle text-secondary">Cuando se le asignen materias a una sección aparecerán aquí.</p>
                     </div>
                 </div>
             </div>
@@ -92,4 +100,20 @@
         <div class="alert alert-info">No se encontraron materias con ese nombre.</div>
     </div>
 </div>
+
+@section scripts {
+    <script>
+        function filtrarMaterias() {
+            var texto = (document.getElementById('buscarMateria').value || '').toLowerCase().trim();
+            var visibles = 0;
+            document.querySelectorAll('.tarjeta-materia').forEach(function (t) {
+                var mostrar = (t.getAttribute('data-nombre') || '').indexOf(texto) !== -1;
+                t.style.display = mostrar ? '' : 'none';
+                if (mostrar) { visibles++; }
+            });
+            var aviso = document.getElementById('sinResultados');
+            if (aviso) { aviso.style.display = (visibles === 0 && document.querySelectorAll('.tarjeta-materia').length > 0) ? '' : 'none'; }
+        }
+    </script>
+}
 

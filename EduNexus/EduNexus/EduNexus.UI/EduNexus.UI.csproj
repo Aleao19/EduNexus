@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\EntityFramework.6.5.2\build\EntityFramework.props" Condition="Exists('..\packages\EntityFramework.6.5.2\build\EntityFramework.props')" />
-  <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -67,6 +66,9 @@
     </Reference>
     <Reference Include="K4os.Hash.xxHash, Version=1.0.8.0, Culture=neutral, PublicKeyToken=32cd54395057cec3, processorArchitecture=MSIL">
       <HintPath>..\packages\K4os.Hash.xxHash.1.0.8\lib\net462\K4os.Hash.xxHash.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=4.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\lib\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="MySql.Data, Version=26.7.0.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
@@ -168,11 +170,20 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform">
-      <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
+    <Compile Include="Controllers\AccountController.cs" />
+    <Compile Include="Models\Cedula.cs" />
+    <Compile Include="Models\DistribucionSecciones.cs" />
+    <Compile Include="Models\Auditoria.cs" />
+    <Compile Include="Models\ForgotPasswordModel.cs" />
+    <Compile Include="Models\ResetPasswordModel.cs" />
+    <Compile Include="Models\RolesSistema.cs" />
+    <Compile Include="Models\DocumentoExpedienteEntity.cs" />
+    <Compile Include="Controllers\AsistenciaController.cs" />
+    <Compile Include="Controllers\MiHorarioController.cs" />
+    <Compile Include="Models\AsistenciaEntity.cs" />
+    <Compile Include="Models\AutorizarRolesAttribute.cs" />
+    <Compile Include="Models\HorarioServicio.cs" />
+    <Compile Include="Models\PermitirCoordinadorAttribute.cs" />
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
@@ -222,6 +233,19 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Views\Asistencia\Historial.cshtml" />
+    <Content Include="Scripts\Asistencia\ListaAsistencia.js" />
+    <Content Include="Scripts\Horarios\ListadoDeHorarios.js" />
+    <Content Include="Views\Asistencia\Registrar.cshtml" />
+    <Content Include="Views\Asistencia\_ListaAsistencia.cshtml" />
+    <Content Include="Views\Horarios\HorarioParaAsignacion.cshtml" />
+    <Content Include="Views\MiHorario\MiHorario.cshtml" />
+    <Content Include="Views\Prematriculas\Comprobante.cshtml" />
+    <Content Include="Views\Prematriculas\Editar.cshtml" />
+    <Content Include="Views\Prematriculas\EstudiantesActivos.cshtml" />
+    <Content Include="Views\Prematriculas\Listado.cshtml" />
+    <Content Include="Views\Prematriculas\Renovar.cshtml" />
+    <Content Include="Views\Shared\_HorarioSemanal.cshtml" />
     <Content Include="bin\es - Copia\System.Web.Helpers.resources.dll" />
     <Content Include="bin\es - Copia\System.Web.Mvc.resources.dll" />
     <Content Include="bin\es - Copia\System.Web.Optimization.resources.dll" />
@@ -351,7 +375,6 @@
     <Content Include="Views\Secciones\CrearSeccion.cshtml" />
     <Content Include="Views\Secciones\EditarSeccion.cshtml" />
     <Content Include="Views\Home\Bitacora.cshtml" />
-    <Content Include="Views\AulaVirtual\Horario.cshtml" />
     <Content Include="Views\AulaVirtual\AulaVirtual.cshtml" />
     <Content Include="Views\AulaVirtual\Materia.cshtml" />
     <Content Include="Views\Home\Login.cshtml" />
@@ -384,7 +407,6 @@
     <Content Include="Views\Grados\ListadoDeGrados.cshtml" />
     <Content Include="Views\Secciones\CuposPorGrupo.cshtml" />
     <Content Include="Views\Secciones\EliminarSeccion.cshtml" />
-    <Content Include="Views\Roles\CrearRol.cshtml" />
     <Content Include="Views\Roles\ListadoDeRoles.cshtml" />
     <Content Include="Views\Usuarios\CrearUsuario.cshtml" />
     <Content Include="Views\Usuarios\ListadoDeUsuarios.cshtml" />
@@ -399,6 +421,10 @@
     <Content Include="Views\Docentes\CrearDocente.cshtml" />
     <Content Include="Views\Docentes\EditarDocente.cshtml" />
     <Content Include="Views\Materias\CrearMateria.cshtml" />
+    <Content Include="Views\Account\ForgotPassword.cshtml" />
+    <Content Include="Views\Account\ForgotPasswordSuccess.cshtml" />
+    <Content Include="Views\Account\ResetPassword.cshtml" />
+    <Content Include="Views\Account\ResetPasswordSuccess.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
@@ -474,9 +500,10 @@
     <PropertyGroup>
       <ErrorText>Este proyecto hace referencia a los paquetes NuGet que faltan en este equipo. Use la restauración de paquetes NuGet para descargarlos. Para obtener más información, consulte http://go.microsoft.com/fwlink/?LinkID=322105. El archivo que falta es {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
     <Error Condition="!Exists('..\packages\EntityFramework.6.5.2\build\EntityFramework.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.5.2\build\EntityFramework.props'))" />
     <Error Condition="!Exists('..\packages\EntityFramework.6.5.2\build\EntityFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.5.2\build\EntityFramework.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\build\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\build\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.targets'))" />
   </Target>
   <Import Project="..\packages\EntityFramework.6.5.2\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.5.2\build\EntityFramework.targets')" />
+  <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\build\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.targets" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\build\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.targets')" />
 </Project>

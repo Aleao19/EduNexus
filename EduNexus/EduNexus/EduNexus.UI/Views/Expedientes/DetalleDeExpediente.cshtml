@@ -1,60 +1,246 @@
-﻿@model EduNexus.Abstracciones.ModelosParaUI.Expedientes.ExpedienteDto
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Expedientes.ExpedienteEstudianteDto
+@using EduNexus.UI.Models
 
+@* Expediente unificado del estudiante: Expedientes/Expediente/{id_usuario}?tab=... *@
 @{
-    ViewBag.Title = "Detalle del expediente";
+    var est = Model.estudiante;
+    var exp = Model.expediente;
+    var datos = Model.datos_personales;
+    ViewBag.Title = "Expediente de " + est.nombre_completo;
+    Func<string, string, string> valor = (texto, vacio) => string.IsNullOrWhiteSpace(texto) ? vacio : texto;
+    Func<string, string> activa = clave => Model.pestana == clave ? " active" : "";
+    Func<string, string> panel = clave => Model.pestana == clave ? " show active" : "";
+    bool puedeCrear = exp == null && est.id_matricula_aprobada.HasValue;
 }
 
-<h2>Detalle del expediente</h2>
+@helper SinExpediente(EduNexus.Abstracciones.ModelosParaUI.Expedientes.ExpedienteEstudianteDto m, string texto)
+{
+    <div class="card-body p-0">
+        <div class="empty">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /></svg>
+            </div>
+            <p class="empty-title">El estudiante todavía no tiene expediente</p>
+            <p class="empty-subtitle text-secondary">@texto</p>
+            <div class="empty-action">
+                @if (m.estudiante.id_matricula_aprobada.HasValue)
+                {
+                    @Html.ActionLink("Crear expediente", "CrearExpediente", "Expedientes", new { id_matricula = m.estudiante.id_matricula_aprobada.Value }, new { @class = "btn btn-primary" })
+                }
+                else
+                {
+                    <span class="text-secondary">Para crearlo, el estudiante necesita una prematrícula aprobada.</span>
+                }
+            </div>
+        </div>
+    </div>
+}
 
-<div>
-    <hr />
-    <div class="container my-2">
-        <div class="row">
-            <div class="col-md-8 offset-md-1">
-                <div class="form-group">
-                    <dl class="dl-horizontal">
-                        <dt>@Html.DisplayNameFor(model => model.identificacion)</dt>
-                        <dd>@Html.DisplayFor(model => model.identificacion)</dd>
-
-                        <dt>@Html.DisplayNameFor(model => model.nombre)</dt>
-                        <dd>@Html.DisplayFor(model => model.nombre)</dd>
-
-                        <dt>@Html.DisplayNameFor(model => model.apellido1)</dt>
-                        <dd>@Html.DisplayFor(model => model.apellido1)</dd>
-
-                        <dt>@Html.DisplayNameFor(model => model.apellido2)</dt>
-                        <dd>@Html.DisplayFor(model => model.apellido2)</dd>
-
-                        <dt>@Html.DisplayNameFor(model => model.genero)</dt>
-                        <dd>@Html.DisplayFor(model => model.genero)</dd>
-
-                        <dt>@Html.DisplayNameFor(model => model.grado)</dt>
-                        <dd>@Html.DisplayFor(model => model.grado)</dd>
-
-                        <dt>@Html.DisplayNameFor(model => model.telefono)</dt>
-                        <dd>@Html.DisplayFor(model => model.telefono)</dd>
-
-                        <dt>@Html.DisplayNameFor(model => model.fecha_nacimiento)</dt>
-                        <dd>@Model.fecha_nacimiento.ToString("dd/MM/yyyy")</dd>
-
-                        <dt>@Html.DisplayNameFor(model => model.tiene_adecuacion)</dt>
-                        <dd>@(Model.tiene_adecuacion ? "Sí" : "No")</dd>
-
-                        <dt>@Html.DisplayNameFor(model => model.tiene_discapacidad)</dt>
-                        <dd>@(Model.tiene_discapacidad ? "Sí" : "No")</dd>
-
-                        <dt>@Html.DisplayNameFor(model => model.contactoEmergencia)</dt>
-                        <dd>@Html.DisplayFor(model => model.contactoEmergencia)</dd>
-
-                        <dt>@Html.DisplayNameFor(model => model.direccion)</dt>
-                        <dd>@Html.DisplayFor(model => model.direccion)</dd>
-                    </dl>
-                </div>
+<div class="page-header d-print-none">
+    <div class="row g-3 align-items-center">
+        <div class="col-auto">
+            <span class="avatar avatar-lg rounded-circle bg-teal-lt fw-bold">@est.iniciales</span>
+        </div>
+        <div class="col">
+            <div class="page-pretitle">Estudiantes / Expediente</div>
+            <h2 class="page-title">@est.nombre_completo</h2>
+            <div class="page-subtitle d-flex flex-wrap align-items-center gap-2">
+                <span>Cédula: <strong>@valor(est.identificacion, "No registrada")</strong></span>
+                <span>Grado y sección: <strong>@est.seccion_actual</strong></span>
+                <span class="badge bg-@(est.estado == "Activo" ? "green" : "red")-lt">@est.estado</span>
+                @if (exp != null)
+                {
+                    <span class="badge bg-blue-lt">Expediente #@exp.id_expediente</span>
+                }
+                else
+                {
+                    <span class="badge bg-yellow-lt">Sin expediente</span>
+                }
+            </div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink("Regresar al listado", "Index", "Expedientes", null, new { @class = "btn btn-outline-secondary" })
+                @if (puedeCrear)
+                {
+                    @Html.ActionLink("Crear expediente", "CrearExpediente", "Expedientes", new { id_matricula = est.id_matricula_aprobada.Value }, new { @class = "btn btn-primary" })
+                }
             </div>
         </div>
     </div>
 </div>
-<p>
-    @Html.ActionLink("Editar", "EditarExpediente", new { id = Model.id_expediente }) |
-    @Html.ActionLink("Regresar", "ListadoDeExpedientes")
-</p>
+
+<div class="row row-cards g-3 mb-3">
+    <div class="col-sm-4">
+        <div class="card card-sm"><div class="card-body">
+            <div class="text-secondary small">Documentos</div>
+            <div class="h2 mb-0">@est.total_documentos</div>
+        </div></div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card card-sm"><div class="card-body">
+            <div class="text-secondary small">Adecuaciones activas</div>
+            <div class="h2 mb-0">@est.adecuaciones_activas</div>
+        </div></div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card card-sm"><div class="card-body">
+            <div class="text-secondary small">Ayudas activas</div>
+            <div class="h2 mb-0">@est.ayudas_activas</div>
+        </div></div>
+    </div>
+</div>
+
+@* ===================== PESTAÑAS ===================== *@
+<ul class="nav nav-tabs flex-nowrap overflow-auto text-nowrap mb-3" id="expedienteTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link@(activa("datos"))" id="tab-datos-btn" data-bs-toggle="tab" data-bs-target="#tab-datos" data-tab="datos" type="button" role="tab">Datos personales</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link@(activa("medica"))" id="tab-medica-btn" data-bs-toggle="tab" data-bs-target="#tab-medica" data-tab="medica" type="button" role="tab">Información médica y contactos</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link@(activa("documentos"))" id="tab-documentos-btn" data-bs-toggle="tab" data-bs-target="#tab-documentos" data-tab="documentos" type="button" role="tab">
+            Documentos <span class="badge bg-blue-lt ms-1">@est.total_documentos</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link@(activa("historial"))" id="tab-historial-btn" data-bs-toggle="tab" data-bs-target="#tab-historial" data-tab="historial" type="button" role="tab">Historial académico</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link@(activa("apoyos"))" id="tab-apoyos-btn" data-bs-toggle="tab" data-bs-target="#tab-apoyos" data-tab="apoyos" type="button" role="tab">
+            Adecuaciones y ayudas
+            @if (est.adecuaciones_activas + est.ayudas_activas > 0)
+            {
+                <span class="badge bg-green-lt ms-1">@(est.adecuaciones_activas + est.ayudas_activas)</span>
+            }
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    @* ===================== DATOS PERSONALES ===================== *@
+    <div class="tab-pane fade@(panel("datos"))" id="tab-datos" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Datos personales</h3>
+            </div>
+            @if (datos == null)
+            {
+                <div class="card-body">
+                    <div class="alert alert-warning mb-3">
+                        No se encontró una prematrícula para este estudiante; solo se muestran los datos de su usuario.
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">Cédula</div><div class="en-dato-valor">@valor(est.identificacion, "No registrada")</div></div>
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">Nombre completo</div><div class="en-dato-valor">@est.nombre_completo</div></div>
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">Correo electrónico</div><div class="en-dato-valor">@valor(est.correo, "No registrado")</div></div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card-body">
+                    @if (exp == null)
+                    {
+                        <div class="alert alert-info mb-3">
+                            Datos tomados de la prematrícula #@datos.id_matricula. El estudiante todavía no tiene expediente.
+                        </div>
+                    }
+                    <div class="row g-3">
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">Número de matrícula</div><div class="en-dato-valor">#@datos.id_matricula</div></div>
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">Cédula</div><div class="en-dato-valor">@valor(Cedula.Normalizar(datos.identificacion) ?? datos.identificacion, "No disponible")</div></div>
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">Nombre completo</div><div class="en-dato-valor">@valor((datos.nombre + " " + datos.apellido1 + " " + datos.apellido2).Trim(), "No disponible")</div></div>
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">Género</div><div class="en-dato-valor">@valor(datos.genero, "No registrado")</div></div>
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">Grado matriculado</div><div class="en-dato-valor">@valor(datos.nombre_grado, "No disponible")</div></div>
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">Fecha de nacimiento</div><div class="en-dato-valor">@datos.fecha_nacimiento.ToString("dd/MM/yyyy")</div></div>
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">Teléfono</div><div class="en-dato-valor">@valor(datos.telefono, "No registrado")</div></div>
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">Correo electrónico</div><div class="en-dato-valor">@valor(datos.correo, valor(est.correo, "No registrado"))</div></div>
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">Dirección</div><div class="en-dato-valor">@valor(datos.direccion, "No registrada")</div></div>
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">¿Declaró discapacidad?</div><div class="en-dato-valor">@(datos.tiene_discapacidad ? "Sí" : "No")</div></div>
+                        <div class="col-sm-6 col-md-4"><div class="en-dato-label">¿Declaró adecuación?</div><div class="en-dato-valor">@(datos.tiene_adecuacion ? "Sí" : "No")</div></div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ===================== INFORMACIÓN MÉDICA Y CONTACTOS ===================== *@
+    <div class="tab-pane fade@(panel("medica"))" id="tab-medica" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Información médica y contactos</h3>
+                @if (exp != null && !string.IsNullOrEmpty(exp.identificacion))
+                {
+                    <div class="card-actions">
+                        @Html.ActionLink("Editar", "EditarExpediente", "Expedientes", new { id = exp.id_expediente }, new { @class = "btn btn-sm btn-primary" })
+                    </div>
+                }
+            </div>
+            @if (exp == null)
+            {
+                @SinExpediente(Model, "La información médica y el contacto de emergencia se registran en el expediente.")
+            }
+            else
+            {
+                <div class="card-body">
+                    @if (string.IsNullOrEmpty(exp.identificacion))
+                    {
+                        <div class="alert alert-warning mb-3">
+                            No se encontró la prematrícula ligada a este expediente (matrícula #@exp.id_matricula); no se puede editar.
+                        </div>
+                    }
+                    <div class="row g-3">
+                        <div class="col-sm-6 col-md-3"><div class="en-dato-label">Grupo sanguíneo</div><div class="en-dato-valor">@valor(exp.grupo_sanguineo, "No registrado")</div></div>
+                        <div class="col-sm-6 col-md-9"><div class="en-dato-label">Alergias</div><div class="en-dato-valor">@valor(exp.alergias, "No registradas")</div></div>
+                        <div class="col-sm-6 col-md-6"><div class="en-dato-label">Contacto de emergencia</div><div class="en-dato-valor">@valor(exp.contactoEmergencia, "No registrado")</div></div>
+                        <div class="col-sm-6 col-md-6"><div class="en-dato-label">Correo del expediente</div><div class="en-dato-valor">@valor(exp.correo, "No registrado")</div></div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ===================== DOCUMENTOS ===================== *@
+    <div class="tab-pane fade@(panel("documentos"))" id="tab-documentos" role="tabpanel">
+        @if (exp == null)
+        {
+            <div class="card">
+                @SinExpediente(Model, "Los documentos se adjuntan al expediente del estudiante.")
+            </div>
+        }
+        else
+        {
+            @Html.Partial("~/Views/DocumentosExpediente/HistorialDocumentos.cshtml", Model)
+        }
+    </div>
+
+    @* ===================== HISTORIAL ACADÉMICO ===================== *@
+    <div class="tab-pane fade@(panel("historial"))" id="tab-historial" role="tabpanel">
+        @Html.Partial("~/Views/ExpedienteAcademico/HistorialAcademico.cshtml", Model)
+    </div>
+
+    @* ===================== ADECUACIONES Y AYUDAS ===================== *@
+    <div class="tab-pane fade@(panel("apoyos"))" id="tab-apoyos" role="tabpanel">
+        @Html.Partial("~/Views/ExpedienteAcademico/Expediente.cshtml", Model)
+    </div>
+</div>
+
+@section scripts
+{
+    <script>
+        // Mantiene ?tab= en la URL al cambiar de pestaña (para recargar o compartir el enlace).
+        document.addEventListener("DOMContentLoaded", function () {
+            var botones = document.querySelectorAll("#expedienteTabs [data-bs-toggle='tab']");
+            Array.prototype.forEach.call(botones, function (boton) {
+                boton.addEventListener("shown.bs.tab", function () {
+                    if (!window.history || !window.history.replaceState || !window.URL) { return; }
+                    var url = new URL(window.location.href);
+                    url.searchParams.set("tab", boton.getAttribute("data-tab"));
+                    window.history.replaceState(null, "", url.toString());
+                });
+            });
+        });
+    </script>
+}

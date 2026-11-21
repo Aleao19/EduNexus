@@ -1,74 +1,79 @@
-﻿@model EduNexus.UI.Models.LoginModel
+﻿
+@model EduNexus.UI.Models.LoginModel
 
-<div class="row justify-content-center w-100">
-    <div class="col-12 col-md-6 col-lg-4">
-        <div class="container container-tight py-4">
-            <div class="text-center mb-4">
-                <h2 class="h2 text-center mb-4">EduNexus</h2>
-            </div>
-            <div class="card card-md">
-                <div class="card-body">
-                    <h2 class="h2 text-center mb-4">Bienvenido</h2>
-                    <p class="text-center text-muted">Ingrese sus datos para acceder</p>
+<div class="en-login">
+    <div class="en-login-card">
+        <div class="text-center mb-4">
+            <span class="en-login-marca">
+                <span class="avatar bg-primary text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M22 9l-10 -4l-10 4l10 4l10 -4v6" />
+                        <path d="M6 10.6v5.4a6 3 0 0 0 12 0v-5.4" />
+                    </svg>
+                </span>
+                EduNexus
+            </span>
+            <div class="text-secondary mt-1">Sistema de gestión escolar</div>
+        </div>
 
-                    @if (TempData["MensajeLogin"] != null)
-                    {
-                        <div class="alert alert-warning" role="alert">@TempData["MensajeLogin"]</div>
-                    }
-                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        <div class="card card-md shadow-sm">
+            <div class="card-body">
+                <h2 class="h2 text-center mb-1">Bienvenido</h2>
+                <p class="text-center text-secondary mb-4">Ingrese sus datos para acceder</p>
 
-                    @using (Html.BeginForm("Login", "Home", FormMethod.Post, new { novalidate = "novalidate" }))
-                    {
-                        @Html.AntiForgeryToken()
+                @if (TempData["MensajeLogin"] != null)
+                {
+                    <div class="alert alert-warning" role="alert">
+                        @TempData["MensajeLogin"]
+                    </div>
+                }
 
-                        <!-- Campo de Correo -->
-                        <div class="mb-3">
-                            @Html.LabelFor(m => m.Correo, "Correo electrónico", new { @class = "form-label" })
-                            @Html.TextBoxFor(m => m.Correo, new { @class = "form-control", placeholder = "edu@email.com", autocomplete = "username" })
-                            @Html.ValidationMessageFor(m => m.Correo, "", new { @class = "text-danger" })
+                @Html.ValidationSummary(true, "", new { @class = "text-danger mb-3" })
+
+                @using (Html.BeginForm("Login", "Home", FormMethod.Post, new { novalidate = "novalidate" }))
+                {
+                    @Html.AntiForgeryToken()
+
+                    <!-- Campo de correo -->
+                    <div class="mb-3">
+                        @Html.LabelFor(m => m.Correo, "Correo electrónico", new { @class = "form-label required" })
+                        @Html.TextBoxFor(m => m.Correo, new { @class = "form-control", placeholder = "edu@email.com", autocomplete = "username" })
+                        @Html.ValidationMessageFor(m => m.Correo, "", new { @class = "text-danger" })
+                    </div>
+
+                    <!-- Campo de contraseña -->
+                    <div class="mb-3">
+                        <label class="form-label required" for="password">
+                            Contraseña
+                        </label>
+
+                        <div class="input-group input-group-flat">
+                            @Html.PasswordFor(m => m.Contrasenna, new { @class = "form-control", id = "password", placeholder = "Contraseña", autocomplete = "current-password" })
+
+                            <span class="input-group-text">
+                                <a href="#" id="togglePassword" class="link-secondary" data-bs-toggle="tooltip" title="Mostrar contraseña">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                                        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+                                        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"></path>
+                                    </svg>
+                                </a>
+                            </span>
                         </div>
 
-                        <!-- Campo de Contraseña -->
-                        <div class="mb-3">
-                            <label class="form-label">
-                                Contraseña
-                                <span class="form-label-description float-end">
-                                    <a href="#">Olvidé mi contraseña</a>
-                                </span>
-                            </label>
-                            <div class="input-group input-group-flat">
-                                @Html.PasswordFor(m => m.Contrasenna, new { @class = "form-control", id = "password", placeholder = "Contraseña", autocomplete = "current-password" })
-                                <span class="input-group-text">
-                                    <a href="#" id="togglePassword" class="link-secondary" data-bs-toggle="tooltip" title="Mostrar contraseña">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
-                                            <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
-                                            <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"></path>
-                                        </svg>
-                                    </a>
-                                </span>
-                            </div>
-                            @Html.ValidationMessageFor(m => m.Contrasenna, "", new { @class = "text-danger" })
-                        </div>
+                        @Html.ValidationMessageFor(m => m.Contrasenna, "", new { @class = "text-danger" })
+                    </div>
 
-                        <!-- Checkbox -->
-                        <div class="mb-3">
-                            <label class="form-check" for="RememberMe">
-                                @Html.CheckBoxFor(m => m.RememberMe, new { @class = "form-check-input" })
-                                <span class="form-check-label">Recordar mi contraseña</span>
-                            </label>
-                        </div>
+                    <!-- Enlace para recuperar contraseña -->
+                    <div class="text-end mb-3">
+                        @Html.ActionLink("Olvidé mi contraseña", "ForgotPassword", "Account", null, new { @class = "link-primary" })
+                    </div>
 
-                        <!-- Botón -->
-                        <div class="form-footer">
-                            <button type="submit" class="btn btn-primary w-100">Ingresar</button>
-                        </div>
-                    }
-
-                    <div class="login-divider"></div>
-                    <p class="login-footer-text">
-                        No tiene una cuenta? <a href="#" id="link-register">Registrarse</a>
-                    </p>
-                </div>
+                    <!-- Botón -->
+                    <div class="form-footer">
+                        <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+                    </div>
+                }
             </div>
         </div>
     </div>

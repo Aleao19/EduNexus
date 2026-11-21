@@ -4,63 +4,40 @@
     ViewBag.Title = "Detalle del grado";
 }
 
-<h2>Detalle del grado</h2>
-
-<div>
-
-    <hr />
-
-    <div class="container my-2">
-
-        <div class="row">
-            <div class="col-md-8 offset-md-1">
-                <div class="form-group">
-                    <dl class="dl-horizontal">
-                        <dt>
-                            @Html.DisplayNameFor(model => model.grado)
-                        </dt>
-                        <dd>
-                            @Html.DisplayFor(model => model.grado)
-                        </dd>
-                        <dt>
-                            @Html.DisplayNameFor(model => model.descripcion)
-                        </dt>
-                        <dd>
-                            @Html.DisplayFor(model => model.descripcion)
-                        </dd>
-                        <dt>
-                            Año
-                        </dt>
-
-                        <dd>
-                            2026
-                        </dd>
-
-                    </dl>
-
-                </div>
-
-            </div>
-
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Detalle del grado</h2>
+            <div class="page-subtitle">Información registrada del grado.</div>
         </div>
-
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink("Regresar", "ListadoDeGrados", null, new { @class = "btn btn-outline-secondary" })
+                @Html.ActionLink("Editar", "EditarGrado", new { id = Model.id_grado }, new { @class = "btn btn-primary" })
+            </div>
+        </div>
     </div>
-
 </div>
 
-<p>
-
-    @Html.ActionLink(
-        "Editar",
-        "EditarGrado",
-        new { id = Model.id_grado }
-    )
-
-    |
-
-    @Html.ActionLink(
-        "Regresar",
-        "ListadoDeGrados"
-    )
-
-</p>
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Datos del grado</h3>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="en-dato-label">@Html.DisplayNameFor(model => model.grado)</div>
+                <div class="en-dato-valor"><span class="badge bg-blue-lt">@Html.DisplayFor(model => model.grado)</span></div>
+            </div>
+            <div class="col-md-6">
+                <div class="en-dato-label">@Html.DisplayNameFor(model => model.descripcion)</div>
+                <div class="en-dato-valor">@Html.DisplayFor(model => model.descripcion)</div>
+            </div>
+            <div class="col-md-6">
+                <div class="en-dato-label">Año lectivo</div>
+                <div class="en-dato-valor">@DateTime.Now.Year</div>
+            </div>
+        </div>
+    </div>
+</div>

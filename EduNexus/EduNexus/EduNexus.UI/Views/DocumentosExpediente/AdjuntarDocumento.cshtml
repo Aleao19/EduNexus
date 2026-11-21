@@ -1,0 +1,106 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Expedientes.DocumentoExpedienteDto
+
+@{
+    ViewBag.Title = "Adjuntar documento";
+    int tamanoMaximo = EduNexus.UI.Models.AlmacenamientoDocumentoExpediente.TamanoMaximo;
+    string tamanoTexto = EduNexus.UI.Models.AlmacenamientoDocumentoExpediente.TamanoMaximoTexto;
+}
+
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Estudiantes</div>
+            <h2 class="page-title">Adjuntar documento al expediente</h2>
+            <div class="page-subtitle">
+                Expediente #@Model.id_expediente
+                @if (!string.IsNullOrWhiteSpace(Model.estudiante))
+                {
+                    <span>· @Model.estudiante</span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@using (Html.BeginForm(
+    "AdjuntarDocumento",
+    "DocumentosExpediente",
+    FormMethod.Post,
+    new { enctype = "multipart/form-data", id = "formDocumento" }))
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(model => model.id_expediente)
+
+    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Datos del documento</h3>
+        </div>
+        <div class="card-body">
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.nombre_documento, new { @class = "form-label required" })
+                @Html.TextBoxFor(model => model.nombre_documento, new { @class = "form-control", maxlength = "150", placeholder = "Ejemplo: Certificado médico" })
+                @Html.ValidationMessageFor(model => model.nombre_documento, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="mb-3">
+                @Html.LabelFor(model => model.descripcion, new { @class = "form-label" })
+                @Html.TextAreaFor(model => model.descripcion, new { @class = "form-control", rows = "4", maxlength = "500", placeholder = "Descripción del documento" })
+                @Html.ValidationMessageFor(model => model.descripcion, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label required" for="archivo">Seleccionar documento</label>
+                <input type="file"
+                       id="archivo"
+                       name="archivo"
+                       class="form-control"
+                       accept=".pdf,.jpg,.jpeg,.png"
+                       data-tamano-maximo="@tamanoMaximo"
+                       required />
+                @Html.ValidationMessage("archivo", "", new { @class = "text-danger", id = "errorArchivo" })
+                <div class="form-hint">
+                    Formatos permitidos: PDF, JPG, JPEG y PNG. Tamaño máximo: @tamanoTexto.
+                </div>
+            </div>
+
+        </div>
+        <div class="card-footer en-form-acciones">
+            @if (!string.IsNullOrEmpty(Model.id_usuario))
+            {
+                @Html.ActionLink("Cancelar", "Expediente", "Expedientes", new { id = Model.id_usuario, tab = "documentos" }, new { @class = "btn btn-outline-secondary" })
+            }
+            else
+            {
+                @Html.ActionLink("Cancelar", "DetalleDeExpediente", "Expedientes", new { id = Model.id_expediente, tab = "documentos" }, new { @class = "btn btn-outline-secondary" })
+            }
+            <input type="submit" value="Adjuntar documento" class="btn btn-primary" />
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        // Evita enviar archivos más grandes que el límite del servidor
+        // (de lo contrario el servidor rechaza la solicitud completa).
+        document.addEventListener("DOMContentLoaded", function () {
+            var formulario = document.getElementById("formDocumento");
+            var archivo = document.getElementById("archivo");
+            if (!formulario || !archivo) { return; }
+
+            var maximo = parseInt(archivo.getAttribute("data-tamano-maximo"), 10);
+
+            formulario.addEventListener("submit", function (evento) {
+                if (archivo.files && archivo.files.length > 0 && archivo.files[0].size > maximo) {
+                    evento.preventDefault();
+                    var error = document.getElementById("errorArchivo");
+                    var texto = "El documento no puede superar los @tamanoTexto.";
+                    if (error) { error.textContent = texto; } else { alert(texto); }
+                }
+            });
+        });
+    </script>
+}

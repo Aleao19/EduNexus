@@ -1,46 +1,75 @@
-﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Expedientes.ExpedienteDto>
+﻿@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico.EstudianteResumenDto>
 
 @{
-    ViewBag.Title = "Listado de expedientes";
+    ViewBag.Title = "Expedientes de estudiantes";
     int total = Model.Count();
+    int conExpediente = Model.Count(e => e.tiene_expediente);
+    int conApoyos = Model.Count(e => e.adecuaciones_activas > 0 || e.ayudas_activas > 0);
+    int sinEstudiante = ViewBag.ExpedientesSinEstudiante is int ? (int)ViewBag.ExpedientesSinEstudiante : 0;
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Estudiantes</h1>
-        <p class="text-secondary mb-0">Registro y expedientes de alumnos matriculados.</p>
-    </div>
-    <div class="col-auto">
-        @Html.ActionLink("+ Nuevo expediente", "CrearExpediente", null, new { @class = "btn btn-primary" })
-    </div>
-</div>
-
-<div class="row row-cards g-3 mb-3">
-    <div class="col-sm-4">
-        <div class="card card-sm shadow-sm">
-            <div class="card-body">
-                <div class="text-secondary small">Total de expedientes</div>
-                <div class="h2 mb-0">@total</div>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Estudiantes</div>
+            <h2 class="page-title">Expedientes de estudiantes</h2>
+            <div class="page-subtitle">Datos personales, información médica, documentos, historial académico, adecuaciones y ayudas de cada estudiante.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink("Tipos de adecuación", "TiposDeAdecuacion", "ExpedienteAcademico", null, new { @class = "btn btn-outline-secondary" })
+                @Html.ActionLink("Nuevo expediente", "CrearExpediente", "Expedientes", null, new { @class = "btn btn-primary" })
             </div>
         </div>
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-header d-flex align-items-center justify-content-between">
-        <h3 class="card-title mb-0">Listado</h3>
-        <input type="text" id="filtroExpedientes" class="form-control form-control-sm w-auto" placeholder="Buscar por nombre..." onkeyup="filtrarExpedientes()" />
+@if (ViewBag.SinRolEstudiante == true)
+{
+    <div class="alert alert-warning">No existe el rol "Estudiante". Créelo en Roles y asígnelo a los usuarios estudiantes.</div>
+}
+
+@if (sinEstudiante > 0)
+{
+    <div class="alert alert-warning">
+        Hay @sinEstudiante expediente(s) que no están ligados a un usuario con rol Estudiante; no aparecen en este listado.
+    </div>
+}
+
+<div class="row row-cards g-3 mb-3">
+    <div class="col-sm-4">
+        <div class="card card-sm"><div class="card-body">
+            <div class="text-secondary small">Estudiantes</div>
+            <div class="h2 mb-0">@total</div>
+        </div></div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card card-sm"><div class="card-body">
+            <div class="text-secondary small">Con expediente</div>
+            <div class="h2 mb-0">@conExpediente</div>
+        </div></div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card card-sm"><div class="card-body">
+            <div class="text-secondary small">Con adecuaciones o ayudas activas</div>
+            <div class="h2 mb-0">@conApoyos</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Estudiantes</h3>
     </div>
 
     @if (!Model.Any())
     {
-        <div class="card-body">
-            <div class="empty">
-                <p class="empty-title">No hay expedientes registrados</p>
-                <div class="empty-action">
-                    @Html.ActionLink("+ Nuevo expediente", "CrearExpediente", null, new { @class = "btn btn-primary" })
-                </div>
+        <div class="empty">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2" /></svg>
             </div>
+            <p class="empty-title">No hay estudiantes registrados</p>
+            <p class="empty-subtitle text-secondary">Los estudiantes son los usuarios con el rol Estudiante (se crean al aprobar la prematrícula).</p>
         </div>
     }
     else
@@ -50,29 +79,64 @@
                 <thead>
                     <tr>
                         <th>Estudiante</th>
-                        <th>@Html.DisplayNameFor(model => model.identificacion)</th>
-                        <th>Id expediente</th>
-                        <th>Id matrícula</th>
-                        <th class="w-1">Acciones</th>
+                        <th>Cédula</th>
+                        <th>Grado y sección actual</th>
+                        <th>Expediente</th>
+                        <th>Apoyos activos</th>
+                        <th class="en-acciones">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var item in Model)
                     {
-                        string inicial = (item.nombre ?? "?").Substring(0, 1).ToUpper();
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    <span class="avatar avatar-sm rounded-circle bg-teal-lt fw-bold me-2">@inicial</span>
-                                    <div class="fw-medium">@item.nombre @item.apellido1 @item.apellido2</div>
+                                    <span class="avatar avatar-sm rounded-circle bg-teal-lt fw-bold me-2">@item.iniciales</span>
+                                    <div>
+                                        <div class="fw-medium">@item.nombre_completo</div>
+                                        @if (item.estado != "Activo")
+                                        {
+                                            <span class="badge bg-red-lt">@item.estado</span>
+                                        }
+                                    </div>
                                 </div>
                             </td>
-                            <td>@Html.DisplayFor(modelItem => item.identificacion)</td>
-                            <td><span class="text-secondary">#@item.id_expediente</span></td>
-                            <td><span class="text-secondary">#@item.id_matricula</span></td>
+                            <td class="text-nowrap">@(string.IsNullOrWhiteSpace(item.identificacion) ? "No registrada" : item.identificacion)</td>
+                            <td>@item.seccion_actual</td>
+                            <td>
+                                @if (item.tiene_expediente)
+                                {
+                                    <span class="badge bg-green-lt">Sí</span>
+                                    <span class="text-secondary small ms-1">@item.total_documentos documento(s)</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-yellow-lt">Sin expediente</span>
+                                }
+                            </td>
                             <td class="text-nowrap">
-                                @Html.ActionLink("Ver detalle", "DetalleDeExpediente", new { id = item.id_expediente }, new { @class = "btn btn-sm btn-outline-secondary me-1" })
-                                @Html.ActionLink("Editar", "EditarExpediente", new { id = item.id_expediente }, new { @class = "btn btn-sm btn-primary" })
+                                @if (item.adecuaciones_activas > 0)
+                                {
+                                    <span class="badge bg-blue-lt me-1" title="Adecuaciones activas">Adecuación: @item.adecuaciones_activas</span>
+                                }
+                                @if (item.ayudas_activas > 0)
+                                {
+                                    <span class="badge bg-blue-lt" title="Ayudas activas">Ayuda: @item.ayudas_activas</span>
+                                }
+                                @if (item.adecuaciones_activas == 0 && item.ayudas_activas == 0)
+                                {
+                                    <span class="text-secondary">Ninguno</span>
+                                }
+                            </td>
+                            <td class="en-acciones">
+                                <div class="btn-list">
+                                    @if (!item.tiene_expediente && item.id_matricula_aprobada.HasValue)
+                                    {
+                                        @Html.ActionLink("Crear expediente", "CrearExpediente", "Expedientes", new { id_matricula = item.id_matricula_aprobada.Value }, new { @class = "btn btn-sm btn-outline-success" })
+                                    }
+                                    @Html.ActionLink("Ver expediente", "Expediente", "Expedientes", new { id = item.id_usuario }, new { @class = "btn btn-sm btn-outline-primary" })
+                                </div>
                             </td>
                         </tr>
                     }

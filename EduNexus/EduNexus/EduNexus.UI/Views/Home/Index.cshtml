@@ -1,20 +1,25 @@
 ﻿@model EduNexus.Abstracciones.ModelosParaUI.Dashboard.DashboardViewModel
 @{
     ViewBag.Title = "Dashboard";
+    bool hayAccesosRapidos = Model.PuedeGestionarAcademico || Model.PuedeVerHorarios || Model.PuedeVerBitacora;
+    var jsonSeguro = new Newtonsoft.Json.JsonSerializerSettings { StringEscapeHandling = Newtonsoft.Json.StringEscapeHandling.EscapeHtml };
 }
 
 <main>
-    <section class="row align-items-center mb-2" aria-labelledby="appTitle">
-        <div class="col">
-            <h1 id="title" class="mb-0">Dashboard</h1>
-            <p class="text-secondary mb-0">Resumen general del sistema — @DateTime.Now.ToString("dddd d 'de' MMMM, yyyy", new System.Globalization.CultureInfo("es-ES"))</p>
+    <div class="page-header d-print-none" aria-labelledby="title">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <div class="page-pretitle">Inicio</div>
+                <h2 id="title" class="page-title">Panel principal</h2>
+                <div class="page-subtitle">Resumen general del sistema — @DateTime.Now.ToString("dddd d 'de' MMMM, yyyy", new System.Globalization.CultureInfo("es-ES"))</div>
+            </div>
         </div>
-    </section>
+    </div>
 
     @* ===================== KPI CARDS ===================== *@
-    <div class="row row-deck row-cards g-4 mt-1">
+    <div class="row row-deck row-cards g-3 mb-3">
         <div class="col-sm-6 col-lg-3">
-            <div class="card card-sm shadow-sm">
+            <div class="card card-sm">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-auto">
@@ -35,7 +40,7 @@
         </div>
 
         <div class="col-sm-6 col-lg-3">
-            <div class="card card-sm shadow-sm">
+            <div class="card card-sm">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-auto">
@@ -56,7 +61,7 @@
         </div>
 
         <div class="col-sm-6 col-lg-3">
-            <div class="card card-sm shadow-sm">
+            <div class="card card-sm">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-auto">
@@ -77,7 +82,7 @@
         </div>
 
         <div class="col-sm-6 col-lg-3">
-            <div class="card card-sm shadow-sm">
+            <div class="card card-sm">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-auto">
@@ -99,9 +104,9 @@
     </div>
 
     @* ===================== GRÁFICAS ===================== *@
-    <div class="row row-deck row-cards g-4 mt-1">
+    <div class="row row-deck row-cards g-3 mb-3">
         <div class="col-lg-7">
-            <div class="card shadow-sm">
+            <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Matrícula histórica por año</h3>
                 </div>
@@ -112,7 +117,7 @@
         </div>
 
         <div class="col-lg-5">
-            <div class="card shadow-sm">
+            <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Estudiantes por sección</h3>
                 </div>
@@ -122,8 +127,8 @@
             </div>
         </div>
 
-        <div class="col-lg-5">
-            <div class="card shadow-sm">
+        <div class="@(Model.PuedeVerBitacora ? "col-lg-5" : "col-12")">
+            <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Docentes por materia</h3>
                 </div>
@@ -133,8 +138,10 @@
             </div>
         </div>
 
+        @if (Model.PuedeVerBitacora)
+        {
         <div class="col-lg-7">
-            <div class="card shadow-sm">
+            <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Actividad reciente</h3>
                     <div class="card-actions">
@@ -144,7 +151,7 @@
                 <div class="list-group list-group-flush">
                     @if (!Model.ActividadReciente.Any())
                     {
-                        <div class="list-group-item text-secondary">Todavía no hay actividad registrada en la bitácora.</div>
+                        <div class="list-group-item text-secondary text-center py-4">Todavía no hay actividad registrada en la bitácora.</div>
                     }
                     @foreach (var evento in Model.ActividadReciente)
                     {
@@ -171,12 +178,13 @@
                 </div>
             </div>
         </div>
+        }
     </div>
 
     @* ===================== PRÓXIMAS CLASES ===================== *@
-    <div class="row row-cards g-4 mt-1 mb-4">
+    <div class="row row-cards g-3 mb-4">
         <div class="col-12">
-            <div class="card shadow-sm">
+            <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Próximas clases de hoy</h3>
                 </div>
@@ -193,7 +201,7 @@
                         <tbody>
                             @if (!Model.ProximasClases.Any())
                             {
-                                <tr><td colspan="4" class="text-secondary">No hay más clases programadas para hoy.</td></tr>
+                                <tr><td colspan="4" class="text-secondary text-center py-4">No hay más clases programadas para hoy.</td></tr>
                             }
                             @foreach (var clase in Model.ProximasClases)
                             {
@@ -212,11 +220,15 @@
     </div>
 
     @* ===================== ACCESOS RÁPIDOS ===================== *@
+    @if (hayAccesosRapidos)
+    {
     <h2 class="h3 mb-3">Accesos rápidos</h2>
-    <div class="row row-deck p-0 g-4 mb-4">
+    <div class="row row-deck row-cards g-3 mb-4">
+        @if (Model.PuedeGestionarAcademico)
+        {
         <!-- Secciones -->
         <div class="col-md-4">
-            <div class="card card-md card-link position-relative shadow-sm">
+            <div class="card card-md card-link position-relative">
                 <div class="card-stamp">
                     <div class="card-stamp-icon bg-blue">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -233,10 +245,14 @@
                 </div>
             </div>
         </div>
+        }
+
+        @if (Model.PuedeVerHorarios)
+        {
 
         <!-- Horarios -->
         <div class="col-md-4">
-            <div class="card card-md card-link position-relative shadow-sm">
+            <div class="card card-md card-link position-relative">
                 <div class="card-stamp">
                     <div class="card-stamp-icon bg-green">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -254,10 +270,14 @@
                 </div>
             </div>
         </div>
+        }
+
+        @if (Model.PuedeGestionarAcademico)
+        {
 
         <!-- Materias -->
         <div class="col-md-4">
-            <div class="card card-md card-link position-relative shadow-sm">
+            <div class="card card-md card-link position-relative">
                 <div class="card-stamp">
                     <div class="card-stamp-icon bg-purple">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -281,7 +301,7 @@
 
         <!-- Docentes -->
         <div class="col-md-4">
-            <div class="card card-md card-link position-relative shadow-sm">
+            <div class="card card-md card-link position-relative">
                 <div class="card-stamp">
                     <div class="card-stamp-icon bg-orange">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -303,7 +323,7 @@
 
         <!-- Estudiantes -->
         <div class="col-md-4">
-            <div class="card card-md card-link position-relative shadow-sm">
+            <div class="card card-md card-link position-relative">
                 <div class="card-stamp">
                     <div class="card-stamp-icon bg-teal">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -323,10 +343,14 @@
                 </div>
             </div>
         </div>
+        }
+
+        @if (Model.PuedeVerBitacora)
+        {
 
         <!-- Auditoría -->
         <div class="col-md-4">
-            <div class="card card-md card-link position-relative shadow-sm">
+            <div class="card card-md card-link position-relative">
                 <div class="card-stamp">
                     <div class="card-stamp-icon bg-yellow">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -344,7 +368,9 @@
                 </div>
             </div>
         </div>
+        }
     </div>
+    }
 </main>
 
 @section scripts {
@@ -362,12 +388,12 @@
                 return true;
             }
 
-            var aniosMatricula = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.AniosMatricula));
-            var matriculaPorAnio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MatriculaPorAnio));
-            var nombresSecciones = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.NombresSecciones));
-            var estudiantesPorSeccion = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.EstudiantesPorSeccion));
-            var nombresMaterias = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.NombresMaterias));
-            var docentesPorMateria = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DocentesPorMateria));
+            var aniosMatricula = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.AniosMatricula, jsonSeguro));
+            var matriculaPorAnio = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MatriculaPorAnio, jsonSeguro));
+            var nombresSecciones = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.NombresSecciones, jsonSeguro));
+            var estudiantesPorSeccion = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.EstudiantesPorSeccion, jsonSeguro));
+            var nombresMaterias = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.NombresMaterias, jsonSeguro));
+            var docentesPorMateria = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DocentesPorMateria, jsonSeguro));
 
             // Gráfica de barras: Matrícula histórica por año
             // (la matrícula es un proceso anual en el sistema educativo público de Costa Rica,

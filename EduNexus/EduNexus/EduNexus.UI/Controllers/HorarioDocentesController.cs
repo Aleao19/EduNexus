@@ -10,28 +10,28 @@ namespace EduNexus.UI.Controllers
 {
     // RDOC-07-001 Como administrador quiero consultar el horario de un docente
     // para facilitar su asignación a materias y secciones
-    // Tablas: usuarios (rol Docente), materia (profesor), horarios, secciones, grados, calendario
+    // Tablas: usuarios (rol Docente), secciones_materias (fk_id_profesor), materia, horarios, secciones, grados, calendario
     [AutorizarAdministrador]
     public class HorarioDocentesController : Controller
     {
-        private const string RolDocente = "Docente";
-        private static readonly string[] Dias = { "lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo" };
-
         // Búsqueda de docentes por nombre, identificación o correo
         public ActionResult BuscarDocente(string q)
         {
             using (var db = new EduNexusDbContext())
             {
                 string buscado = Normalizar(q);
+                // La cédula también se busca normalizada (0-0000-0000), aunque se haya escrito sin guiones
+                string cedulaBuscada = Cedula.Normalizar(q);
 
                 List<DocenteBusquedaDto> resultados = ObtenerDocentes(db)
                     .Where(u => buscado == "" ||
-                                Normalizar(NombreCompleto(u) + " " + u.identificacion + " " + u.email).Contains(buscado))
+                                (cedulaBuscada != null && Cedula.Iguales(u.identificacion, cedulaBuscada)) ||
+                                Normalizar(NombreCompleto(u) + " " + CedulaFormateada(u.identificacion) + " " + u.identificacion + " " + u.email).Contains(buscado))
                     .Select(u => new DocenteBusquedaDto
                     {
                         id_usuario = u.id_usuario,
                         nombre = NombreCompleto(u),
-                        identificacion = u.identificacion,
+                        identificacion = CedulaFormateada(u.identificacion),
                         email = u.email,
                         estado = u.estado ? "Activo" : "Inactivo"
                     })
@@ -57,41 +57,48 @@ namespace EduNexus.UI.Controllers
                     return HttpNotFound();
                 }
 
-                // Las materias del docente (materia.profesor) y sus horarios
+                // Clases del docente (secciones_materias.fk_id_profesor) y sus horarios
+                List<SeccionMateriaEntity> clases = HorarioServicio.ClasesDelDocente(db, id);
+                List<int> idsSecciones = clases.Select(c => c.fk_id_seccion).Distinct().ToList();
+                List<int> idsMaterias = clases.Select(c => c.fk_id_materia).Distinct().ToList();
+
                 Dictionary<int, MateriaEntity> materias = db.Materias
-                    .Where(m => m.profesor == id).ToList()
+                    .Where(m => idsMaterias.Contains(m.id_materia)).ToList()
                     .ToDictionary(m => m.id_materia);
 
-                List<int> idsMaterias = materias.Keys.ToList();
                 List<HorarioEntity> horarios = db.Horarios
-                    .Where(h => idsMaterias.Contains(h.fk_materia)).ToList();
+                    .Where(h => idsSecciones.Contains(h.fk_seccion) && idsMaterias.Contains(h.fk_materia)).ToList()
+                    .Where(h => clases.Any(c => c.fk_id_seccion == h.fk_seccion && c.fk_id_materia == h.fk_materia))
+                    .ToList();
 
-                Dictionary<int, string> etiquetas = EtiquetasDeSecciones(db);
+                Dictionary<int, string> etiquetas = HorarioServicio.EtiquetasDeSecciones(db);
+                ViewBag.TieneClases = clases.Any();
 
                 var modelo = new HorarioDocenteDto
                 {
                     id_usuario = docente.id_usuario,
                     docente = NombreCompleto(docente),
-                    identificacion = docente.identificacion,
+                    identificacion = CedulaFormateada(docente.identificacion),
                     email = docente.email,
 
                     // Escenario 1: horario completo (día, hora, materia y sección)
                     // Escenario 2: si la lista queda vacía, la vista muestra el aviso y la opción de asignar
                     horarios = horarios
-                        .OrderBy(h => OrdenDia(h.dia_semana))
+                        .OrderBy(h => HorarioServicio.OrdenDia(h.dia_semana))
                         .ThenBy(h => h.hora_inicio)
                         .Select(h =>
                         {
                             string seccion;
                             etiquetas.TryGetValue(h.fk_seccion, out seccion);
-                            MateriaEntity materia = materias[h.fk_materia];
+                            MateriaEntity materia;
+                            materias.TryGetValue(h.fk_materia, out materia);
 
                             return new HorarioDocenteItemDto
                             {
                                 dia_semana = h.dia_semana,
-                                hora_inicio = h.hora_inicio.ToString("HH:mm"),
-                                hora_fin = h.hora_fin.ToString("HH:mm"),
-                                materia = materia.id_materia + " - " + materia.nombre,
+                                hora_inicio = HorarioServicio.Hora(h.hora_inicio),
+                                hora_fin = HorarioServicio.Hora(h.hora_fin),
+                                materia = materia != null ? materia.nombre : "Materia " + h.fk_materia,
                                 seccion = seccion ?? ""
                             };
                         })
@@ -104,8 +111,8 @@ namespace EduNexus.UI.Controllers
 
         private static List<UsuarioEntity> ObtenerDocentes(EduNexusDbContext db)
         {
-            string idRolDocente = db.Roles
-                .Where(r => r.nombre == RolDocente)
+            string idRolDocente = db.Roles.ToList()
+                .Where(r => RolesSistema.Es(r.nombre, RolesSistema.Docente))
                 .Select(r => r.id_rol)
                 .FirstOrDefault();
 
@@ -117,24 +124,9 @@ namespace EduNexus.UI.Controllers
             return db.Usuarios.Where(u => u.rol == idRolDocente).OrderBy(u => u.nombre).ToList();
         }
 
-        // Etiqueta de cada sección: "Tercer Grado - 3-A (2026)"
-        private static Dictionary<int, string> EtiquetasDeSecciones(EduNexusDbContext db)
+        private static string CedulaFormateada(string cedula)
         {
-            Dictionary<int, string> grados = db.Grados.ToList().ToDictionary(g => g.id_grado, g => g.nombre);
-            Dictionary<int, int> anios = db.Calendarios.ToList().ToDictionary(c => c.id_calendario, c => c.fecha_inicio.Year);
-
-            return db.Secciones.ToList().ToDictionary(
-                s => s.id_seccion,
-                s => (grados.ContainsKey(s.fk_id_grado) ? grados[s.fk_id_grado] : "Grado")
-                     + " - " + s.nombre
-                     + (anios.ContainsKey(s.fk_id_calendario) ? " (" + anios[s.fk_id_calendario] + ")" : ""));
-        }
-
-        private static int OrdenDia(string dia)
-        {
-            string d = Normalizar(dia).Replace("á", "a").Replace("é", "e");
-            int posicion = Array.IndexOf(Dias, d);
-            return posicion < 0 ? 99 : posicion;
+            return Cedula.Normalizar(cedula) ?? cedula;
         }
 
         private static string NombreCompleto(UsuarioEntity u)

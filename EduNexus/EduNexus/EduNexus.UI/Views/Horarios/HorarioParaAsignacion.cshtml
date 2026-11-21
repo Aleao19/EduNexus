@@ -1,0 +1,95 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Horarios.HorarioAsignacionDto
+
+@{
+    ViewBag.Title = "Horario para asignar estudiantes";
+}
+
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Asignación de estudiantes - @Model.seccion</h2>
+            <div class="page-subtitle">Horario, cupos disponibles y estudiantes asignados de la sección.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink("Regresar", "ListadoDeHorarios", new { id = Model.id_seccion }, new { @class = "btn btn-outline-secondary" })
+                @if (Model.items.Any())
+                {
+                    @Html.ActionLink("Asignar estudiantes", "AsignarEstudiantes", "Secciones", new { id = Model.id_seccion }, new { @class = "btn btn-primary" })
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.items.Any())
+{
+    @* Escenario 2: la sección no tiene horario configurado *@
+    <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2">
+        <span>La sección no tiene horario configurado y no es posible asignar estudiantes.</span>
+        @Html.ActionLink("Crear horario", "CrearHorario", new { id = Model.id_seccion }, new { @class = "btn btn-primary btn-sm ms-auto" })
+    </div>
+}
+else
+{
+    @* Escenario 1: horario, cupos disponibles y estudiantes ya asignados *@
+    <div class="row row-cards g-3 mb-3">
+        <div class="col-sm-4">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-secondary small">Cupo total</div>
+                    <div class="h2 mb-0">@Model.cupo</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-secondary small">Estudiantes asignados</div>
+                    <div class="h2 mb-0">@Model.matriculados</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-secondary small">Cupos disponibles</div>
+                    <div class="h2 mb-0">@Model.cupos_disponibles</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="card-title">Horario semanal</h3>
+        </div>
+        @Html.Partial("_HorarioSemanal", Model.items, new ViewDataDictionary { { "mostrarProfesor", true } })
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Estudiantes asignados</h3>
+        </div>
+        @if (!Model.estudiantes.Any())
+        {
+            <div class="empty">
+                <p class="empty-title">Sin estudiantes asignados</p>
+                <p class="empty-subtitle text-secondary">Aún no hay estudiantes asignados a esta sección.</p>
+                <div class="empty-action">
+                    @Html.ActionLink("Asignar estudiantes", "AsignarEstudiantes", "Secciones", new { id = Model.id_seccion }, new { @class = "btn btn-primary" })
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (string nombre in Model.estudiantes)
+                {
+                    <div class="list-group-item">@nombre</div>
+                }
+            </div>
+        }
+    </div>
+}

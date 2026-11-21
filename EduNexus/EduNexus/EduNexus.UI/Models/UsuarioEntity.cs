@@ -1,4 +1,7 @@
-﻿namespace EduNexus.UI.Models.Identity
+﻿
+using System;
+
+namespace EduNexus.UI.Models.Identity
 {
     // Tabla: usuarios
     public class UsuarioEntity
@@ -15,5 +18,9 @@
         public string password_hash { get; set; }
         public string security_stamp { get; set; }
         public bool email_confirmado { get; set; }
+
+        // Propiedades para recuperación de contraseña
+        public string token_recuperacion { get; set; }
+        public DateTime? expira_token_recuperacion { get; set; }
     }
 }

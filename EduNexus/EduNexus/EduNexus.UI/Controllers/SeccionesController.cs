@@ -48,11 +48,13 @@ namespace EduNexus.UI.Controllers
                     .Where(x => !grado.HasValue || x.grado == grado.Value)
                     .Where(x => !anio.HasValue || x.anio == anio.Value)
                     .ToList();
+                CompletarDistribucion(db, filtradas);
                 return View(filtradas);
             }
         }
 
         // GET: Secciones/AsignarEstudiantes/5
+        [PermitirCoordinador]
         public ActionResult AsignarEstudiantes(int? id)
         {
             if (!id.HasValue)
@@ -75,6 +77,7 @@ namespace EduNexus.UI.Controllers
         }
 
         // POST: Secciones/AsignarEstudiantes
+        [PermitirCoordinador]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult AsignarEstudiantes(int id, string idUsuario)
@@ -119,6 +122,22 @@ namespace EduNexus.UI.Controllers
                     return RedirectToAction("AsignarEstudiantes", new { id = id });
                 }
 
+                // Un estudiante solo puede pertenecer a una sección por periodo lectivo
+                int idCalendario = seccion.fk_id_calendario;
+                int? otraSeccion = (from e in db.SeccionesEstudiantes
+                                    join s in db.Secciones on e.fk_id_seccion equals s.id_seccion
+                                    where e.fk_id_usuario == idUsuario && s.fk_id_calendario == idCalendario
+                                    select (int?)s.id_seccion).FirstOrDefault();
+
+                if (otraSeccion.HasValue)
+                {
+                    var etiquetasOtra = HorarioServicio.EtiquetasDeSecciones(db);
+                    TempData["Error"] = "El estudiante ya está asignado a la sección "
+                        + (etiquetasOtra.ContainsKey(otraSeccion.Value) ? etiquetasOtra[otraSeccion.Value] : otraSeccion.Value.ToString())
+                        + " en este periodo lectivo. Use la opción \"Mover\" desde esa sección.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
                 int cantidadActual = db.SeccionesEstudiantes.Count(e => e.fk_id_seccion == id);
 
                 if (cantidadActual >= seccion.cupo)
@@ -134,10 +153,97 @@ namespace EduNexus.UI.Controllers
                     fecha_asignacion = DateTime.Now
                 });
 
+                var etiquetas = HorarioServicio.EtiquetasDeSecciones(db);
+                string etiqueta = etiquetas.ContainsKey(id) ? etiquetas[id] : seccion.nombre;
+                Auditoria.Registrar(db, "Asignación de estudiante a sección",
+                    "Estudiante " + HorarioServicio.NombreCompleto(estudiante) + " (" + estudiante.identificacion + ") asignado a " + etiqueta + ".",
+                    null, new { id_seccion = id, seccion = etiqueta, id_usuario = idUsuario });
+
                 db.SaveChanges();
             }
 
             TempData["Mensaje"] = "El estudiante se asignó correctamente a la sección.";
+            return RedirectToAction("AsignarEstudiantes", new { id = id });
+        }
+        // POST: Secciones/MoverEstudiante
+        [PermitirCoordinador]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult MoverEstudiante(int id, string idUsuario, int? idSeccionDestino)
+        {
+            if (!idSeccionDestino.HasValue)
+            {
+                TempData["Error"] = "Seleccione la sección destino.";
+                return RedirectToAction("AsignarEstudiantes", new { id = id });
+            }
+
+            using (var db = new EduNexusDbContext())
+            {
+                var origen = db.Secciones.FirstOrDefault(s => s.id_seccion == id);
+                var destino = db.Secciones.FirstOrDefault(s => s.id_seccion == idSeccionDestino.Value);
+
+                if (origen == null || destino == null)
+                {
+                    return HttpNotFound();
+                }
+
+                if (destino.id_seccion == origen.id_seccion)
+                {
+                    TempData["Error"] = "El estudiante ya está en esa sección.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                if (destino.fk_id_grado != origen.fk_id_grado || destino.fk_id_calendario != origen.fk_id_calendario)
+                {
+                    TempData["Error"] = "Solo se puede mover al estudiante a una sección del mismo grado y año lectivo.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                var asignacion = db.SeccionesEstudiantes.FirstOrDefault(e =>
+                    e.fk_id_seccion == id && e.fk_id_usuario == idUsuario);
+
+                if (asignacion == null)
+                {
+                    TempData["Error"] = "El estudiante no está asignado a esta sección.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                if (db.SeccionesEstudiantes.Any(e => e.fk_id_seccion == destino.id_seccion && e.fk_id_usuario == idUsuario))
+                {
+                    TempData["Error"] = "El estudiante ya está asignado a la sección destino.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                if (!db.Horarios.Any(h => h.fk_seccion == destino.id_seccion))
+                {
+                    TempData["Error"] = "La sección destino no tiene horario configurado.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                if (db.SeccionesEstudiantes.Count(e => e.fk_id_seccion == destino.id_seccion) >= destino.cupo)
+                {
+                    TempData["Error"] = "La sección destino ya alcanzó su cupo máximo.";
+                    return RedirectToAction("AsignarEstudiantes", new { id = id });
+                }
+
+                var etiquetas = HorarioServicio.EtiquetasDeSecciones(db);
+                string etiquetaOrigen = etiquetas.ContainsKey(origen.id_seccion) ? etiquetas[origen.id_seccion] : origen.nombre;
+                string etiquetaDestino = etiquetas.ContainsKey(destino.id_seccion) ? etiquetas[destino.id_seccion] : destino.nombre;
+
+                // Se reutiliza el mismo registro: solo cambia la sección y la fecha de asignación
+                asignacion.fk_id_seccion = destino.id_seccion;
+                asignacion.fecha_asignacion = DateTime.Now;
+
+                Auditoria.Registrar(db, "Cambio de sección de estudiante",
+                    "Estudiante " + idUsuario + " movido a " + etiquetaDestino,
+                    new { id_seccion = origen.id_seccion, seccion = etiquetaOrigen },
+                    new { id_seccion = destino.id_seccion, seccion = etiquetaDestino });
+
+                db.SaveChanges();
+
+                TempData["Mensaje"] = "El estudiante se movió a " + etiquetaDestino + ".";
+            }
+
             return RedirectToAction("AsignarEstudiantes", new { id = id });
         }
 
@@ -148,50 +254,148 @@ namespace EduNexus.UI.Controllers
                 (r.nombre.Trim().Equals("Estudiante", StringComparison.OrdinalIgnoreCase) ||
                  r.nombre.Trim().Equals("Estudiantes", StringComparison.OrdinalIgnoreCase)));
 
-            var estudiantes = new List<object>();
+            var estudiantes = new List<EstudianteDisponibleVm>();
+            var seccionActual = db.Secciones.FirstOrDefault(s => s.id_seccion == idSeccion);
+
+            // Secciones del mismo grado y año lectivo: sobre ellas se calcula la distribución
+            // por género y necesidades y la sección sugerida (Models/DistribucionSecciones.cs).
+            var seccionesGrado = seccionActual == null
+                ? new List<SeccionEntity>()
+                : db.Secciones.Where(s => s.fk_id_grado == seccionActual.fk_id_grado
+                                       && s.fk_id_calendario == seccionActual.fk_id_calendario).ToList();
+            var estados = DistribucionSecciones.EstadoDeSecciones(db, seccionesGrado);
 
             if (rolEstudiante != null)
             {
-                estudiantes = db.Usuarios
+                // Se excluyen los estudiantes que ya tienen sección en el mismo periodo lectivo
+                int idCalendario = seccionActual != null ? seccionActual.fk_id_calendario : 0;
+                List<string> yaAsignados = (from e in db.SeccionesEstudiantes
+                                            join s in db.Secciones on e.fk_id_seccion equals s.id_seccion
+                                            where s.fk_id_calendario == idCalendario
+                                            select e.fk_id_usuario).Distinct().ToList();
+                var asignadosSet = new HashSet<string>(yaAsignados);
+
+                var usuariosDisponibles = db.Usuarios
                     .Where(u => u.estado && u.rol == rolEstudiante.id_rol)
+                    .OrderBy(u => u.nombre).ThenBy(u => u.apellido1)
                     .ToList()
-                    .Select(u => (object)new
+                    .Where(u => !asignadosSet.Contains(u.id_usuario))
+                    .ToList();
+                var perfiles = DistribucionSecciones.Perfiles(db, usuariosDisponibles);
+
+                foreach (var u in usuariosDisponibles)
+                {
+                    var perfil = perfiles[u.id_usuario];
+                    var sugerencia = DistribucionSecciones.Elegir(perfil, estados.Values);
+                    estudiantes.Add(new EstudianteDisponibleVm
                     {
                         id_usuario = u.id_usuario,
-                        nombreCompleto = ((u.nombre ?? "") + " " +
-                                          (u.apellido1 ?? "") + " " +
-                                          (u.apellido2 ?? "")).Trim() +
-                                          " - " + (u.identificacion ?? "")
-                    })
-                    .ToList();
+                        texto = HorarioServicio.NombreCompleto(u)
+                                + " - " + (Cedula.Normalizar(u.identificacion) ?? u.identificacion ?? "")
+                                + " · Género: " + perfil.GeneroTexto
+                                + (perfil.TieneNecesidades ? " · Con necesidades" : ""),
+                        genero = perfil.GeneroTexto,
+                        tiene_necesidades = perfil.TieneNecesidades,
+                        id_seccion_sugerida = sugerencia != null ? sugerencia.Seccion.IdSeccion : (int?)null,
+                        seccion_sugerida = sugerencia != null ? sugerencia.Seccion.Etiqueta : null,
+                        motivo_sugerencia = sugerencia != null ? sugerencia.Motivo : null
+                    });
+                }
             }
 
-            ViewBag.EstudiantesDisponibles = new SelectList(
-                estudiantes,
-                "id_usuario",
-                "nombreCompleto");
+            ViewBag.EstudiantesDisponibles = estudiantes;
 
             ViewBag.ErrorRolEstudiante = rolEstudiante == null;
 
-            ViewBag.EstudiantesAsignados = (
+            // Mover: solo a secciones del mismo grado y año lectivo, con horario y con cupo
+            var conHorario = new HashSet<int>(db.Horarios.Select(h => h.fk_seccion).Distinct().ToList());
+            var candidatasMover = estados.Values
+                .Where(x => x.IdSeccion != idSeccion && conHorario.Contains(x.IdSeccion))
+                .ToList();
+
+            var filasAsignadas = (
                 from e in db.SeccionesEstudiantes
                 join u in db.Usuarios on e.fk_id_usuario equals u.id_usuario
                 where e.fk_id_seccion == idSeccion
                 orderby u.nombre, u.apellido1
-                select new EstudianteAsignadoDto
+                select new { u, e.fecha_asignacion }).ToList();
+            var perfilesAsignados = DistribucionSecciones.Perfiles(db, filasAsignadas.Select(x => x.u));
+
+            ViewBag.EstudiantesAsignados = filasAsignadas.Select(x =>
+            {
+                var perfil = perfilesAsignados[x.u.id_usuario];
+                var sugerencia = DistribucionSecciones.Elegir(perfil, candidatasMover);
+                return new EstudianteSeccionVm
                 {
-                    nombreCompleto = ((u.nombre ?? "") + " " +
-                                      (u.apellido1 ?? "") + " " +
-                                      (u.apellido2 ?? "")).Trim(),
-                    identificacion = u.identificacion,
-                    fecha_asignacion = e.fecha_asignacion
+                    id_usuario = x.u.id_usuario,
+                    nombreCompleto = HorarioServicio.NombreCompleto(x.u),
+                    identificacion = Cedula.Normalizar(x.u.identificacion) ?? x.u.identificacion,
+                    fecha_asignacion = x.fecha_asignacion,
+                    genero = perfil.GeneroTexto,
+                    tiene_necesidades = perfil.TieneNecesidades,
+                    id_seccion_sugerida = sugerencia != null ? sugerencia.Seccion.IdSeccion : (int?)null,
+                    seccion_sugerida = sugerencia != null ? sugerencia.Seccion.Etiqueta : null,
+                    motivo_sugerencia = sugerencia != null ? sugerencia.Motivo : null
+                };
+            }).ToList();
+
+            ViewBag.DistribucionSecciones = estados.Values
+                .OrderBy(x => x.Etiqueta)
+                .Select(x => new DistribucionSeccionVm
+                {
+                    id_seccion = x.IdSeccion,
+                    texto = x.Etiqueta,
+                    cupo = x.Cupo,
+                    asignados = x.Total,
+                    disponibles = x.Libres,
+                    femenino = x.Femenino,
+                    masculino = x.Masculino,
+                    otro = x.Otro,
+                    sin_genero = x.SinGenero,
+                    con_necesidades = x.ConNecesidades,
+                    es_actual = x.IdSeccion == idSeccion
                 }).ToList();
 
-            var seccion = db.Secciones.FirstOrDefault(s => s.id_seccion == idSeccion);
+            // Secciones a las que se puede mover un estudiante: mismo grado y mismo año lectivo.
+            ViewBag.SeccionesDestino = estados.Values
+                .Where(x => x.IdSeccion != idSeccion)
+                .OrderBy(x => x.Etiqueta)
+                .Select(x => new SeccionDestinoVm
+                {
+                    id_seccion = x.IdSeccion,
+                    texto = x.Etiqueta,
+                    disponibles = x.Libres,
+                    resumen = x.Resumen,
+                    tiene_horario = conHorario.Contains(x.IdSeccion)
+                }).ToList();
 
-            ViewBag.CupoMaximo = seccion != null ? seccion.cupo : 0;
+            ViewBag.CupoMaximo = seccionActual != null ? seccionActual.cupo : 0;
             ViewBag.CantidadAsignada = db.SeccionesEstudiantes.Count(e =>
                 e.fk_id_seccion == idSeccion);
+        }
+
+        // Agrega a cada sección el conteo de estudiantes por género y con necesidades.
+        private static void CompletarDistribucion(EduNexusDbContext db, List<SeccionesDto> secciones)
+        {
+            if (secciones == null || !secciones.Any())
+            {
+                return;
+            }
+            var ids = secciones.Select(x => x.id_seccion).ToList();
+            var entidades = db.Secciones.Where(s => ids.Contains(s.id_seccion)).ToList();
+            var estados = DistribucionSecciones.EstadoDeSecciones(db, entidades);
+            foreach (var dto in secciones)
+            {
+                EstadoSeccionDistribucion estado;
+                if (estados.TryGetValue(dto.id_seccion, out estado))
+                {
+                    dto.estudiantes_femenino = estado.Femenino;
+                    dto.estudiantes_masculino = estado.Masculino;
+                    dto.estudiantes_otro = estado.Otro;
+                    dto.estudiantes_sin_genero = estado.SinGenero;
+                    dto.estudiantes_con_necesidades = estado.ConNecesidades;
+                }
+            }
         }
 
 
@@ -266,6 +470,9 @@ namespace EduNexus.UI.Controllers
                     fk_id_calendario = calendario.id_calendario,
                     cupo = seccion.cupo
                 });
+                Auditoria.Registrar(db, "Crear sección",
+                    "Se registró la sección " + nombre + " de " + grado.nombre + " (" + seccion.anio.Value + ").",
+                    null, new { nombre, grado = grado.nombre, anio = seccion.anio.Value, cupo = seccion.cupo });
                 db.SaveChanges();
             }
 
@@ -322,6 +529,22 @@ namespace EduNexus.UI.Controllers
                     return View(seccion);
                 }
 
+                // El cupo no puede quedar por debajo de los estudiantes ya asignados
+                int asignados = db.SeccionesEstudiantes.Count(e => e.fk_id_seccion == existente.id_seccion);
+                seccion.estudiantes_matriculados = asignados;
+                if (seccion.cupo < asignados)
+                {
+                    ModelState.AddModelError("cupo", "El cupo no puede ser menor a los " + asignados + " estudiantes ya asignados a la sección.");
+                    return View(seccion);
+                }
+
+                // Con estudiantes asignados no se cambia el periodo lectivo (podrían quedar en dos secciones del mismo periodo)
+                if (calendario.id_calendario != existente.fk_id_calendario && asignados > 0)
+                {
+                    ModelState.AddModelError("anio", "No se puede cambiar el año lectivo de una sección que ya tiene estudiantes asignados.");
+                    return View(seccion);
+                }
+
                 CalendarioEntity calendarioAnterior = db.Calendarios.FirstOrDefault(c => c.id_calendario == existente.fk_id_calendario);
                 var antes = new
                 {
@@ -335,19 +558,9 @@ namespace EduNexus.UI.Controllers
                 existente.cupo = seccion.cupo;
 
                 // Escenario 5: edición exitosa, se registra la fecha y el usuario que realizó la modificación (bitácora)
-                var usuario = Session[AutorizarAdministradorAttribute.ClaveSesion] as UsuarioDto;
-                if (usuario != null)
-                {
-                    db.Bitacora.Add(new BitacoraEntity
-                    {
-                        tipo_de_evento = EventoModificacion,
-                        descripcion_evento = DescripcionEvento(existente.id_seccion) + " " + nombre,
-                        fecha = DateTime.Now,
-                        datos_anteriores = JsonConvert.SerializeObject(antes),
-                        datos_posteriores = JsonConvert.SerializeObject(new { nombre, anio = seccion.anio.Value, cupo = seccion.cupo }),
-                        fk_id_usuario = usuario.id_usuario
-                    });
-                }
+                Auditoria.Registrar(db, EventoModificacion,
+                    DescripcionEvento(existente.id_seccion) + " " + nombre,
+                    antes, new { nombre, anio = seccion.anio.Value, cupo = seccion.cupo });
                 db.SaveChanges();
             }
 
@@ -388,16 +601,25 @@ namespace EduNexus.UI.Controllers
 
                 // La sección tampoco se puede borrar si otros módulos ya la usan (horarios o asignaciones)
                 int usos = db.Database.SqlQuery<int>(
-                    "SELECT (SELECT COUNT(*) FROM horarios WHERE fk_seccion = @p0) + (SELECT COUNT(*) FROM asignaciones WHERE fk_id_seccion = @p0)",
+                    "SELECT (SELECT COUNT(*) FROM horarios WHERE fk_seccion = @p0) + (SELECT COUNT(*) FROM asignaciones WHERE fk_id_seccion = @p0) + (SELECT COUNT(*) FROM asistencia WHERE fk_id_seccion = @p0)",
                     id).First();
                 if (usos > 0)
                 {
-                    TempData["Error"] = "No se puede eliminar la sección porque tiene horarios o asignaciones asociadas.";
+                    TempData["Error"] = "No se puede eliminar la sección porque tiene horarios, asignaciones o registros de asistencia asociados.";
                     return RedirectToAction("ListadoDeSecciones");
                 }
 
+                // Las materias asignadas a la sección (secciones_materias) se quitan junto con ella
+                var materiasDeSeccion = db.SeccionesMaterias.Where(sm => sm.fk_id_seccion == id).ToList();
+
                 // Escenario 6: eliminación de sección sin estudiantes
+                var etiquetas = HorarioServicio.EtiquetasDeSecciones(db);
+                string etiqueta = etiquetas.ContainsKey(id) ? etiquetas[id] : seccion.nombre;
+                db.SeccionesMaterias.RemoveRange(materiasDeSeccion);
                 db.Secciones.Remove(seccion);
+                Auditoria.Registrar(db, "Eliminar sección", "Se eliminó la sección " + etiqueta + ".",
+                    new { seccion.id_seccion, seccion.nombre, seccion.fk_id_grado, seccion.fk_id_calendario, seccion.cupo,
+                          materias = materiasDeSeccion.Select(m => m.fk_id_materia).ToList() }, null);
                 db.SaveChanges();
             }
 
@@ -450,6 +672,8 @@ namespace EduNexus.UI.Controllers
                 SeccionesDto seccion = ObtenerSecciones(db, null, null, id.Value).FirstOrDefault();
                 if (seccion != null && incluirAuditoria)
                 {
+                    CompletarDistribucion(db, new List<SeccionesDto> { seccion });
+
                     // Última modificación registrada en la bitácora
                     string prefijo = DescripcionEvento(seccion.id_seccion);
                     var ultima = (from b in db.Bitacora

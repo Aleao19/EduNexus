@@ -1,69 +1,75 @@
 ﻿@model EduNexus.Abstracciones.ModelosParaUI.Horarios.HorariosDto
-
 @{
     ViewBag.Title = "Editar horario";
+    var materias = (System.Collections.Generic.IEnumerable<System.Web.Mvc.SelectListItem>)ViewBag.Materias;
 }
 
-<h2>Editar horario</h2>
-
-
-
-
-@using (Html.BeginForm())
-{
-    @Html.AntiForgeryToken()
-    @Html.HiddenFor(model => model.id_horario)
-    @Html.HiddenFor(model => model.seccion)
-
-    <div class="form-horizontal">
-        <hr />
-        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        <div class="container my-2">
-            <div class="row">
-                <div class="col-md-8 offset-md-1">
-                    <div class="form-group mt-3">
-                        <label class="control-label col-md-2">Día</label>
-                        <div class="col-md-10">
-                            @Html.DropDownListFor(model => model.dia_semana, (SelectList)ViewBag.Dias, new { @class = "form-control" })
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        <label class="control-label col-md-2">Hora inicio</label>
-                        <div class="col-md-10">
-                            <input type="time" name="hora_inicio" value="@Model.hora_inicio.ToString("HH:mm")" class="form-control" />
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        <label class="control-label col-md-2">Hora fin</label>
-                        <div class="col-md-10">
-                            <input type="time" name="hora_fin" value="@Model.hora_fin.ToString("HH:mm")" class="form-control" />
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-3">
-                        <label class="control-label col-md-2">Materia</label>
-                        <div class="col-md-10">
-                            @Html.DropDownListFor(model => model.materia, (SelectList)ViewBag.Materias, new { @class = "form-control" })
-                        </div>
-                    </div>
-
-                    <div class="form-group my-3">
-                        <div class="col-md-offset-2 col-md-10 mt-2">
-                            <input type="submit" value="Guardar" class="btn btn-cyan" />
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Editar horario</h2>
+            <div class="page-subtitle">Cambie la materia o el bloque de la clase en la cuadrícula.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <span class="hz-badge">Sección @(ViewBag.NombreSeccion ?? "—")</span>
         </div>
     </div>
-}
-
-<div>
-    @Html.ActionLink("Regresar", "ListadoDeHorarios", new { id = Model.seccion })
 </div>
 
-@section Scripts {
-    @Scripts.Render("~/bundles/jqueryval")
+<div class="hz-wrap">
+    @using (Html.BeginForm("Edit", "Horarios", FormMethod.Post, new { id = "formHorario" }))
+    {
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(m => m.id_horario)
+        @Html.HiddenFor(m => m.seccion)
+        <input type="hidden" name="dia_semana" id="dia_semana" value="@Model.dia_semana" />
+        <input type="hidden" name="hora_inicio" id="hora_inicio" value="@(Model.hora_inicio.ToString("hh\\:mm"))" />
+        <input type="hidden" name="hora_fin" id="hora_fin" value="@(Model.hora_fin.ToString("hh\\:mm"))" />
+
+        <div class="hz-card">
+            <h5><span class="hz-step">1</span>Materia <span class="text-danger">*</span></h5>
+            <div class="hz-materias">
+                @foreach (var m in materias)
+                {
+                    <input type="radio" name="materia" id="mat_@m.Value" value="@m.Value" @(Model.materia.ToString() == m.Value ? "checked" : "") />
+                    <label for="mat_@m.Value">@m.Text</label>
+                }
+            </div>
+        </div>
+
+        <div class="hz-card">
+            <h5><span class="hz-step">2</span>Bloque en la cuadrícula <span class="text-danger">*</span></h5>
+            <p class="form-hint mb-2">
+                El bloque actual ya está marcado. Para cambiarlo: primer clic = hora de inicio, segundo clic en el mismo día = hora de fin.
+            </p>
+            <div class="hz-scroll">
+                <div class="hz-grid" id="grid"
+                     data-dia="@Model.dia_semana"
+                     data-inicio="@(Model.hora_inicio.ToString("hh\\:mm"))"
+                     data-fin="@(Model.hora_fin.ToString("hh\\:mm"))"></div>
+            </div>
+        </div>
+
+        <div class="hz-card">
+            <div class="hz-resumen">
+                <div><small>Materia</small><strong id="resMateria">—</strong></div>
+                <div><small>Día</small><strong id="resDia">—</strong></div>
+                <div><small>Horario</small><strong id="resHora">—</strong></div>
+                <div class="hz-acciones">
+                    @Html.ActionLink("Cancelar", "ListadoDeHorarios", new { id = Model.seccion }, new { @class = "btn btn-outline-secondary" })
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </div>
+            <div class="alert alert-danger hz-error" id="errorBox"></div>
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mt-3">@Html.ValidationSummary(false)</div>
+            }
+        </div>
+    }
+</div>
+
+@section scripts {
+    <script src="~/Scripts/Horarios/CrearHorario.js"></script>
 }
