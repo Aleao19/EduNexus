@@ -1,4 +1,5 @@
 ﻿@using System
+@using System.Linq
 @using EduNexus.UI.Models
 
 @{
@@ -7,34 +8,235 @@
 
     bool estaAutenticado = usuarioSesion != null;
 
-    // Matriz de permisos fija (ver RolesSistema). Los roles se comparan sin tildes ni mayúsculas.
-    bool esAdministrador = RolesSistema.Es(usuarioSesion, RolesSistema.Administrador);
-    bool esCoordinador = RolesSistema.Es(usuarioSesion, RolesSistema.CoordinadorAcademico);
-    bool esDirector = RolesSistema.Es(usuarioSesion, RolesSistema.Director);
-    bool esDocente = RolesSistema.Es(usuarioSesion, RolesSistema.Docente);
-    bool esEstudiante = RolesSistema.Es(usuarioSesion, RolesSistema.Estudiante);
-    // RMPR-08-005: el Padre (encargado del estudiante) realiza la prematrícula.
-    bool esEncargado = RolesSistema.Es(usuarioSesion, RolesSistema.Padre);
+    // ========================================
+    // MATRIZ DE PERMISOS
+    // ========================================
 
-    // Aula virtual: Administrador y Director (consulta), Docente y Estudiante (sus clases).
-    bool veAulaVirtual = esAdministrador || esDirector || esDocente || esEstudiante;
-    // RHOR-09-006 y 007: Mi horario (Docente y Estudiante).
+    bool esAdministrador = RolesSistema.Es(
+        usuarioSesion, RolesSistema.Administrador);
+
+    bool esCoordinador = RolesSistema.Es(
+        usuarioSesion, RolesSistema.CoordinadorAcademico);
+
+    bool esDirector = RolesSistema.Es(
+        usuarioSesion, RolesSistema.Director);
+
+    bool esDocente = RolesSistema.Es(
+        usuarioSesion, RolesSistema.Docente);
+
+    bool esEstudiante = RolesSistema.Es(
+        usuarioSesion, RolesSistema.Estudiante);
+
+    bool esEncargado = RolesSistema.Es(
+        usuarioSesion, RolesSistema.Padre);
+
+    // Aula virtual.
+
+    bool veAulaVirtual =
+        esAdministrador ||
+        esDirector ||
+        esDocente ||
+        esEstudiante;
+
+    // RHOR-09-006 y 007: Mi horario.
+
     bool veMiHorario = esDocente || esEstudiante;
 
-    // Solo presentación: resaltar en el menú la sección en la que se encuentra el usuario.
-    string controladorActual = (ViewContext.RouteData.Values["controller"] ?? "").ToString();
-    string accionActual = (ViewContext.RouteData.Values["action"] ?? "").ToString();
-    Func<string[], string> activoSi = nombres => nombres.Any(n => string.Equals(n, controladorActual, StringComparison.OrdinalIgnoreCase)) ? " active" : "";
-    string activoInicio = (controladorActual == "Home" && accionActual != "Bitacora") ? " active" : "";
-    string activoAcademico = activoSi(new[] { "Grados", "Secciones", "SeccionMaterias", "Materias", "Docentes", "HorarioDocentes", "Horarios" });
-    string activoEstudiantes = activoSi(new[] { "Prematriculas", "Expedientes", "ExpedienteAcademico", "DocumentosExpediente" });
-    string activoSeguridad = (activoSi(new[] { "Usuarios", "Roles" }) != "" || accionActual == "Bitacora") ? " active" : "";
+    // RASI-10-004: Notificaciones y justificaciones.
+
+    bool veNotificaciones = esEncargado;
+
+    bool veJustificaciones = esDocente;
+
+    // RASI-10-005: Reportes mensuales de asistencia.
+
+    bool veReportesAsistencia = esAdministrador;
+
+    // RJT-11-001: Enviar justificación.
+
+    bool veEnviarJustificacion = esEncargado;
+
+    bool veHistorialJustificaciones = esEncargado;
+
+    // RJT-11-002: Registro de salidas.
+
+    bool veSalidasEstudiantes =
+        esAdministrador || esDirector;
+
+    // ========================================
+    // REGISTRO, CONSULTA Y MODIFICACIÓN DE NOTAS
+    // ========================================
+
+    bool veCalificaciones = esDocente;
+
+    bool veConsultaNotas =
+        esAdministrador ||
+        esDocente ||
+        esEstudiante ||
+        esEncargado;
+
+    bool veModificarNotas = esDocente;
+
+    // ========================================
+    // RESALTAR SECCIÓN ACTIVA DEL MENÚ
+    // ========================================
+
+    string controladorActual =
+        (ViewContext.RouteData.Values["controller"] ?? "")
+        .ToString();
+
+    string accionActual =
+        (ViewContext.RouteData.Values["action"] ?? "")
+        .ToString();
+
+    Func<string[], string> activoSi =
+        nombres => nombres.Any(n =>
+            string.Equals(
+                n,
+                controladorActual,
+                StringComparison.OrdinalIgnoreCase))
+        ? " active"
+        : "";
+
+    Func<string, string, string> activoAccion =
+        (controlador, accion) =>
+            string.Equals(
+                controladorActual,
+                controlador,
+                StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(
+                accionActual,
+                accion,
+                StringComparison.OrdinalIgnoreCase)
+        ? " active"
+        : "";
+
+    string activoInicio =
+        (controladorActual == "Home" &&
+         accionActual != "Bitacora")
+        ? " active"
+        : "";
+
+    string activoAcademico = activoSi(new[]
+    {
+        "Grados",
+        "Secciones",
+        "SeccionMaterias",
+        "Materias",
+        "Docentes",
+        "HorarioDocentes",
+        "Horarios"
+    });
+
+    string activoEstudiantes = activoSi(new[]
+    {
+        "Prematriculas",
+        "Expedientes",
+        "ExpedienteAcademico",
+        "DocumentosExpediente",
+        "ReportesAsistencia"
+    });
+
+    string activoSeguridad =
+        (activoSi(new[] { "Usuarios", "Roles" }) != "" ||
+         accionActual == "Bitacora")
+        ? " active"
+        : "";
+
+    // RJT-11-001: Justificaciones del encargado.
+
+    string activoJustificacionesEncargado =
+        string.Equals(
+            controladorActual,
+            "Notificaciones",
+            StringComparison.OrdinalIgnoreCase) &&
+        (
+            string.Equals(
+                accionActual,
+                "EnviarJustificacion",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(
+                accionActual,
+                "HistorialJustificaciones",
+                StringComparison.OrdinalIgnoreCase)
+        )
+        ? " active"
+        : "";
+
+    string activoNotificaciones =
+        string.Equals(
+            controladorActual,
+            "Notificaciones",
+            StringComparison.OrdinalIgnoreCase) &&
+        activoJustificacionesEncargado == ""
+        ? " active"
+        : "";
+
+    // RJT-11-002: Menú activo de salidas.
+
+    string activoSalidasEstudiantes =
+        activoSi(new[]
+        {
+            "SalidasEstudiantes"
+        });
+
+    // ========================================
+    // MENÚ ACTIVO DE CALIFICACIONES
+    // ========================================
+
+    string activoCalificaciones =
+        activoSi(new[]
+        {
+            "Notas",
+            "ConsultaNotas"
+        });
+
+    string activoConsultaNotas =
+        activoSi(new[]
+        {
+            "ConsultaNotas"
+        });
+
+    // Identificar acceso desde Modificar notas.
+
+    bool modoModificar = string.Equals(
+        Request.QueryString["modo"],
+        "modificar",
+        StringComparison.OrdinalIgnoreCase);
+
+    string activoHistorialNotas =
+        !modoModificar
+        ? activoAccion("Notas", "Historial")
+        : "";
+
+    string activoModificarNotas =
+        (
+            activoAccion("Notas", "Editar") != "" ||
+            (
+                activoAccion("Notas", "Historial") != "" &&
+                modoModificar
+            )
+        )
+        ? " active"
+        : "";
+
+    // ========================================
+    // INFORMACIÓN DEL USUARIO
+    // ========================================
 
     string iniciales = "";
+
     if (estaAutenticado)
     {
-        iniciales = ((string.IsNullOrEmpty(usuarioSesion.nombre) ? "" : usuarioSesion.nombre.Substring(0, 1))
-                   + (string.IsNullOrEmpty(usuarioSesion.apellido1) ? "" : usuarioSesion.apellido1.Substring(0, 1))).ToUpper();
+        iniciales = (
+            (string.IsNullOrEmpty(usuarioSesion.nombre)
+                ? ""
+                : usuarioSesion.nombre.Substring(0, 1))
+            +
+            (string.IsNullOrEmpty(usuarioSesion.apellido1)
+                ? ""
+                : usuarioSesion.apellido1.Substring(0, 1))
+            ).ToUpper();
     }
 }
 
@@ -67,6 +269,7 @@
 <body>
 
     <!-- MENÚ PRINCIPAL -->
+
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark d-print-none w-100 en-navbar">
 
         <div class="container-xl">
@@ -76,8 +279,7 @@
                 "Index",
                 "Home",
                 new { area = "" },
-                new { @class = "navbar-brand" }
-            )
+                new { @class = "navbar-brand" })
 
             <button type="button"
                     class="navbar-toggler"
@@ -97,76 +299,744 @@
 
                     @if (estaAutenticado)
                     {
-                        <!-- INICIO (todos los roles) -->
+                        <!-- INICIO -->
+
                         <li class="nav-item">
-                            @Html.ActionLink("Inicio", "Index", "Home", new { area = "" }, new { @class = "nav-link" + activoInicio })
+
+                            @Html.ActionLink(
+                                "Inicio",
+                                "Index",
+                                "Home",
+                                new { area = "" },
+                                new
+                                {
+                                    @class = "nav-link" +
+                                        activoInicio
+                                })
+
                         </li>
+
+                        <!-- AULA VIRTUAL -->
 
                         if (veAulaVirtual)
                         {
                             <li class="nav-item">
-                                @Html.ActionLink("Aula Virtual", "AulaVirtual", "AulaVirtual", new { area = "" }, new { @class = "nav-link" + activoSi(new[] { "AulaVirtual" }) })
+
+                                @Html.ActionLink(
+                                    "Aula Virtual",
+                                    "AulaVirtual",
+                                    "AulaVirtual",
+                                    new { area = "" },
+                                    new
+                                    {
+                                        @class = "nav-link" +
+                                            activoSi(new[]
+                                            {
+                                                "AulaVirtual"
+                                            })
+                                    })
+
                             </li>
                         }
+
+                        <!-- MI HORARIO -->
 
                         if (veMiHorario)
                         {
                             <li class="nav-item">
-                                @Html.ActionLink("Mi horario", "MiHorario", "MiHorario", new { area = "" }, new { @class = "nav-link" + activoSi(new[] { "MiHorario" }) })
+
+                                @Html.ActionLink(
+                                    "Mi horario",
+                                    "MiHorario",
+                                    "MiHorario",
+                                    new { area = "" },
+                                    new
+                                    {
+                                        @class = "nav-link" +
+                                            activoSi(new[]
+                                            {
+                                                "MiHorario"
+                                            })
+                                    })
+
                             </li>
                         }
+
+                        <!-- MENÚ DEL DOCENTE -->
 
                         if (esDocente)
                         {
                             <li class="nav-item">
-                                @Html.ActionLink("Asistencia", "Registrar", "Asistencia", new { area = "" }, new { @class = "nav-link" + activoSi(new[] { "Asistencia" }) })
+
+                                @Html.ActionLink(
+                                    "Asistencia",
+                                    "Registrar",
+                                    "Asistencia",
+                                    new { area = "" },
+                                    new
+                                    {
+                                        @class = "nav-link" +
+                                            activoSi(new[]
+                                            {
+                                                "Asistencia"
+                                            })
+                                    })
+
                             </li>
                         }
 
-                        @* MENÚ DEL ADMINISTRADOR (agrupado en menús desplegables) *@
-                        if (esAdministrador)
+                        @* RASI-10-004:
+                           REVISIÓN DE JUSTIFICACIONES *@
+
+                        if (veJustificaciones)
+                        {
+                            <li class="nav-item">
+
+                                @Html.ActionLink(
+                                    "Justificaciones",
+                                    "Index",
+                                    "Justificaciones",
+                                    new { area = "" },
+                                    new
+                                    {
+                                        @class = "nav-link" +
+                                            activoSi(new[]
+                                            {
+                                                "Justificaciones"
+                                            })
+                                    })
+
+                            </li>
+                        }
+
+                        @* ==========================================
+                           REGISTRO, CONSULTA Y MODIFICACIÓN DE NOTAS
+                           MENÚ DEL DOCENTE
+                           ========================================== *@
+
+                        if (veCalificaciones)
                         {
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle@(activoAcademico)" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Académico</a>
+
+                                <a class="nav-link dropdown-toggle@(activoCalificaciones)"
+                                   href="#"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+
+                                    Calificaciones
+
+                                </a>
+
                                 <ul class="dropdown-menu">
-                                    <li>@Html.ActionLink("Grados", "ListadoDeGrados", "Grados", new { area = "" }, new { @class = "dropdown-item" })</li>
-                                    <li>@Html.ActionLink("Secciones", "ListadoDeSecciones", "Secciones", new { area = "" }, new { @class = "dropdown-item" })</li>
-                                    <li>@Html.ActionLink("Materias", "ListadoDeMaterias", "Materias", new { area = "" }, new { @class = "dropdown-item" })</li>
-                                    <li>@Html.ActionLink("Docentes", "ListadoDeDocentes", "Docentes", new { area = "" }, new { @class = "dropdown-item" })</li>
-                                    <li>@Html.ActionLink("Horarios", "ListadoDeHorarios", "Horarios", new { area = "" }, new { @class = "dropdown-item" })</li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Registrar notas",
+                                            "Registrar",
+                                            "Notas",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item" +
+                                                    activoAccion(
+                                                        "Notas",
+                                                        "Registrar")
+                                            })
+
+                                    </li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Historial de calificaciones",
+                                            "Historial",
+                                            "Notas",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item" +
+                                                    activoHistorialNotas
+                                            })
+
+                                    </li>
+
+                                    @* VISUALIZAR NOTAS *@
+
+                                    @if (veConsultaNotas)
+                                    {
+                                        <li>
+
+                                            <hr class="dropdown-divider" />
+
+                                        </li>
+
+                                        <li>
+
+                                            @Html.ActionLink(
+                                                "Consultar calificaciones",
+                                                "Index",
+                                                "ConsultaNotas",
+                                                new { area = "" },
+                                                new
+                                                {
+                                                    @class = "dropdown-item" +
+                                                        activoConsultaNotas
+                                                })
+
+                                        </li>
+                                    }
+
+                                    @* MODIFICAR NOTAS *@
+
+                                    @if (veModificarNotas)
+                                    {
+                                        <li>
+
+                                            <hr class="dropdown-divider" />
+
+                                        </li>
+
+                                        <li>
+
+                                            @Html.ActionLink(
+                                                "Modificar notas",
+                                                "Historial",
+                                                "Notas",
+                                                new
+                                                {
+                                                    area = "",
+                                                    modo = "modificar"
+                                                },
+                                                new
+                                                {
+                                                    @class = "dropdown-item" +
+                                                        activoModificarNotas,
+                                                    title = "Seleccione una calificación para modificarla"
+                                                })
+
+                                        </li>
+                                    }
+
                                 </ul>
+
                             </li>
+                        }
+
+                        @* MENÚ DEL ADMINISTRADOR *@
+
+                        if (esAdministrador)
+                        {
+                            <!-- MENÚ ACADÉMICO -->
+
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle@(activoEstudiantes)" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Estudiantes</a>
+
+                                <a class="nav-link dropdown-toggle@(activoAcademico)"
+                                   href="#"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+
+                                    Académico
+
+                                </a>
+
                                 <ul class="dropdown-menu">
-                                    <li>@Html.ActionLink("Solicitudes de prematrícula", "Listado", "Prematriculas", new { area = "" }, new { @class = "dropdown-item" })</li>
-                                    <li>@Html.ActionLink("Renovaciones", "EstudiantesActivos", "Prematriculas", new { area = "" }, new { @class = "dropdown-item" })</li>
-                                    <li>@Html.ActionLink("Expedientes", "Index", "Expedientes", new { area = "" }, new { @class = "dropdown-item" })</li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Grados",
+                                            "ListadoDeGrados",
+                                            "Grados",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item"
+                                            })
+
+                                    </li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Secciones",
+                                            "ListadoDeSecciones",
+                                            "Secciones",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item"
+                                            })
+
+                                    </li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Materias",
+                                            "ListadoDeMaterias",
+                                            "Materias",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item"
+                                            })
+
+                                    </li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Docentes",
+                                            "ListadoDeDocentes",
+                                            "Docentes",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item"
+                                            })
+
+                                    </li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Horarios",
+                                            "ListadoDeHorarios",
+                                            "Horarios",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item"
+                                            })
+
+                                    </li>
+
                                 </ul>
+
                             </li>
+
+                            <!-- MENÚ ESTUDIANTES -->
+
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle@(activoSeguridad)" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Seguridad</a>
+
+                                <a class="nav-link dropdown-toggle@(activoEstudiantes)"
+                                   href="#"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+
+                                    Estudiantes
+
+                                </a>
+
                                 <ul class="dropdown-menu">
-                                    <li>@Html.ActionLink("Usuarios", "ListadoDeUsuarios", "Usuarios", new { area = "" }, new { @class = "dropdown-item" })</li>
-                                    <li>@Html.ActionLink("Roles", "ListadoDeRoles", "Roles", new { area = "" }, new { @class = "dropdown-item" })</li>
-                                    <li>@Html.ActionLink("Bitácora", "Bitacora", "Home", new { area = "" }, new { @class = "dropdown-item" })</li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Solicitudes de prematrícula",
+                                            "Listado",
+                                            "Prematriculas",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item"
+                                            })
+
+                                    </li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Renovaciones",
+                                            "EstudiantesActivos",
+                                            "Prematriculas",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item"
+                                            })
+
+                                    </li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Expedientes",
+                                            "Index",
+                                            "Expedientes",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item"
+                                            })
+
+                                    </li>
+
+                                    @* RASI-10-005:
+                                       REPORTES MENSUALES DE ASISTENCIA *@
+
+                                    @if (veReportesAsistencia)
+                                    {
+                                        <li>
+
+                                            <hr class="dropdown-divider" />
+
+                                        </li>
+
+                                        <li>
+
+                                            @Html.ActionLink(
+                                                "Reportes de asistencia",
+                                                "Index",
+                                                "ReportesAsistencia",
+                                                new { area = "" },
+                                                new
+                                                {
+                                                    @class = "dropdown-item" +
+                                                        activoSi(new[]
+                                                        {
+                                                            "ReportesAsistencia"
+                                                        })
+                                                })
+
+                                        </li>
+                                    }
+
                                 </ul>
+
+                            </li>
+
+                            @* ======================================
+                               VISUALIZAR NOTAS
+                               MENÚ DEL ADMINISTRADOR
+                               ====================================== *@
+
+                            if (veConsultaNotas && !esDocente)
+                            {
+                                <li class="nav-item">
+
+                                    @Html.ActionLink(
+                                        "Consultar calificaciones",
+                                        "Index",
+                                        "ConsultaNotas",
+                                        new { area = "" },
+                                        new
+                                        {
+                                            @class = "nav-link" +
+                                                activoConsultaNotas
+                                        })
+
+                                </li>
+                            }
+
+                            <!-- MENÚ SEGURIDAD -->
+
+                            <li class="nav-item dropdown">
+
+                                <a class="nav-link dropdown-toggle@(activoSeguridad)"
+                                   href="#"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+
+                                    Seguridad
+
+                                </a>
+
+                                <ul class="dropdown-menu">
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Usuarios",
+                                            "ListadoDeUsuarios",
+                                            "Usuarios",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item"
+                                            })
+
+                                    </li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Roles",
+                                            "ListadoDeRoles",
+                                            "Roles",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item"
+                                            })
+
+                                    </li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Bitácora",
+                                            "Bitacora",
+                                            "Home",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item"
+                                            })
+
+                                    </li>
+
+                                </ul>
+
+                            </li>
+                        }
+
+                        @* ==========================================
+                           RJT-11-002:
+                           REGISTRO DE SALIDAS DE ESTUDIANTES
+                           ADMINISTRADOR Y DIRECTOR
+                           ========================================== *@
+
+                        if (veSalidasEstudiantes)
+                        {
+                            <li class="nav-item dropdown">
+
+                                <a class="nav-link dropdown-toggle@(activoSalidasEstudiantes)"
+                                   href="#"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+
+                                    Salidas de estudiantes
+
+                                </a>
+
+                                <ul class="dropdown-menu">
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Registrar salida",
+                                            "Registrar",
+                                            "SalidasEstudiantes",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item" +
+                                                    activoAccion(
+                                                        "SalidasEstudiantes",
+                                                        "Registrar")
+                                            })
+
+                                    </li>
+
+                                    <li>
+
+                                        @Html.ActionLink(
+                                            "Historial de salidas",
+                                            "Historial",
+                                            "SalidasEstudiantes",
+                                            new { area = "" },
+                                            new
+                                            {
+                                                @class = "dropdown-item" +
+                                                    activoAccion(
+                                                        "SalidasEstudiantes",
+                                                        "Historial")
+                                            })
+
+                                    </li>
+
+                                </ul>
+
                             </li>
                         }
 
                         @* MENÚ DEL COORDINADOR ACADÉMICO *@
+
                         if (esCoordinador)
                         {
                             <li class="nav-item">
-                                @Html.ActionLink("Horarios", "ListadoDeHorarios", "Horarios", new { area = "" }, new { @class = "nav-link" + activoSi(new[] { "Horarios" }) })
+
+                                @Html.ActionLink(
+                                    "Horarios",
+                                    "ListadoDeHorarios",
+                                    "Horarios",
+                                    new { area = "" },
+                                    new
+                                    {
+                                        @class = "nav-link" +
+                                            activoSi(new[]
+                                            {
+                                                "Horarios"
+                                            })
+                                    })
+
+                            </li>
+                        }
+
+                        @* ==========================================
+                           VISUALIZAR NOTAS
+                           MENÚ DEL ESTUDIANTE
+                           ========================================== *@
+
+                        if (esEstudiante &&
+                            veConsultaNotas &&
+                            !esAdministrador &&
+                            !esDocente)
+                        {
+                            <li class="nav-item">
+
+                                @Html.ActionLink(
+                                    "Mis calificaciones",
+                                    "Index",
+                                    "ConsultaNotas",
+                                    new { area = "" },
+                                    new
+                                    {
+                                        @class = "nav-link" +
+                                            activoConsultaNotas
+                                    })
+
                             </li>
                         }
 
                         @* MENÚ DEL ENCARGADO - RMPR-08-005 *@
+
                         if (esEncargado)
                         {
                             <li class="nav-item">
-                                @Html.ActionLink("Realizar prematrícula", "Crear", "Prematriculas", new { area = "" }, new { @class = "nav-link" })
+
+                                @Html.ActionLink(
+                                    "Realizar prematrícula",
+                                    "Crear",
+                                    "Prematriculas",
+                                    new { area = "" },
+                                    new
+                                    {
+                                        @class = "nav-link"
+                                    })
+
+                            </li>
+                        }
+
+                        @* ==========================================
+                           VISUALIZAR NOTAS
+                           MENÚ DEL PADRE DE FAMILIA
+                           ========================================== *@
+
+                        if (esEncargado &&
+                            veConsultaNotas &&
+                            !esAdministrador &&
+                            !esDocente &&
+                            !esEstudiante)
+                        {
+                            <li class="nav-item">
+
+                                @Html.ActionLink(
+                                    "Calificaciones de mis hijos",
+                                    "Index",
+                                    "ConsultaNotas",
+                                    new { area = "" },
+                                    new
+                                    {
+                                        @class = "nav-link" +
+                                            activoConsultaNotas
+                                    })
+
+                            </li>
+                        }
+
+                        @* RASI-10-004:
+                           NOTIFICACIONES DEL PADRE DE FAMILIA *@
+
+                        if (veNotificaciones)
+                        {
+                            <li class="nav-item">
+
+                                @Html.ActionLink(
+                                    "Notificaciones",
+                                    "Index",
+                                    "Notificaciones",
+                                    new { area = "" },
+                                    new
+                                    {
+                                        @class = "nav-link" +
+                                            activoNotificaciones
+                                    })
+
+                            </li>
+                        }
+
+                        @* ==========================================
+                           RJT-11-001:
+                           JUSTIFICACIONES DEL PADRE DE FAMILIA
+                           ========================================== *@
+
+                        if (veEnviarJustificacion ||
+                            veHistorialJustificaciones)
+                        {
+                            <li class="nav-item dropdown">
+
+                                <a class="nav-link dropdown-toggle@(activoJustificacionesEncargado)"
+                                   href="#"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+
+                                    Justificaciones
+
+                                </a>
+
+                                <ul class="dropdown-menu">
+
+                                    @if (veEnviarJustificacion)
+                                    {
+                                        <li>
+
+                                            @Html.ActionLink(
+                                                "Enviar justificación",
+                                                "EnviarJustificacion",
+                                                "Notificaciones",
+                                                new { area = "" },
+                                                new
+                                                {
+                                                    @class = "dropdown-item" +
+                                                        activoAccion(
+                                                            "Notificaciones",
+                                                            "EnviarJustificacion")
+                                                })
+
+                                        </li>
+                                    }
+
+                                    @if (veHistorialJustificaciones)
+                                    {
+                                        <li>
+
+                                            @Html.ActionLink(
+                                                "Historial de justificaciones",
+                                                "HistorialJustificaciones",
+                                                "Notificaciones",
+                                                new { area = "" },
+                                                new
+                                                {
+                                                    @class = "dropdown-item" +
+                                                        activoAccion(
+                                                            "Notificaciones",
+                                                            "HistorialJustificaciones")
+                                                })
+
+                                        </li>
+                                    }
+
+                                </ul>
+
                             </li>
                         }
                     }
@@ -174,18 +1044,30 @@
                 </ul>
 
                 <!-- INFORMACIÓN DE SESIÓN -->
+
                 <div class="navbar-nav flex-row align-items-center ms-lg-auto gap-2">
 
                     @if (estaAutenticado)
                     {
                         <span class="nav-link en-usuario">
 
-                            <span class="avatar avatar-sm bg-primary-lt rounded-circle">@iniciales</span>
+                            <span class="avatar avatar-sm bg-primary-lt rounded-circle">
+
+                                @iniciales
+
+                            </span>
 
                             <span class="en-usuario-texto">
+
                                 @usuarioSesion.nombre
                                 @usuarioSesion.apellido1
-                                <small>@usuarioSesion.nombreRol</small>
+
+                                <small>
+
+                                    @usuarioSesion.nombreRol
+
+                                </small>
+
                             </span>
 
                         </span>
@@ -195,8 +1077,10 @@
                             "CerrarSesion",
                             "Home",
                             new { area = "" },
-                            new { @class = "btn btn-sm btn-outline-light" }
-                        )
+                            new
+                            {
+                                @class = "btn btn-sm btn-outline-light"
+                            })
                     }
                     else
                     {
@@ -205,8 +1089,10 @@
                             "Login",
                             "Home",
                             new { area = "" },
-                            new { @class = "nav-link" }
-                        )
+                            new
+                            {
+                                @class = "nav-link"
+                            })
                     }
 
                 </div>
@@ -218,6 +1104,7 @@
     </nav>
 
     <!-- CONTENIDO PRINCIPAL -->
+
     <div class="container-xl body-content">
 
         @* ==========================================
@@ -240,10 +1127,10 @@
             </div>
         }
 
-        @* Los mensajes de inicio de sesión (TempData["MensajeLogin"]) los muestra la vista Login. *@
+        @* Los mensajes de inicio de sesión
+           los muestra la vista Login. *@
 
         @* ==========================================
-           RMPR-08
            MENSAJES DE ÉXITO
            ========================================== *@
 
@@ -289,19 +1176,29 @@
     </div>
 
     <!-- PIE DE PÁGINA -->
+
     <footer class="en-footer d-print-none">
 
         <div class="container-xl d-flex flex-wrap justify-content-between gap-2">
 
-            <span>&copy; @DateTime.Now.Year EduNexus</span>
+            <span>
 
-            <span>Sistema de gestión escolar</span>
+                &copy; @DateTime.Now.Year EduNexus
+
+            </span>
+
+            <span>
+
+                Sistema de gestión escolar
+
+            </span>
 
         </div>
 
     </footer>
 
     <!-- SCRIPTS -->
+
     @Scripts.Render("~/bundles/jquery")
 
     @Scripts.Render("~/bundles/bootstrap")
