@@ -1,0 +1,1342 @@
+@model EduNexus.Abstracciones.ModelosParaUI.Asistencia.ReporteAsistenciaDto
+
+@using System
+@using System.Linq
+@using System.Globalization
+
+@{
+    ViewBag.Title = "Reporte mensual de asistencia";
+
+    decimal porcentajePresentes = 0;
+    decimal porcentajeTardias = 0;
+    decimal porcentajeJustificadas = 0;
+    decimal porcentajeNoJustificadas = 0;
+
+    if (Model.total_registros > 0)
+    {
+        porcentajePresentes =
+            (decimal)Model.total_presentes
+            * 100 / Model.total_registros;
+
+        porcentajeTardias =
+            (decimal)Model.total_tardias
+            * 100 / Model.total_registros;
+
+        porcentajeJustificadas =
+            (decimal)Model.total_ausencias_justificadas
+            * 100 / Model.total_registros;
+
+        porcentajeNoJustificadas =
+            (decimal)Model.total_ausencias_no_justificadas
+            * 100 / Model.total_registros;
+    }
+
+    var cultura = CultureInfo.InvariantCulture;
+}
+
+<style>
+
+    .reporte-contenedor {
+        max-width: 1400px;
+        margin: 30px auto;
+        padding: 20px;
+    }
+
+    .reporte-encabezado {
+        margin-bottom: 25px;
+    }
+
+    .reporte-encabezado h2 {
+        color: #24364b;
+        font-weight: bold;
+    }
+
+    .reporte-encabezado p {
+        color: #64748b;
+    }
+
+    .reporte-panel {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+
+    .reporte-filtros {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fit, minmax(180px, 1fr));
+        gap: 20px;
+    }
+
+    .reporte-filtros label {
+        font-weight: bold;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+
+    .reporte-filtros select {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .reporte-acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .reporte-resumen {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fit, minmax(170px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .reporte-tarjeta {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+
+    .reporte-tarjeta span {
+        color: #64748b;
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    .reporte-tarjeta h3 {
+        font-size: 30px;
+        font-weight: bold;
+        margin: 12px 0 0;
+    }
+
+    .color-azul {
+        color: #2563eb;
+    }
+
+    .color-verde {
+        color: #16a34a;
+    }
+
+    .color-amarillo {
+        color: #d97706;
+    }
+
+    .color-rojo {
+        color: #dc2626;
+    }
+
+    .color-morado {
+        color: #7c3aed;
+    }
+
+    .reporte-periodo {
+        background: #eff6ff;
+        border-left: 5px solid #2563eb;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+
+    .reporte-periodo h3 {
+        color: #1e40af;
+        margin-top: 0;
+    }
+
+    .grafico-fila {
+        margin-bottom: 20px;
+    }
+
+    .grafico-etiqueta {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #334155;
+    }
+
+    .grafico-barra {
+        width: 100%;
+        height: 24px;
+        background: #e2e8f0;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .grafico-valor {
+        height: 100%;
+        border-radius: 6px;
+    }
+
+    .barra-verde {
+        background: #16a34a;
+    }
+
+    .barra-amarilla {
+        background: #d97706;
+    }
+
+    .barra-azul {
+        background: #2563eb;
+    }
+
+    .barra-roja {
+        background: #dc2626;
+    }
+
+    .reporte-tabla {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    .reporte-tabla thead th {
+        background: #24364b;
+        color: white;
+        padding: 12px;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .reporte-tabla tbody td {
+        padding: 12px;
+        border-bottom: 1px solid #e2e8f0;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .reporte-tabla tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    .reporte-tabla tbody tr:hover {
+        background: #eff6ff;
+    }
+
+    .reporte-tabla tfoot td {
+        background: #e2e8f0;
+        font-weight: bold;
+        padding: 12px;
+        text-align: center;
+    }
+
+    .reporte-tabla .texto-izquierda {
+        text-align: left;
+    }
+
+    .porcentaje-asistencia {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: bold;
+        white-space: nowrap;
+    }
+
+    .asistencia-alta {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .asistencia-media {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .asistencia-baja {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .asistencia-sin-registros {
+        background: #e2e8f0;
+        color: #475569;
+    }
+
+    .reporte-vacio {
+        text-align: center;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 10px;
+        padding: 40px;
+        color: #64748b;
+    }
+
+    .reporte-nota {
+        color: #64748b;
+        font-size: 13px;
+        margin-top: 15px;
+    }
+
+    .solo-impresion {
+        display: none;
+    }
+
+    @@media print {
+
+        @@page {
+            size: landscape;
+            margin: 12mm;
+        }
+
+        .navbar,
+        .en-navbar,
+        .en-footer,
+        .no-imprimir,
+        footer {
+            display: none !important;
+        }
+
+        .solo-impresion {
+            display: block;
+        }
+
+        .reporte-contenedor {
+            width: 100%;
+            max-width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+
+        .reporte-panel,
+        .reporte-tarjeta {
+            box-shadow: none;
+        }
+
+        .reporte-tabla {
+            font-size: 11px;
+        }
+
+        .reporte-tabla th,
+        .reporte-tabla td {
+            padding: 7px !important;
+        }
+
+        .table-responsive {
+            overflow: visible !important;
+        }
+
+        .reporte-tabla thead {
+            display: table-header-group;
+        }
+
+        .reporte-tabla tfoot {
+            display: table-row-group;
+        }
+
+        .reporte-tabla tr {
+            page-break-inside: avoid;
+        }
+
+        .reporte-tarjeta,
+        .grafico-fila,
+        .reporte-periodo {
+            page-break-inside: avoid;
+        }
+
+        * {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    }
+
+</style>
+
+<div class="reporte-contenedor">
+
+    <!-- ENCABEZADO -->
+
+    <div class="reporte-encabezado">
+
+        <h2>Reporte mensual de asistencia</h2>
+
+        <p>
+            Consulte las estadísticas de asistencia
+            de los estudiantes por grado, sección
+            y período mensual.
+        </p>
+
+    </div>
+
+    <!-- MENSAJES DE ERROR -->
+
+    @if (!string.IsNullOrEmpty(Model.mensajeError))
+    {
+        <div class="alert alert-danger no-imprimir">
+
+            @Model.mensajeError
+
+        </div>
+    }
+
+    <!-- FILTROS DEL REPORTE -->
+
+    <div class="reporte-panel no-imprimir">
+
+        <h4>Filtros de búsqueda</h4>
+
+        <hr />
+
+        @using (Html.BeginForm(
+            "Index",
+            "ReportesAsistencia",
+            FormMethod.Get,
+            new { id = "formReporteAsistencia" }))
+        {
+            <input type="hidden"
+                   name="consultar"
+                   value="true" />
+
+            <div class="reporte-filtros">
+
+                <div>
+
+                    <label for="anio">
+                        Año
+                    </label>
+
+                    @Html.DropDownListFor(
+                        m => m.anio,
+                        (SelectList)ViewBag.Anios,
+                        new
+                        {
+                            @class = "form-select",
+                            id = "anio",
+                            required = "required"
+                        })
+
+                </div>
+
+                <div>
+
+                    <label for="mes">
+                        Mes
+                    </label>
+
+                    @Html.DropDownListFor(
+                        m => m.mes,
+                        (SelectList)ViewBag.Meses,
+                        new
+                        {
+                            @class = "form-select",
+                            id = "mes",
+                            required = "required"
+                        })
+
+                </div>
+
+                <div>
+
+                    <label for="id_grado">
+                        Grado
+                    </label>
+
+                    @Html.DropDownListFor(
+                        m => m.id_grado,
+                        (SelectList)ViewBag.Grados,
+                        "Seleccione un grado",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "id_grado",
+                            required = "required"
+                        })
+
+                </div>
+
+                <div>
+
+                    <label for="id_seccion">
+                        Sección
+                    </label>
+
+                    @Html.DropDownListFor(
+                        m => m.id_seccion,
+                        (SelectList)ViewBag.Secciones,
+                        "Seleccione una sección",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "id_seccion",
+                            required = "required"
+                        })
+
+                </div>
+
+            </div>
+
+            <div id="mensajeSecciones"
+                 class="text-danger mt-2"
+                 role="alert"
+                 aria-live="polite">
+            </div>
+
+            <div class="reporte-acciones">
+
+                <button type="submit"
+                        id="btnGenerarReporte"
+                        class="btn btn-primary">
+
+                    Generar reporte
+
+                </button>
+
+                <a href="@Url.Action(
+                    "Index",
+                    "ReportesAsistencia")"
+                   class="btn btn-secondary">
+
+                    Limpiar filtros
+
+                </a>
+
+                @if (Model.consultado &&
+                     Model.total_registros > 0)
+                {
+                    <button type="button"
+                            class="btn btn-success"
+                            onclick="window.print();">
+
+                        Imprimir reporte
+
+                    </button>
+                }
+
+            </div>
+        }
+
+    </div>
+
+    <!-- RESULTADOS DEL REPORTE -->
+
+    @if (Model.consultado)
+    {
+        <div class="solo-impresion">
+
+            <h2>EduNexus</h2>
+
+            <p>Sistema de gestión escolar</p>
+
+        </div>
+
+        <!-- INFORMACIÓN DEL PERÍODO -->
+
+        <div class="reporte-periodo">
+
+            <h3>Información del reporte</h3>
+
+            <p>
+                <strong>Grado:</strong>
+                @Model.nombre_grado
+            </p>
+
+            <p>
+                <strong>Sección:</strong>
+                @Model.nombre_seccion
+            </p>
+
+            <p>
+                <strong>Mes:</strong>
+                @Model.nombre_mes
+            </p>
+
+            <p>
+                <strong>Año:</strong>
+                @Model.anio
+            </p>
+
+            <p>
+                <strong>Período:</strong>
+
+                @Model.fecha_inicio.ToString("dd/MM/yyyy")
+
+                al
+
+                @Model.fecha_fin.ToString("dd/MM/yyyy")
+            </p>
+
+            <p>
+                <strong>Fecha de generación:</strong>
+
+                @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+            </p>
+
+        </div>
+
+        <!-- TARJETAS ESTADÍSTICAS -->
+
+        <div class="reporte-resumen">
+
+            <div class="reporte-tarjeta">
+
+                <span>Total de estudiantes</span>
+
+                <h3 class="color-morado">
+                    @Model.total_estudiantes
+                </h3>
+
+            </div>
+
+            <div class="reporte-tarjeta">
+
+                <span>Total de registros</span>
+
+                <h3 class="color-azul">
+                    @Model.total_registros
+                </h3>
+
+            </div>
+
+            <div class="reporte-tarjeta">
+
+                <span>Presentes</span>
+
+                <h3 class="color-verde">
+                    @Model.total_presentes
+                </h3>
+
+            </div>
+
+            <div class="reporte-tarjeta">
+
+                <span>Tardías</span>
+
+                <h3 class="color-amarillo">
+                    @Model.total_tardias
+                </h3>
+
+            </div>
+
+            <div class="reporte-tarjeta">
+
+                <span>Ausencias justificadas</span>
+
+                <h3 class="color-azul">
+                    @Model.total_ausencias_justificadas
+                </h3>
+
+            </div>
+
+            <div class="reporte-tarjeta">
+
+                <span>Ausencias no justificadas</span>
+
+                <h3 class="color-rojo">
+                    @Model.total_ausencias_no_justificadas
+                </h3>
+
+            </div>
+
+            <div class="reporte-tarjeta">
+
+                <span>Porcentaje de asistencia</span>
+
+                <h3 class="color-verde">
+
+                    @(Model.total_registros > 0
+                        ? Model.porcentaje_asistencia
+                            .ToString("N2") + "%"
+                        : "N/D")
+
+                </h3>
+
+            </div>
+
+            <div class="reporte-tarjeta">
+
+                <span>Porcentaje de ausencias</span>
+
+                <h3 class="color-rojo">
+
+                    @(Model.total_registros > 0
+                        ? Model.porcentaje_ausencias
+                            .ToString("N2") + "%"
+                        : "N/D")
+
+                </h3>
+
+            </div>
+
+        </div>
+
+        if (Model.total_registros == 0)
+        {
+            <div class="alert alert-info">
+
+                No existen registros de asistencia
+                para la sección y el mes seleccionados.
+
+                Esto no significa que los estudiantes
+                hayan estado ausentes.
+
+            </div>
+        }
+
+        <!-- GRÁFICO ESTADÍSTICO -->
+
+        if (Model.total_registros > 0)
+        {
+            <div class="reporte-panel">
+
+                <h4>Distribución mensual de asistencia</h4>
+
+                <hr />
+
+                <!-- PRESENTES -->
+
+                <div class="grafico-fila">
+
+                    <div class="grafico-etiqueta">
+
+                        <span>Presentes</span>
+
+                        <span>
+
+                            @Model.total_presentes
+
+                            (@porcentajePresentes.ToString("N2")%)
+
+                        </span>
+
+                    </div>
+
+                    <div class="grafico-barra">
+
+                        <div class="grafico-valor barra-verde"
+                             style="width: @(porcentajePresentes.ToString(cultura))%;">
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- TARDÍAS -->
+
+                <div class="grafico-fila">
+
+                    <div class="grafico-etiqueta">
+
+                        <span>Tardías</span>
+
+                        <span>
+
+                            @Model.total_tardias
+
+                            (@porcentajeTardias.ToString("N2")%)
+
+                        </span>
+
+                    </div>
+
+                    <div class="grafico-barra">
+
+                        <div class="grafico-valor barra-amarilla"
+                             style="width: @(porcentajeTardias.ToString(cultura))%;">
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- AUSENCIAS JUSTIFICADAS -->
+
+                <div class="grafico-fila">
+
+                    <div class="grafico-etiqueta">
+
+                        <span>Ausencias justificadas</span>
+
+                        <span>
+
+                            @Model.total_ausencias_justificadas
+
+                            (@porcentajeJustificadas.ToString("N2")%)
+
+                        </span>
+
+                    </div>
+
+                    <div class="grafico-barra">
+
+                        <div class="grafico-valor barra-azul"
+                             style="width: @(porcentajeJustificadas.ToString(cultura))%;">
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- AUSENCIAS NO JUSTIFICADAS -->
+
+                <div class="grafico-fila">
+
+                    <div class="grafico-etiqueta">
+
+                        <span>Ausencias no justificadas</span>
+
+                        <span>
+
+                            @Model.total_ausencias_no_justificadas
+
+                            (@porcentajeNoJustificadas.ToString("N2")%)
+
+                        </span>
+
+                    </div>
+
+                    <div class="grafico-barra">
+
+                        <div class="grafico-valor barra-roja"
+                             style="width: @(porcentajeNoJustificadas.ToString(cultura))%;">
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+
+        <!-- DETALLE POR ESTUDIANTE -->
+
+        <div class="reporte-panel">
+
+            <h4>Detalle de asistencia por estudiante</h4>
+
+            <hr />
+
+            @if (Model.estudiantes == null ||
+                 !Model.estudiantes.Any())
+            {
+                <div class="reporte-vacio">
+
+                    <h4>No hay estudiantes disponibles</h4>
+
+                    <p>
+                        No se encontraron estudiantes
+                        asociados a la sección seleccionada.
+                    </p>
+
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+
+                    <table class="reporte-tabla">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>Identificación</th>
+
+                                <th>Estudiante</th>
+
+                                <th>Presentes</th>
+
+                                <th>Tardías</th>
+
+                                <th>Ausencias justificadas</th>
+
+                                <th>Ausencias no justificadas</th>
+
+                                <th>Total de ausencias</th>
+
+                                <th>Total de registros</th>
+
+                                <th>% Asistencia</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var estudiante
+                                in Model.estudiantes)
+                            {
+                                string clasePorcentaje =
+                                    "asistencia-sin-registros";
+
+                                if (estudiante.total_registros > 0)
+                                {
+                                    if (estudiante.porcentaje_asistencia >= 90)
+                                    {
+                                        clasePorcentaje =
+                                            "asistencia-alta";
+                                    }
+                                    else if (estudiante.porcentaje_asistencia >= 75)
+                                    {
+                                        clasePorcentaje =
+                                            "asistencia-media";
+                                    }
+                                    else
+                                    {
+                                        clasePorcentaje =
+                                            "asistencia-baja";
+                                    }
+                                }
+
+                                <tr>
+
+                                    <td>
+                                        @estudiante.identificacion
+                                    </td>
+
+                                    <td class="texto-izquierda">
+
+                                        <strong>
+                                            @estudiante.nombre
+                                        </strong>
+
+                                    </td>
+
+                                    <td class="color-verde">
+                                        @estudiante.presentes
+                                    </td>
+
+                                    <td class="color-amarillo">
+                                        @estudiante.tardias
+                                    </td>
+
+                                    <td class="color-azul">
+                                        @estudiante.ausencias_justificadas
+                                    </td>
+
+                                    <td class="color-rojo">
+                                        @estudiante.ausencias_no_justificadas
+                                    </td>
+
+                                    <td>
+                                        @estudiante.total_ausencias
+                                    </td>
+
+                                    <td>
+                                        @estudiante.total_registros
+                                    </td>
+
+                                    <td>
+
+                                        <span class="porcentaje-asistencia @clasePorcentaje">
+
+                                            @(estudiante.total_registros > 0
+                                                ? estudiante.porcentaje_asistencia
+                                                    .ToString("N2") + "%"
+                                                : "Sin registros")
+
+                                        </span>
+
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                        <tfoot>
+
+                            <tr>
+
+                                <td colspan="2">
+                                    TOTALES DE LA SECCIÓN
+                                </td>
+
+                                <td>
+                                    @Model.total_presentes
+                                </td>
+
+                                <td>
+                                    @Model.total_tardias
+                                </td>
+
+                                <td>
+                                    @Model.total_ausencias_justificadas
+                                </td>
+
+                                <td>
+                                    @Model.total_ausencias_no_justificadas
+                                </td>
+
+                                <td>
+
+                                    @(Model.total_ausencias_justificadas +
+                                      Model.total_ausencias_no_justificadas)
+
+                                </td>
+
+                                <td>
+                                    @Model.total_registros
+                                </td>
+
+                                <td>
+
+                                    @(Model.total_registros > 0
+                                        ? Model.porcentaje_asistencia
+                                            .ToString("N2") + "%"
+                                        : "N/D")
+
+                                </td>
+
+                            </tr>
+
+                        </tfoot>
+
+                    </table>
+
+                </div>
+
+                <div class="reporte-nota">
+
+                    <p>
+                        <strong>Interpretación visual:</strong>
+                    </p>
+
+                    <p class="color-verde">
+                        Verde: asistencia igual o superior al 90%.
+                    </p>
+
+                    <p class="color-amarillo">
+                        Amarillo: asistencia igual o superior
+                        al 75% e inferior al 90%.
+                    </p>
+
+                    <p class="color-rojo">
+                        Rojo: asistencia inferior al 75%.
+                    </p>
+
+                    <p>
+                        Los colores son indicadores visuales
+                        de referencia, no criterios oficiales
+                        de aprobación académica.
+                    </p>
+
+                    <p>
+                        <strong>Fórmula:</strong>
+
+                        Porcentaje de asistencia =
+                        (Presentes + Tardías) /
+                        Total de registros × 100.
+                    </p>
+
+                    <p>
+                        Los cálculos se realizan sobre los
+                        registros de asistencia por materia,
+                        no sobre días lectivos únicos.
+                    </p>
+
+                    <p>
+                        Los estudiantes sin registros no
+                        se consideran ausentes.
+                    </p>
+
+                </div>
+            }
+
+        </div>
+
+        <!-- BOTONES INFERIORES -->
+
+        <div class="reporte-acciones no-imprimir">
+
+            @if (Model.total_registros > 0)
+            {
+                <button type="button"
+                        class="btn btn-success"
+                        onclick="window.print();">
+
+                    Imprimir reporte
+
+                </button>
+            }
+
+            <a href="@Url.Action("Index", "Home")"
+               class="btn btn-secondary">
+
+                Volver al inicio
+
+            </a>
+
+        </div>
+    }
+    else
+    {
+        <div class="reporte-vacio">
+
+            <h3>Consulta de asistencia mensual</h3>
+
+            <p>
+                Seleccione el año, mes, grado y sección
+                para generar el reporte correspondiente.
+            </p>
+
+        </div>
+    }
+
+</div>
+
+@section scripts {
+
+    <script>
+
+        $(document).ready(function () {
+
+            var grado = $("#id_grado");
+
+            var seccion = $("#id_seccion");
+
+            var anio = $("#anio");
+
+            var mes = $("#mes");
+
+            var boton = $("#btnGenerarReporte");
+
+            var mensaje = $("#mensajeSecciones");
+
+            var solicitudActual = null;
+
+            // ========================================
+            // CARGAR SECCIONES DINÁMICAMENTE
+            // ========================================
+
+            function cargarSecciones() {
+
+                if (solicitudActual) {
+
+                    solicitudActual.abort();
+
+                    solicitudActual = null;
+                }
+
+                var idGrado = grado.val();
+
+                var anioSeleccionado = anio.val();
+
+                mensaje.text("");
+
+                seccion.empty();
+
+                seccion.append(
+                    $("<option>", {
+                        value: "",
+                        text: "Seleccione una sección"
+                    })
+                );
+
+                seccion.prop("disabled", true);
+
+                boton.prop("disabled", true);
+
+                if (!idGrado || !anioSeleccionado) {
+
+                    return;
+                }
+
+                seccion.empty();
+
+                seccion.append(
+                    $("<option>", {
+                        value: "",
+                        text: "Cargando secciones..."
+                    })
+                );
+
+                solicitudActual = $.ajax({
+
+                    url: '@Url.Action(
+                        "ObtenerSecciones",
+                        "ReportesAsistencia")',
+
+                    type: "GET",
+
+                    dataType: "json",
+
+                    data: {
+
+                        id_grado: idGrado,
+
+                        anio: anioSeleccionado
+                    },
+
+                    success: function (respuesta) {
+
+                        seccion.empty();
+
+                        seccion.append(
+                            $("<option>", {
+                                value: "",
+                                text: "Seleccione una sección"
+                            })
+                        );
+
+                        if (!respuesta ||
+                            respuesta.length === 0) {
+
+                            mensaje.text(
+                                "No existen secciones " +
+                                "para el grado y año seleccionados."
+                            );
+
+                            return;
+                        }
+
+                        $.each(
+                            respuesta,
+                            function (indice, item) {
+
+                                seccion.append(
+                                    $("<option>", {
+
+                                        value: item.id,
+
+                                        text: item.nombre
+                                    })
+                                );
+                            }
+                        );
+
+                        seccion.prop("disabled", false);
+                    },
+
+                    error: function (xhr, estado) {
+
+                        if (estado === "abort") {
+
+                            return;
+                        }
+
+                        seccion.empty();
+
+                        seccion.append(
+                            $("<option>", {
+
+                                value: "",
+
+                                text: "Error al cargar secciones"
+                            })
+                        );
+
+                        mensaje.text(
+                            "No fue posible cargar las secciones. " +
+                            "Intente nuevamente."
+                        );
+                    }
+                });
+            }
+
+            // ========================================
+            // VALIDAR MESES FUTUROS
+            // ========================================
+
+            function validarMeses() {
+
+                var fechaActual = new Date();
+
+                var anioActual =
+                    fechaActual.getFullYear();
+
+                var mesActual =
+                    fechaActual.getMonth() + 1;
+
+                var anioSeleccionado =
+                    parseInt(anio.val(), 10);
+
+                mes.find("option").each(function () {
+
+                    var numeroMes =
+                        parseInt($(this).val(), 10);
+
+                    var esFuturo =
+                        anioSeleccionado === anioActual &&
+                        numeroMes > mesActual;
+
+                    $(this).prop("disabled", esFuturo);
+                });
+
+                if (anioSeleccionado === anioActual &&
+                    parseInt(mes.val(), 10) > mesActual) {
+
+                    mes.val(mesActual);
+                }
+            }
+
+            // ========================================
+            // EVENTOS DE LOS FILTROS
+            // ========================================
+
+            grado.on("change", function () {
+
+                cargarSecciones();
+            });
+
+            anio.on("change", function () {
+
+                validarMeses();
+
+                cargarSecciones();
+            });
+
+            seccion.on("change", function () {
+
+                boton.prop(
+                    "disabled",
+                    !seccion.val()
+                );
+            });
+
+            // ========================================
+            // VALIDAR FORMULARIO
+            // ========================================
+
+            $("#formReporteAsistencia")
+                .on("submit", function (event) {
+
+                    if (!anio.val() ||
+                        !mes.val() ||
+                        !grado.val() ||
+                        !seccion.val()) {
+
+                        event.preventDefault();
+
+                        mensaje.text(
+                            "Debe completar todos los filtros."
+                        );
+
+                        return;
+                    }
+
+                    boton.prop("disabled", true);
+
+                    boton.text("Generando reporte...");
+                });
+
+            // ========================================
+            // CONFIGURACIÓN INICIAL
+            // ========================================
+
+            validarMeses();
+
+            if (!grado.val()) {
+
+                seccion.prop("disabled", true);
+            }
+
+            boton.prop(
+                "disabled",
+                !grado.val() || !seccion.val()
+            );
+        });
+
+    </script>
+}

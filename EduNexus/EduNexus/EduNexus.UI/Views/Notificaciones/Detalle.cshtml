@@ -1,0 +1,697 @@
+@model EduNexus.UI.Models.Identity.NotificacionEntity
+
+@{
+    ViewBag.Title = "Detalle de notificación";
+
+    string estado = Convert.ToString(
+        ViewBag.EstadoAsistencia);
+
+    string estadoJustificacion = Convert.ToString(
+        ViewBag.EstadoJustificacion);
+
+    bool puedeJustificar =
+        ViewBag.PuedeJustificar != null &&
+        (bool)ViewBag.PuedeJustificar;
+
+    bool tieneJustificacion =
+        ViewBag.TieneJustificacion != null &&
+        (bool)ViewBag.TieneJustificacion;
+
+    bool existePendiente =
+        ViewBag.ExisteJustificacionPendiente != null &&
+        (bool)ViewBag.ExisteJustificacionPendiente;
+
+    string claseEstado = "estado-neutral";
+
+    if (estado == "Ausencia no justificada")
+    {
+        claseEstado = "estado-pendiente";
+    }
+    else if (estado == "Ausencia justificada" ||
+             estado == "Presente")
+    {
+        claseEstado = "estado-justificado";
+    }
+
+    string claseJustificacion = "estado-neutral";
+
+    if (estadoJustificacion == "Pendiente")
+    {
+        claseJustificacion = "estado-revision";
+    }
+    else if (estadoJustificacion == "Aprobada")
+    {
+        claseJustificacion = "estado-justificado";
+    }
+    else if (estadoJustificacion == "Rechazada")
+    {
+        claseJustificacion = "estado-pendiente";
+    }
+}
+
+<style>
+    .detalle-contenedor {
+        max-width: 900px;
+        margin: 30px auto;
+        padding: 20px;
+    }
+
+    .detalle-encabezado {
+        margin-bottom: 25px;
+    }
+
+    .detalle-encabezado h2 {
+        color: #24364b;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .detalle-encabezado p {
+        color: #64748b;
+    }
+
+    .detalle-tarjeta {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+
+    .detalle-tarjeta h3 {
+        color: #24364b;
+        font-size: 20px;
+        font-weight: bold;
+        margin-top: 0;
+        margin-bottom: 20px;
+    }
+
+    .detalle-mensaje {
+        background: #eff6ff;
+        border-left: 5px solid #2563eb;
+        padding: 18px;
+        border-radius: 8px;
+        color: #334155;
+        line-height: 1.7;
+    }
+
+    .detalle-datos {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+    }
+
+    .detalle-campo {
+        background: #f8fafc;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .detalle-etiqueta {
+        color: #64748b;
+        font-size: 13px;
+        font-weight: bold;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .detalle-valor {
+        color: #24364b;
+        font-size: 16px;
+        font-weight: 500;
+        overflow-wrap: break-word;
+    }
+
+    .estado-asistencia {
+        display: inline-block;
+        padding: 7px 12px;
+        border-radius: 15px;
+        font-size: 13px;
+        font-weight: bold;
+    }
+
+    .estado-pendiente {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .estado-justificado {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .estado-neutral {
+        background: #e2e8f0;
+        color: #475569;
+    }
+
+    .estado-revision {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .justificacion-motivo {
+        background: #f0fdf4;
+        border-left: 5px solid #16a34a;
+        border-radius: 8px;
+        padding: 18px;
+        color: #166534;
+        overflow-wrap: break-word;
+    }
+
+    .justificacion-pendiente {
+        background: #fffbeb;
+        border-left: 5px solid #d97706;
+        border-radius: 8px;
+        padding: 18px;
+        color: #92400e;
+        margin-bottom: 20px;
+    }
+
+    .justificacion-enviada {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 18px;
+        margin-bottom: 20px;
+        overflow-wrap: break-word;
+    }
+
+    .justificacion-texto {
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+    }
+
+    .formulario-justificacion {
+        margin-top: 20px;
+    }
+
+    .formulario-justificacion label {
+        display: block;
+        color: #24364b;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .formulario-justificacion textarea {
+        width: 100%;
+        max-width: 100%;
+        min-height: 140px;
+        padding: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        resize: vertical;
+        box-sizing: border-box;
+    }
+
+    .formulario-justificacion textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 4px rgba(37,99,235,0.2);
+    }
+
+    .contador-caracteres {
+        text-align: right;
+        color: #64748b;
+        font-size: 13px;
+        margin-top: 5px;
+        margin-bottom: 15px;
+    }
+
+    .detalle-acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 25px;
+    }
+
+    .formulario-en-linea {
+        display: inline-block;
+        margin: 0;
+    }
+
+    .detalle-fecha {
+        color: #64748b;
+        font-size: 13px;
+        margin-top: 15px;
+    }
+
+    .observaciones-docente {
+        background: #eff6ff;
+        border-left: 4px solid #2563eb;
+        border-radius: 6px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+</style>
+
+<div class="detalle-contenedor">
+
+    <div class="detalle-encabezado">
+
+        <h2>Detalle de notificación</h2>
+
+        <p>
+            Consulte la información relacionada
+            con la asistencia del estudiante.
+        </p>
+
+    </div>
+
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Mensaje"]
+        </div>
+    }
+
+    @if (TempData["MensajeError"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["MensajeError"]
+        </div>
+    }
+
+    <!-- INFORMACIÓN DE LA NOTIFICACIÓN -->
+
+    <div class="detalle-tarjeta">
+
+        <h3>@Model.titulo</h3>
+
+        <div class="detalle-mensaje">
+
+            @Model.mensaje
+
+        </div>
+
+        <div class="detalle-fecha">
+
+            Fecha de recepción:
+
+            @Model.fecha_creacion.ToString(
+                "dd/MM/yyyy HH:mm")
+
+        </div>
+
+        <div class="detalle-fecha">
+
+            Estado de la notificación:
+
+            @if (Model.leida)
+            {
+                <strong>Leída</strong>
+            }
+            else
+            {
+                <strong>No leída</strong>
+            }
+
+        </div>
+
+        @if (Model.fecha_lectura.HasValue)
+        {
+            <div class="detalle-fecha">
+
+                Fecha de lectura:
+
+                @Model.fecha_lectura.Value.ToString(
+                    "dd/MM/yyyy HH:mm")
+
+            </div>
+        }
+
+    </div>
+
+    <!-- INFORMACIÓN DEL ESTUDIANTE -->
+
+    <div class="detalle-tarjeta">
+
+        <h3>Información de asistencia</h3>
+
+        <div class="detalle-datos">
+
+            <div class="detalle-campo">
+
+                <span class="detalle-etiqueta">
+                    Nombre del estudiante
+                </span>
+
+                <span class="detalle-valor">
+                    @ViewBag.NombreEstudiante
+                </span>
+
+            </div>
+
+            <div class="detalle-campo">
+
+                <span class="detalle-etiqueta">
+                    Materia
+                </span>
+
+                <span class="detalle-valor">
+                    @ViewBag.NombreMateria
+                </span>
+
+            </div>
+
+            <div class="detalle-campo">
+
+                <span class="detalle-etiqueta">
+                    Fecha de asistencia
+                </span>
+
+                <span class="detalle-valor">
+                    @ViewBag.FechaAusencia
+                </span>
+
+            </div>
+
+            <div class="detalle-campo">
+
+                <span class="detalle-etiqueta">
+                    Estado actual de asistencia
+                </span>
+
+                <span class="estado-asistencia @claseEstado">
+
+                    @estado
+
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- JUSTIFICACIÓN DE AUSENCIA -->
+
+    <div class="detalle-tarjeta">
+
+        <h3>Justificación de ausencia</h3>
+
+        <!-- JUSTIFICACIÓN REGISTRADA EN ASISTENCIA -->
+
+        @if (estado == "Ausencia justificada")
+        {
+            <div class="justificacion-motivo">
+
+                <strong>
+                    La ausencia se encuentra justificada.
+                </strong>
+
+                <p class="justificacion-texto">
+                    @ViewBag.MotivoJustificacion
+                </p>
+
+            </div>
+        }
+
+        <!-- CONSULTAR SOLICITUD ENVIADA -->
+
+        @if (tieneJustificacion)
+        {
+            <div class="justificacion-enviada">
+
+                <h4>Última solicitud enviada</h4>
+
+                <p>
+                    <strong>Estado:</strong>
+
+                    <span class="estado-asistencia
+                                 @claseJustificacion">
+
+                        @estadoJustificacion
+
+                    </span>
+                </p>
+
+                <p>
+                    <strong>Fecha de envío:</strong>
+
+                    @ViewBag.FechaEnvioJustificacion
+                </p>
+
+                <strong>Motivo enviado:</strong>
+
+                <p class="justificacion-texto">
+                    @ViewBag.MotivoSolicitud
+                </p>
+
+                @if (!string.IsNullOrWhiteSpace(
+                    Convert.ToString(
+                        ViewBag.ObservacionesDocente)))
+                {
+                    <div class="observaciones-docente">
+
+                        <strong>
+                            Observaciones del docente:
+                        </strong>
+
+                        <p class="justificacion-texto">
+                            @ViewBag.ObservacionesDocente
+                        </p>
+
+                    </div>
+                }
+
+            </div>
+        }
+
+        <!-- SOLICITUD PENDIENTE -->
+
+        @if (existePendiente &&
+             estado == "Ausencia no justificada")
+        {
+            <div class="justificacion-pendiente">
+
+                <strong>
+                    Justificación pendiente de revisión
+                </strong>
+
+                <p>
+                    Existe una solicitud de justificación
+                    para esta ausencia que se encuentra
+                    pendiente de revisión por el docente.
+                </p>
+
+            </div>
+        }
+
+        <!-- FORMULARIO DE JUSTIFICACIÓN -->
+
+        @if (puedeJustificar)
+        {
+            <div class="justificacion-pendiente">
+
+                <strong>
+                    Ausencia pendiente de justificación
+                </strong>
+
+                <p>
+                    Puede enviar el motivo de la ausencia
+                    para que sea revisado por el docente.
+                </p>
+
+            </div>
+
+            if (estadoJustificacion == "Rechazada")
+            {
+                <div class="alert alert-info">
+
+                    Puede enviar una nueva justificación
+                    tomando en cuenta las observaciones
+                    realizadas por el docente.
+
+                </div>
+            }
+
+            using (Html.BeginForm(
+                "EnviarJustificacion",
+                "Notificaciones",
+                FormMethod.Post,
+                new
+                {
+                    @class = "formulario-justificacion",
+                    id = "formJustificacion"
+                }))
+            {
+                @Html.AntiForgeryToken()
+
+                @Html.Hidden(
+                    "id",
+                    Model.id_notificacion)
+
+                <label for="motivo">
+                    Motivo de la ausencia *
+                </label>
+
+                <textarea
+                    id="motivo"
+                    name="motivo"
+                    class="form-control"
+                    maxlength="500"
+                    required="required"
+                    placeholder="Describa el motivo por el cual el estudiante no asistió a clases."></textarea>
+
+                <div class="contador-caracteres">
+
+                    <span id="contadorMotivo">0</span>
+                    / 500 caracteres
+
+                </div>
+
+                <p class="text-muted">
+
+                    La justificación será enviada al docente
+                    para su revisión. El estado de asistencia
+                    no cambiará hasta que sea aprobada.
+
+                </p>
+
+                <button
+                    type="submit"
+                    id="btnEnviarJustificacion"
+                    class="btn btn-success">
+
+                    Enviar justificación
+
+                </button>
+            }
+        }
+        else if (estado != "Ausencia justificada" &&
+                 !existePendiente)
+        {
+            <div class="alert alert-info">
+
+                El estado actual de asistencia no permite
+                enviar una justificación de ausencia.
+
+            </div>
+        }
+
+    </div>
+
+    <!-- BOTONES DE ACCIÓN -->
+
+    <div class="detalle-acciones">
+
+        <a href="@Url.Action(
+            "Index",
+            "Notificaciones")"
+           class="btn btn-default">
+
+            Volver a notificaciones
+
+        </a>
+
+        @if (!Model.leida)
+        {
+            using (Html.BeginForm(
+                "MarcarComoLeida",
+                "Notificaciones",
+                FormMethod.Post,
+                new
+                {
+                    @class = "formulario-en-linea"
+                }))
+            {
+                @Html.AntiForgeryToken()
+
+                @Html.Hidden(
+                    "id",
+                    Model.id_notificacion)
+
+                <button type="submit"
+                        class="btn btn-primary">
+
+                    Marcar como leída
+
+                </button>
+            }
+        }
+
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            var motivo =
+                document.getElementById("motivo");
+
+            var contador =
+                document.getElementById("contadorMotivo");
+
+            var formulario =
+                document.getElementById("formJustificacion");
+
+            var boton =
+                document.getElementById(
+                    "btnEnviarJustificacion");
+
+            if (motivo && contador) {
+
+                motivo.addEventListener(
+                    "input",
+                    function () {
+
+                        contador.textContent =
+                            motivo.value.length;
+                    });
+            }
+
+            if (formulario && motivo && boton) {
+
+                formulario.addEventListener(
+                    "submit",
+                    function (event) {
+
+                        if (motivo.value.trim().length === 0) {
+
+                            event.preventDefault();
+
+                            alert(
+                                "Debe ingresar el motivo " +
+                                "de la ausencia.");
+
+                            motivo.focus();
+
+                            return;
+                        }
+
+                        if (motivo.value.length > 500) {
+
+                            event.preventDefault();
+
+                            alert(
+                                "El motivo no puede superar " +
+                                "los 500 caracteres.");
+
+                            return;
+                        }
+
+                        var confirmar = confirm(
+                            "¿Desea enviar esta justificación " +
+                            "al docente?");
+
+                        if (!confirmar) {
+
+                            event.preventDefault();
+
+                            return;
+                        }
+
+                        boton.disabled = true;
+
+                        boton.textContent = "Enviando...";
+                    });
+            }
+        });
+</script>

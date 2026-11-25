@@ -3,6 +3,7 @@
 @using System
 @using System.Linq
 @using System.Collections.Generic
+@using System.Web.Mvc
 @using EduNexus.UI.Models.Identity
 
 @{
@@ -69,8 +70,7 @@
 
     .historial-resumen {
         display: grid;
-        grid-template-columns: repeat(
-            auto-fit, minmax(180px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 20px;
         margin-bottom: 25px;
     }
@@ -293,7 +293,9 @@
 
 <div class="historial-contenedor">
 
+    <!-- ======================================== -->
     <!-- ENCABEZADO -->
+    <!-- ======================================== -->
 
     <div class="historial-encabezado">
 
@@ -307,18 +309,14 @@
 
         <div class="historial-acciones">
 
-            <a href="@Url.Action(
-                "EnviarJustificacion",
-                "Notificaciones")"
+            <a href="@Url.Action("EnviarJustificacion", "Notificaciones")"
                class="btn btn-primary">
 
                 Enviar nueva justificación
 
             </a>
 
-            <a href="@Url.Action(
-                "Index",
-                "Notificaciones")"
+            <a href="@Url.Action("Index", "Notificaciones")"
                class="btn btn-secondary">
 
                 Ver notificaciones
@@ -329,7 +327,9 @@
 
     </div>
 
+    <!-- ======================================== -->
     <!-- RESUMEN ESTADÍSTICO -->
+    <!-- ======================================== -->
 
     <div class="historial-resumen">
 
@@ -375,7 +375,9 @@
 
     </div>
 
+    <!-- ======================================== -->
     <!-- FILTROS DE BÚSQUEDA -->
+    <!-- ======================================== -->
 
     <div class="historial-panel">
 
@@ -393,9 +395,7 @@
                 <div class="historial-filtro">
 
                     <label for="id_estudiante">
-
                         Estudiante
-
                     </label>
 
                     @Html.DropDownList(
@@ -413,9 +413,7 @@
                 <div class="historial-filtro">
 
                     <label for="estado">
-
                         Estado de justificación
-
                     </label>
 
                     @Html.DropDownList(
@@ -443,9 +441,7 @@
 
                 <div>
 
-                    <a href="@Url.Action(
-                        "HistorialJustificaciones",
-                        "Notificaciones")"
+                    <a href="@Url.Action("HistorialJustificaciones", "Notificaciones")"
                        class="btn btn-secondary">
 
                         Limpiar filtros
@@ -459,7 +455,9 @@
 
     </div>
 
+    <!-- ======================================== -->
     <!-- INFORMACIÓN SOBRE LOS ESTADOS -->
+    <!-- ======================================== -->
 
     <div class="historial-informacion">
 
@@ -501,7 +499,9 @@
 
     </div>
 
+    <!-- ======================================== -->
     <!-- LISTADO DE JUSTIFICACIONES -->
+    <!-- ======================================== -->
 
     <div class="historial-panel">
 
@@ -526,9 +526,7 @@
                     con los filtros seleccionados.
                 </p>
 
-                <a href="@Url.Action(
-                    "EnviarJustificacion",
-                    "Notificaciones")"
+                <a href="@Url.Action("EnviarJustificacion", "Notificaciones")"
                    class="btn btn-primary">
 
                     Enviar justificación
@@ -573,6 +571,10 @@
 
                         @foreach (var justificacion in Model)
                         {
+                            // ========================================
+                            // VARIABLES DEL REGISTRO
+                            // ========================================
+
                             string nombreEstudiante =
                                 "Estudiante no disponible";
 
@@ -585,9 +587,25 @@
                             string claseEstado =
                                 "estado-desconocido";
 
+                            string fechaEnvio =
+                                justificacion.fecha_envio
+                                    .ToString("dd/MM/yyyy");
+
+                            string horaEnvio =
+                                justificacion.fecha_envio
+                                    .ToString("HH:mm");
+
+                            string fechaRevision =
+                                "Sin revisar";
+
+                            string horaRevision =
+                                string.Empty;
+
                             AsistenciaEntity asistencia = null;
 
-                            // Obtener nombre del estudiante.
+                            // ========================================
+                            // OBTENER NOMBRE DEL ESTUDIANTE
+                            // ========================================
 
                             if (!string.IsNullOrEmpty(
                                     justificacion.fk_id_estudiante) &&
@@ -599,7 +617,9 @@
                                         justificacion.fk_id_estudiante];
                             }
 
-                            // Obtener registro de asistencia.
+                            // ========================================
+                            // OBTENER REGISTRO DE ASISTENCIA
+                            // ========================================
 
                             if (asistencias.ContainsKey(
                                 justificacion.fk_id_asistencia))
@@ -608,38 +628,63 @@
                                     asistencias[
                                         justificacion.fk_id_asistencia];
 
-                                fechaAusencia =
-                                    asistencia.fecha.ToString(
-                                        "dd/MM/yyyy");
-
-                                if (nombresMaterias.ContainsKey(
-                                    asistencia.fk_id_materia))
+                                if (asistencia != null &&
+                                    asistencia.fk_id_usuario ==
+                                        justificacion.fk_id_estudiante)
                                 {
-                                    nombreMateria =
-                                        nombresMaterias[
-                                            asistencia.fk_id_materia];
+                                    fechaAusencia =
+                                        asistencia.fecha
+                                            .ToString("dd/MM/yyyy");
+
+                                    if (nombresMaterias.ContainsKey(
+                                        asistencia.fk_id_materia))
+                                    {
+                                        nombreMateria =
+                                            nombresMaterias[
+                                                asistencia.fk_id_materia];
+                                    }
+                                }
+                                else
+                                {
+                                    asistencia = null;
                                 }
                             }
 
-                            // Asignar color según estado.
+                            // ========================================
+                            // OBTENER FECHA Y HORA DE REVISIÓN
+                            // ========================================
+
+                            if (justificacion.fecha_revision.HasValue)
+                            {
+                                fechaRevision =
+                                    justificacion.fecha_revision.Value
+                                        .ToString("dd/MM/yyyy");
+
+                                horaRevision =
+                                    justificacion.fecha_revision.Value
+                                        .ToString("HH:mm");
+                            }
+
+                            // ========================================
+                            // ASIGNAR COLOR SEGÚN ESTADO
+                            // ========================================
 
                             if (justificacion.estado == "Pendiente")
                             {
-                                claseEstado =
-                                    "estado-pendiente";
+                                claseEstado = "estado-pendiente";
                             }
-                            else if (
-                                justificacion.estado == "Aprobada")
+                            else if (justificacion.estado == "Aprobada")
                             {
-                                claseEstado =
-                                    "estado-aprobada";
+                                claseEstado = "estado-aprobada";
                             }
-                            else if (
-                                justificacion.estado == "Rechazada")
+                            else if (justificacion.estado == "Rechazada")
                             {
-                                claseEstado =
-                                    "estado-rechazada";
+                                claseEstado = "estado-rechazada";
                             }
+
+                            // ========================================
+                            // VALIDAR POSIBILIDAD DE REENVÍO
+                            // ========================================
 
                             bool puedeReenviar =
                                 justificacion.estado == "Rechazada" &&
@@ -663,26 +708,30 @@
                                 <!-- MATERIA -->
 
                                 <td>
+
                                     @nombreMateria
+
                                 </td>
 
                                 <!-- FECHA DE AUSENCIA -->
 
                                 <td>
+
                                     @fechaAusencia
+
                                 </td>
 
                                 <!-- FECHA DE ENVÍO -->
 
                                 <td>
 
-                                    @justificacion.fecha_envio.ToString(
-                                        "dd/MM/yyyy")
+                                    <span>
+                                        @fechaEnvio
+                                    </span>
 
                                     <div class="texto-secundario">
 
-                                        @justificacion.fecha_envio.ToString(
-                                            "HH:mm")
+                                        @horaEnvio
 
                                     </div>
 
@@ -710,13 +759,15 @@
 
                                     @if (justificacion.fecha_revision.HasValue)
                                     {
-                                        @justificacion.fecha_revision.Value
-                                            .ToString("dd/MM/yyyy")
+                                        <span>
+
+                                            @fechaRevision
+
+                                        </span>
 
                                         <div class="texto-secundario">
 
-                                            @justificacion.fecha_revision.Value
-                                                .ToString("HH:mm")
+                                            @horaRevision
 
                                         </div>
                                     }
@@ -731,14 +782,18 @@
 
                                 </td>
 
-                                <!-- OBSERVACIONES -->
+                                <!-- OBSERVACIONES DEL DOCENTE -->
 
                                 <td class="historial-observaciones">
 
                                     @if (!string.IsNullOrWhiteSpace(
                                         justificacion.observaciones))
                                     {
-                                        @justificacion.observaciones
+                                        <span>
+
+                                            @justificacion.observaciones
+
+                                        </span>
                                     }
                                     else
                                     {
@@ -757,22 +812,14 @@
 
                                     @if (puedeReenviar)
                                     {
-                                        <a href="@Url.Action(
-                                            "EnviarJustificacion",
-                                            "Notificaciones",
-                                            new
-                                            {
-                                                id_estudiante =
-                                                    justificacion.fk_id_estudiante
-                                            })"
+                                        <a href="@Url.Action("EnviarJustificacion", "Notificaciones", new { id_estudiante = justificacion.fk_id_estudiante })"
                                            class="btn btn-sm btn-outline-primary">
 
                                             Consultar ausencias
 
                                         </a>
                                     }
-                                    else if (
-                                        justificacion.estado == "Pendiente")
+                                    else if (justificacion.estado == "Pendiente")
                                     {
                                         <span class="texto-secundario">
 
@@ -780,8 +827,7 @@
 
                                         </span>
                                     }
-                                    else if (
-                                        justificacion.estado == "Aprobada")
+                                    else if (justificacion.estado == "Aprobada")
                                     {
                                         <span class="color-verde">
 
@@ -812,31 +858,27 @@
 
     </div>
 
+    <!-- ======================================== -->
     <!-- BOTONES INFERIORES -->
+    <!-- ======================================== -->
 
     <div class="historial-acciones">
 
-        <a href="@Url.Action(
-            "EnviarJustificacion",
-            "Notificaciones")"
+        <a href="@Url.Action("EnviarJustificacion", "Notificaciones")"
            class="btn btn-primary">
 
             Enviar nueva justificación
 
         </a>
 
-        <a href="@Url.Action(
-            "Index",
-            "Notificaciones")"
+        <a href="@Url.Action("Index", "Notificaciones")"
            class="btn btn-outline-secondary">
 
             Ver notificaciones
 
         </a>
 
-        <a href="@Url.Action(
-            "Index",
-            "Home")"
+        <a href="@Url.Action("Index", "Home")"
            class="btn btn-secondary">
 
             Volver al inicio

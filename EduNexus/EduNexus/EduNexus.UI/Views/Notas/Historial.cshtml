@@ -1,0 +1,1356 @@
+@model IEnumerable<EduNexus.Abstracciones.ModelosParaUI.Notas.NotaDto>
+
+@using System
+@using System.Linq
+@using System.Web.Mvc
+@using System.Collections.Generic
+@using EduNexus.Abstracciones.ModelosParaUI.Notas
+
+@{
+    ViewBag.Title = "Historial de calificaciones";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var notas = Model != null
+        ? Model.ToList()
+        : new List<NotaDto>();
+
+    bool tieneNotas = notas.Any();
+
+    int totalNotas = ViewBag.TotalNotas != null
+        ? Convert.ToInt32(ViewBag.TotalNotas)
+        : 0;
+
+    int totalEstudiantes = ViewBag.TotalEstudiantes != null
+        ? Convert.ToInt32(ViewBag.TotalEstudiantes)
+        : 0;
+
+    decimal promedioGeneral = ViewBag.PromedioGeneral != null
+        ? Convert.ToDecimal(ViewBag.PromedioGeneral)
+        : 0m;
+
+    decimal notaMayor = ViewBag.NotaMayor != null
+        ? Convert.ToDecimal(ViewBag.NotaMayor)
+        : 0m;
+
+    decimal notaMenor = ViewBag.NotaMenor != null
+        ? Convert.ToDecimal(ViewBag.NotaMenor)
+        : 0m;
+
+    int totalModificadas = notas.Count(n =>
+        n.fecha_modificacion.HasValue ||
+        string.Equals(
+            n.estado,
+            "Modificada",
+            StringComparison.OrdinalIgnoreCase));
+
+    string promedioTexto = tieneNotas
+        ? promedioGeneral.ToString("N2")
+        : "—";
+
+    string notaMayorTexto = tieneNotas
+        ? notaMayor.ToString("N2")
+        : "—";
+
+    string notaMenorTexto = tieneNotas
+        ? notaMenor.ToString("N2")
+        : "—";
+
+    string fechaDesde = Convert.ToString(ViewBag.FechaDesde);
+    string fechaHasta = Convert.ToString(ViewBag.FechaHasta);
+}
+
+<style>
+    .historial-notas {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .historial-header {
+        margin-bottom: 25px;
+    }
+
+    .historial-header h2 {
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .historial-header p {
+        color: #64748b;
+        margin-bottom: 0;
+    }
+
+    .historial-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 25px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .historial-card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .historial-label {
+        display: block;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 7px;
+    }
+
+    .historial-notas .form-control,
+    .historial-notas .form-select {
+        min-height: 42px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+    }
+
+    .historial-notas .form-control:focus,
+    .historial-notas .form-select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+    }
+
+    .historial-stat {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        height: 100%;
+    }
+
+    .historial-stat-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .historial-stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        margin-top: 8px;
+    }
+
+    .stat-azul {
+        color: #2563eb;
+    }
+
+    .stat-verde {
+        color: #16a34a;
+    }
+
+    .stat-morado {
+        color: #7c3aed;
+    }
+
+    .stat-naranja {
+        color: #d97706;
+    }
+
+    .historial-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .historial-table thead th {
+        background: #f1f5f9;
+        color: #334155;
+        font-weight: 600;
+        padding: 14px;
+        white-space: nowrap;
+    }
+
+    .historial-table tbody td {
+        padding: 14px;
+        vertical-align: middle;
+    }
+
+    .historial-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .historial-estudiante {
+        font-weight: 600;
+        color: #1e293b;
+        min-width: 180px;
+    }
+
+    .historial-secundario {
+        color: #64748b;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+
+    .historial-calificacion {
+        display: inline-block;
+        min-width: 65px;
+        text-align: center;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-weight: 700;
+    }
+
+    .historial-estado {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .estado-registrada {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .estado-modificada {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .estado-otro {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .historial-observaciones {
+        min-width: 180px;
+        max-width: 300px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        font-size: 13px;
+    }
+
+    .historial-empty {
+        text-align: center;
+        padding: 50px 20px;
+        color: #64748b;
+    }
+
+    .historial-empty h4 {
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 10px;
+    }
+
+    .historial-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .historial-actions .btn {
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 600;
+    }
+
+    .historial-resumen {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+
+    .historial-buscador {
+        max-width: 350px;
+    }
+
+    .historial-notas .validation-summary-valid {
+        display: none;
+    }
+
+    .historial-fecha {
+        white-space: nowrap;
+    }
+
+    /* MODIFICACION DE CALIFICACIONES */
+
+    .historial-btn-editar {
+        display: inline-block;
+        background: #2563eb;
+        color: #ffffff;
+        border: 1px solid #2563eb;
+        border-radius: 7px;
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: background .2s;
+    }
+
+    .historial-btn-editar:hover {
+        background: #1d4ed8;
+        color: #ffffff;
+        text-decoration: none;
+    }
+
+    .historial-modificacion {
+        min-width: 160px;
+        font-size: 13px;
+    }
+
+    .historial-sin-modificacion {
+        color: #94a3b8;
+        font-size: 12px;
+    }
+
+    .historial-fila-modificada td:first-child {
+        border-left: 3px solid #2563eb;
+    }
+
+    .historial-aviso {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 22px;
+        font-size: 14px;
+    }
+
+    .historial-acciones-tabla {
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    @@media (max-width: 768px) {
+        .historial-notas {
+            padding: 10px;
+        }
+
+        .historial-card {
+            padding: 15px;
+        }
+
+        .historial-stat-value {
+            font-size: 24px;
+        }
+
+        .historial-buscador {
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .historial-actions {
+            justify-content: stretch;
+        }
+
+        .historial-actions .btn {
+            flex: 1;
+        }
+    }
+</style>
+
+<div class="historial-notas">
+
+    <!-- ENCABEZADO -->
+
+    <div class="historial-header">
+
+        <div class="d-flex flex-wrap
+                    justify-content-between
+                    align-items-center">
+
+            <div>
+
+                <h2>Historial de calificaciones</h2>
+
+                <p>
+                    Consulte y modifique las calificaciones
+                    registradas y analice el rendimiento
+                    académico de sus estudiantes.
+                </p>
+
+            </div>
+
+            <div class="mt-2">
+
+                <a href="@Url.Action("Registrar", "Notas")"
+                   class="btn btn-primary">
+
+                    Registrar nuevas notas
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MENSAJES -->
+
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="alert alert-success">
+
+            @TempData["Mensaje"]
+
+        </div>
+    }
+
+    @if (TempData["MensajeError"] != null)
+    {
+        <div class="alert alert-danger">
+
+            @TempData["MensajeError"]
+
+        </div>
+    }
+
+    @Html.ValidationSummary(
+        false,
+        "",
+        new { @class = "alert alert-danger" }
+    )
+
+    <!-- INFORMACION SOBRE MODIFICACIONES -->
+
+    <div class="historial-aviso">
+
+        <strong>Modificación de calificaciones:</strong>
+
+        Para corregir una calificación registrada,
+        utilice el botón "Modificar nota" correspondiente
+        al estudiante. Deberá indicar el motivo del cambio.
+        La modificación quedará registrada en la bitácora
+        del sistema.
+
+    </div>
+
+    <!-- FILTROS DE BUSQUEDA -->
+
+    <div class="historial-card">
+
+        <div class="historial-card-title">
+            Filtros de búsqueda
+        </div>
+
+        @using (Html.BeginForm(
+            "Historial",
+            "Notas",
+            FormMethod.Get,
+            new { id = "formFiltrosNotas" }))
+        {
+            <div class="row">
+
+                <!-- GRADO -->
+
+                <div class="col-md-3 mb-3">
+
+                    <label class="historial-label"
+                           for="id_grado">
+                        Grado
+                    </label>
+
+                    @Html.DropDownList(
+                        "id_grado",
+                        (SelectList)ViewBag.Grados,
+                        "Todos los grados",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "id_grado"
+                        })
+
+                </div>
+
+                <!-- SECCION -->
+
+                <div class="col-md-3 mb-3">
+
+                    <label class="historial-label"
+                           for="id_seccion">
+                        Sección
+                    </label>
+
+                    @Html.DropDownList(
+                        "id_seccion",
+                        (SelectList)ViewBag.Secciones,
+                        "Todas las secciones",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "id_seccion"
+                        })
+
+                </div>
+
+                <!-- MATERIA -->
+
+                <div class="col-md-3 mb-3">
+
+                    <label class="historial-label"
+                           for="id_materia">
+                        Materia
+                    </label>
+
+                    @Html.DropDownList(
+                        "id_materia",
+                        (SelectList)ViewBag.Materias,
+                        "Todas las materias",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "id_materia"
+                        })
+
+                </div>
+
+                <!-- PERIODO -->
+
+                <div class="col-md-3 mb-3">
+
+                    <label class="historial-label"
+                           for="periodo">
+                        Período académico
+                    </label>
+
+                    @Html.DropDownList(
+                        "periodo",
+                        (SelectList)ViewBag.Periodos,
+                        "Todos los períodos",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "periodo"
+                        })
+
+                </div>
+
+                <!-- ESTUDIANTE -->
+
+                <div class="col-md-3 mb-3">
+
+                    <label class="historial-label"
+                           for="id_estudiante">
+                        Estudiante
+                    </label>
+
+                    @Html.DropDownList(
+                        "id_estudiante",
+                        (SelectList)ViewBag.Estudiantes,
+                        "Todos los estudiantes",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "id_estudiante"
+                        })
+
+                </div>
+
+                <!-- TIPO DE EVALUACION -->
+
+                <div class="col-md-3 mb-3">
+
+                    <label class="historial-label"
+                           for="tipo_evaluacion">
+                        Tipo de evaluación
+                    </label>
+
+                    @Html.DropDownList(
+                        "tipo_evaluacion",
+                        (SelectList)ViewBag.TiposEvaluacion,
+                        "Todos los tipos",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "tipo_evaluacion"
+                        })
+
+                </div>
+
+                <!-- FECHA INICIAL -->
+
+                <div class="col-md-3 mb-3">
+
+                    <label class="historial-label"
+                           for="fecha_desde">
+                        Fecha desde
+                    </label>
+
+                    <input type="date"
+                           name="fecha_desde"
+                           id="fecha_desde"
+                           class="form-control"
+                           value="@fechaDesde" />
+
+                </div>
+
+                <!-- FECHA FINAL -->
+
+                <div class="col-md-3 mb-3">
+
+                    <label class="historial-label"
+                           for="fecha_hasta">
+                        Fecha hasta
+                    </label>
+
+                    <input type="date"
+                           name="fecha_hasta"
+                           id="fecha_hasta"
+                           class="form-control"
+                           value="@fechaHasta" />
+
+                </div>
+
+            </div>
+
+            <div class="historial-actions">
+
+                <a href="@Url.Action("Historial", "Notas")"
+                   class="btn btn-outline-secondary">
+
+                    Limpiar filtros
+
+                </a>
+
+                <button type="submit"
+                        class="btn btn-primary">
+
+                    Consultar calificaciones
+
+                </button>
+
+            </div>
+        }
+
+    </div>
+
+    <!-- ESTADISTICAS -->
+
+    <div class="row mb-4">
+
+        <!-- TOTAL DE NOTAS -->
+
+        <div class="col-lg col-md-4 col-sm-6 mb-3">
+
+            <div class="historial-stat">
+
+                <div class="historial-stat-label">
+                    Calificaciones registradas
+                </div>
+
+                <div class="historial-stat-value stat-azul">
+                    @totalNotas
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- TOTAL DE ESTUDIANTES -->
+
+        <div class="col-lg col-md-4 col-sm-6 mb-3">
+
+            <div class="historial-stat">
+
+                <div class="historial-stat-label">
+                    Estudiantes calificados
+                </div>
+
+                <div class="historial-stat-value stat-verde">
+                    @totalEstudiantes
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- PROMEDIO GENERAL -->
+
+        <div class="col-lg col-md-4 col-sm-6 mb-3">
+
+            <div class="historial-stat">
+
+                <div class="historial-stat-label">
+                    Promedio general
+                </div>
+
+                <div class="historial-stat-value stat-morado">
+                    @promedioTexto
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- NOTA MAYOR -->
+
+        <div class="col-lg col-md-4 col-sm-6 mb-3">
+
+            <div class="historial-stat">
+
+                <div class="historial-stat-label">
+                    Nota más alta
+                </div>
+
+                <div class="historial-stat-value stat-verde">
+                    @notaMayorTexto
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- NOTA MENOR -->
+
+        <div class="col-lg col-md-4 col-sm-6 mb-3">
+
+            <div class="historial-stat">
+
+                <div class="historial-stat-label">
+                    Nota más baja
+                </div>
+
+                <div class="historial-stat-value stat-naranja">
+                    @notaMenorTexto
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- TOTAL DE NOTAS MODIFICADAS -->
+
+        <div class="col-lg col-md-4 col-sm-6 mb-3">
+
+            <div class="historial-stat">
+
+                <div class="historial-stat-label">
+                    Calificaciones modificadas
+                </div>
+
+                <div class="historial-stat-value stat-azul">
+                    @totalModificadas
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- LISTADO DE CALIFICACIONES -->
+
+    <div class="historial-card">
+
+        <div class="historial-card-title">
+            Calificaciones registradas
+        </div>
+
+        @if (tieneNotas)
+        {
+            <div class="d-flex flex-wrap
+                        justify-content-between
+                        align-items-center mb-3">
+
+                <div class="historial-resumen">
+
+                    Mostrando
+
+                    <strong id="cantidadVisible">
+                        @notas.Count
+                    </strong>
+
+                    de
+
+                    <strong>
+                        @notas.Count
+                    </strong>
+
+                    calificaciones.
+
+                </div>
+
+                <div class="historial-buscador mb-3">
+
+                    <input type="text"
+                           id="buscarCalificacion"
+                           class="form-control"
+                           placeholder="Buscar estudiante o evaluación..."
+                           aria-label="Buscar calificaciones" />
+
+                </div>
+
+            </div>
+
+            <!-- FILTRO LOCAL POR ESTADO -->
+
+            <div class="row mb-3">
+
+                <div class="col-md-4">
+
+                    <label class="historial-label"
+                           for="filtroEstado">
+                        Estado de la calificación
+                    </label>
+
+                    <select id="filtroEstado"
+                            class="form-select">
+
+                        <option value="">
+                            Todos los estados
+                        </option>
+
+                        <option value="registrada">
+                            Registradas
+                        </option>
+
+                        <option value="modificada">
+                            Modificadas
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered historial-table"
+                       id="tablaHistorialNotas">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>N.º</th>
+
+                            <th>Estudiante</th>
+
+                            <th>Grado</th>
+
+                            <th>Sección</th>
+
+                            <th>Materia</th>
+
+                            <th>Calendario</th>
+
+                            <th>Período</th>
+
+                            <th>Evaluación</th>
+
+                            <th>Tipo</th>
+
+                            <th>Fecha de evaluación</th>
+
+                            <th>Nota / 100</th>
+
+                            <th>Observaciones</th>
+
+                            <th>Fecha de registro</th>
+
+                            <th>Estado</th>
+
+                            <th>Última modificación</th>
+
+                            <th>Modificado por</th>
+
+                            <th>Acciones</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        @for (int i = 0; i < notas.Count; i++)
+                        {
+                            var item = notas[i];
+
+                            string fechaEvaluacionTexto =
+                                item.fecha_evaluacion.HasValue
+                                ? item.fecha_evaluacion.Value
+                                    .ToString("dd/MM/yyyy")
+                                : "No disponible";
+
+                            string fechaRegistroTexto =
+                                item.fecha_registro
+                                    .ToString("dd/MM/yyyy HH:mm");
+
+                            string fechaModificacionTexto =
+                                item.fecha_modificacion.HasValue
+                                ? item.fecha_modificacion.Value
+                                    .ToString("dd/MM/yyyy HH:mm")
+                                : "Sin modificaciones";
+
+                            string calificacionTexto =
+                                item.nota.HasValue
+                                ? item.nota.Value.ToString("N2")
+                                : "—";
+
+                            string observacionesTexto =
+                                string.IsNullOrWhiteSpace(
+                                    item.observaciones)
+                                ? "Sin observaciones"
+                                : item.observaciones;
+
+                            string estadoTexto =
+                                string.IsNullOrWhiteSpace(item.estado)
+                                ? "No disponible"
+                                : item.estado;
+
+                            bool fueModificada =
+                                item.fecha_modificacion.HasValue ||
+                                string.Equals(
+                                    estadoTexto,
+                                    "Modificada",
+                                    StringComparison.OrdinalIgnoreCase);
+
+                            if (fueModificada)
+                            {
+                                estadoTexto = "Modificada";
+                            }
+
+                            string claseEstado =
+                                fueModificada
+                                ? "estado-modificada"
+                                : string.Equals(
+                                    estadoTexto,
+                                    "Registrada",
+                                    StringComparison.OrdinalIgnoreCase)
+                                    ? "estado-registrada"
+                                    : "estado-otro";
+
+                            string claseFila =
+                                fueModificada
+                                ? "historial-fila-modificada"
+                                : "";
+
+                            string estadoFiltro =
+                                estadoTexto.ToLowerInvariant();
+
+                            string nombreModificadoPor =
+                                string.IsNullOrWhiteSpace(
+                                    item.nombre_modificado_por)
+                                ? "No disponible"
+                                : item.nombre_modificado_por;
+
+                            <tr class="fila-calificacion @claseFila"
+                                data-estado="@estadoFiltro">
+
+                                <td>
+                                    @(i + 1)
+                                </td>
+
+                                <!-- ESTUDIANTE -->
+
+                                <td>
+
+                                    <div class="historial-estudiante">
+                                        @item.nombre_estudiante
+                                    </div>
+
+                                    <div class="historial-secundario">
+                                        @item.identificacion_estudiante
+                                    </div>
+
+                                </td>
+
+                                <!-- GRADO -->
+
+                                <td>
+                                    @item.nombre_grado
+                                </td>
+
+                                <!-- SECCION -->
+
+                                <td>
+                                    @item.nombre_seccion
+                                </td>
+
+                                <!-- MATERIA -->
+
+                                <td>
+                                    @item.nombre_materia
+                                </td>
+
+                                <!-- CALENDARIO -->
+
+                                <td>
+                                    @item.nombre_calendario
+                                </td>
+
+                                <!-- PERIODO -->
+
+                                <td>
+                                    @item.periodo
+                                </td>
+
+                                <!-- EVALUACION -->
+
+                                <td>
+
+                                    <strong>
+                                        @item.nombre_evaluacion
+                                    </strong>
+
+                                </td>
+
+                                <!-- TIPO -->
+
+                                <td>
+                                    @item.tipo_evaluacion
+                                </td>
+
+                                <!-- FECHA DE EVALUACION -->
+
+                                <td class="historial-fecha">
+                                    @fechaEvaluacionTexto
+                                </td>
+
+                                <!-- CALIFICACION -->
+
+                                <td>
+
+                                    <span class="historial-calificacion">
+                                        @calificacionTexto
+                                    </span>
+
+                                </td>
+
+                                <!-- OBSERVACIONES -->
+
+                                <td>
+
+                                    <div class="historial-observaciones">@observacionesTexto</div>
+
+                                </td>
+
+                                <!-- FECHA DE REGISTRO -->
+
+                                <td class="historial-fecha">
+                                    @fechaRegistroTexto
+                                </td>
+
+                                <!-- ESTADO -->
+
+                                <td>
+
+                                    <span class="historial-estado @claseEstado">
+                                        @estadoTexto
+                                    </span>
+
+                                </td>
+
+                                <!-- ULTIMA MODIFICACION -->
+
+                                <td class="historial-modificacion">
+
+                                    @if (item.fecha_modificacion.HasValue)
+                                    {
+                                        <div class="historial-fecha">
+
+                                            @fechaModificacionTexto
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="historial-sin-modificacion">
+
+                                            Sin modificaciones
+
+                                        </span>
+                                    }
+
+                                </td>
+
+                                <!-- RESPONSABLE DE MODIFICACION -->
+
+                                <td class="historial-modificacion">
+
+                                    @if (fueModificada)
+                                    {
+                                        <span>
+                                            @nombreModificadoPor
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="historial-sin-modificacion">
+                                            No aplica
+                                        </span>
+                                    }
+
+                                </td>
+
+                                <!-- ACCIONES -->
+
+                                <td class="historial-acciones-tabla">
+
+                                    <a href="@Url.Action(
+                                        "Editar",
+                                        "Notas",
+                                        new
+                                        {
+                                            id = item.id_nota
+                                        })"
+                                       class="historial-btn-editar"
+                                       title="Modificar la calificación">
+
+                                        Modificar nota
+
+                                    </a>
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <!-- MENSAJE SIN RESULTADOS -->
+
+            <div id="sinResultadosBusqueda"
+                 class="historial-empty"
+                 style="display: none;">
+
+                <h4>No se encontraron coincidencias</h4>
+
+                <p>
+                    Intente buscar con otro nombre,
+                    identificación, evaluación o estado.
+                </p>
+
+            </div>
+        }
+        else
+        {
+            <div class="historial-empty">
+
+                <h4>No hay calificaciones disponibles</h4>
+
+                <p>
+                    No se encontraron registros que coincidan
+                    con los filtros seleccionados.
+                </p>
+
+                <div class="mt-3">
+
+                    <a href="@Url.Action("Historial", "Notas")"
+                       class="btn btn-outline-secondary">
+
+                        Limpiar filtros
+
+                    </a>
+
+                    <a href="@Url.Action("Registrar", "Notas")"
+                       class="btn btn-primary">
+
+                        Registrar calificaciones
+
+                    </a>
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+
+    <!-- BOTON REGRESAR -->
+
+    <div class="historial-actions">
+
+        <a href="@Url.Action("Index", "Home")"
+           class="btn btn-outline-secondary">
+
+            Regresar al inicio
+
+        </a>
+
+    </div>
+
+</div>
+
+@section scripts {
+
+    <script>
+
+        $(document).ready(function () {
+
+            var formulario = $("#formFiltrosNotas");
+
+            // ========================================
+            // ACTUALIZAR FILTROS AL CAMBIAR GRADO
+            // ========================================
+
+            $("#id_grado").on("change", function () {
+
+                $("#id_seccion").val("");
+
+                $("#id_materia").val("");
+
+                $("#id_estudiante").val("");
+
+                formulario.trigger("submit");
+
+            });
+
+            // ========================================
+            // ACTUALIZAR FILTROS AL CAMBIAR SECCION
+            // ========================================
+
+            $("#id_seccion").on("change", function () {
+
+                $("#id_materia").val("");
+
+                $("#id_estudiante").val("");
+
+                formulario.trigger("submit");
+
+            });
+
+            // ========================================
+            // ACTUALIZAR FILTRO DE ESTUDIANTES
+            // ========================================
+
+            $("#id_materia, #periodo, #tipo_evaluacion")
+                .on("change", function () {
+
+                    $("#id_estudiante").val("");
+
+                    formulario.trigger("submit");
+
+                });
+
+            // ========================================
+            // VALIDAR RANGO DE FECHAS
+            // ========================================
+
+            formulario.on("submit", function (e) {
+
+                var desde = $("#fecha_desde").val();
+
+                var hasta = $("#fecha_hasta").val();
+
+                if (desde && hasta && desde > hasta) {
+
+                    e.preventDefault();
+
+                    alert(
+                        "La fecha inicial no puede ser " +
+                        "posterior a la fecha final."
+                    );
+
+                    return false;
+                }
+
+            });
+
+            // ========================================
+            // NORMALIZAR TEXTO PARA BUSQUEDA
+            // ========================================
+
+            function normalizarTexto(texto) {
+
+                texto = (texto || "").toLowerCase();
+
+                if (typeof texto.normalize === "function") {
+
+                    texto = texto
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "");
+
+                }
+
+                return $.trim(texto);
+
+            }
+
+            // ========================================
+            // BUSCADOR Y FILTRO POR ESTADO
+            // ========================================
+
+            function aplicarFiltrosLocales() {
+
+                var busqueda = normalizarTexto(
+                    $("#buscarCalificacion").val()
+                );
+
+                var estadoSeleccionado =
+                    $("#filtroEstado").val() || "";
+
+                var cantidadVisible = 0;
+
+                $(".fila-calificacion").each(function () {
+
+                    var fila = $(this);
+
+                    var contenido = normalizarTexto(
+                        fila.text()
+                    );
+
+                    var estadoFila = normalizarTexto(
+                        fila.attr("data-estado")
+                    );
+
+                    var coincideBusqueda =
+                        contenido.indexOf(busqueda) !== -1;
+
+                    var coincideEstado =
+                        estadoSeleccionado === "" ||
+                        estadoFila === estadoSeleccionado;
+
+                    var coincide =
+                        coincideBusqueda &&
+                        coincideEstado;
+
+                    fila.toggle(coincide);
+
+                    if (coincide) {
+
+                        cantidadVisible++;
+
+                    }
+
+                });
+
+                $("#cantidadVisible").text(
+                    cantidadVisible
+                );
+
+                $("#sinResultadosBusqueda").toggle(
+                    cantidadVisible === 0
+                );
+
+            }
+
+            // ========================================
+            // EVENTOS DE BUSQUEDA
+            // ========================================
+
+            $("#buscarCalificacion").on(
+                "input",
+                aplicarFiltrosLocales
+            );
+
+            $("#filtroEstado").on(
+                "change",
+                aplicarFiltrosLocales
+            );
+
+        });
+
+    </script>
+}

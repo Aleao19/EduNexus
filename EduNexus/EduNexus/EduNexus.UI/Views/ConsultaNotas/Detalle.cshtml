@@ -1,0 +1,1470 @@
+@model EduNexus.Abstracciones.ModelosParaUI.Notas.NotaDto
+
+@using System
+@using System.Linq
+@using EduNexus.UI.Models
+@using EduNexus.Abstracciones.ModelosParaUI.Notas
+@using EduNexus.Abstracciones.ModelosParaUI.Usuarios
+
+@{
+    ViewBag.Title = "Detalle de calificación";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var resumen = ViewBag.Resumen as ResumenNotasDto;
+
+    var usuarioSesion = Session["UsuarioActual"] as UsuarioDto;
+
+    bool esDocente = usuarioSesion != null &&
+        RolesSistema.Es(usuarioSesion, RolesSistema.Docente);
+
+    bool puedeModificar = esDocente &&
+        !string.IsNullOrWhiteSpace(usuarioSesion.id_usuario) &&
+        string.Equals(
+            usuarioSesion.id_usuario,
+            Model.fk_id_docente,
+            StringComparison.Ordinal);
+
+    bool fueModificada =
+        Model.fecha_modificacion.HasValue ||
+        string.Equals(
+            Model.estado,
+            "Modificada",
+            StringComparison.OrdinalIgnoreCase);
+
+    var porcentaje = Model.nota.HasValue
+        ? Math.Max(
+            0m,
+            Math.Min(100m, Model.nota.Value)
+        ).ToString(
+            "0.##",
+            System.Globalization.CultureInfo.InvariantCulture
+        )
+        : "0";
+}
+
+<style>
+    .detalle-nota {
+        padding: 20px 0;
+        color: #1e293b;
+    }
+
+    .detalle-nota .encabezado {
+        background: linear-gradient(
+            135deg, #1e3a8a, #2563eb
+        );
+        color: white;
+        padding: 28px;
+        border-radius: 14px;
+        margin-bottom: 24px;
+    }
+
+    .detalle-nota .encabezado h2 {
+        color: white;
+        margin: 0 0 8px;
+        font-weight: 700;
+    }
+
+    .detalle-nota .encabezado p {
+        color: #dbeafe;
+        margin: 0;
+    }
+
+    .detalle-nota .panel {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 3px 10px
+            rgba(0, 0, 0, 0.04);
+    }
+
+    .detalle-nota .titulo-panel {
+        font-size: 19px;
+        font-weight: 700;
+        color: #1e3a8a;
+        margin-bottom: 20px;
+    }
+
+    .detalle-nota .informacion-grid {
+        display: grid;
+        grid-template-columns:
+            repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+    }
+
+    .detalle-nota .campo {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 15px;
+    }
+
+    .detalle-nota .campo label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        margin-bottom: 6px;
+    }
+
+    .detalle-nota .campo strong {
+        display: block;
+        font-size: 15px;
+        color: #1e293b;
+        overflow-wrap: anywhere;
+    }
+
+    .detalle-nota .calificacion-principal {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 12px;
+        padding: 28px;
+        text-align: center;
+        margin-bottom: 24px;
+    }
+
+    .detalle-nota .calificacion-principal h3 {
+        color: #1e3a8a;
+        margin-bottom: 12px;
+        font-size: 18px;
+    }
+
+    .detalle-nota .nota-grande {
+        font-size: 58px;
+        font-weight: 700;
+        color: #2563eb;
+        line-height: 1.2;
+    }
+
+    .detalle-nota .nota-grande small {
+        font-size: 20px;
+        color: #64748b;
+    }
+
+    .detalle-nota .barra {
+        height: 12px;
+        background: #dbeafe;
+        border-radius: 10px;
+        overflow: hidden;
+        max-width: 500px;
+        margin: 20px auto 10px;
+    }
+
+    .detalle-nota .barra-progreso {
+        height: 100%;
+        background: #2563eb;
+        border-radius: 10px;
+    }
+
+    .detalle-nota .estado {
+        display: inline-block;
+        background: #e2e8f0;
+        color: #334155;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-top: 12px;
+    }
+
+    .detalle-nota .estado-modificada {
+        background: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #93c5fd;
+    }
+
+    .detalle-nota .estado-registrada {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .detalle-nota .observaciones {
+        background: #f8fafc;
+        border-left: 4px solid #2563eb;
+        border-radius: 7px;
+        padding: 18px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        line-height: 1.7;
+        color: #334155;
+    }
+
+    .detalle-nota .estadisticas {
+        display: grid;
+        grid-template-columns:
+            repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .detalle-nota .estadistica {
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #2563eb;
+        border-radius: 9px;
+        padding: 18px;
+        text-align: center;
+        background: #f8fafc;
+    }
+
+    .detalle-nota .estadistica span {
+        display: block;
+        color: #64748b;
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+
+    .detalle-nota .estadistica strong {
+        color: #1e3a8a;
+        font-size: 26px;
+    }
+
+    .detalle-nota .estadistica.verde {
+        border-top-color: #16a34a;
+    }
+
+    .detalle-nota .estadistica.verde strong {
+        color: #15803d;
+    }
+
+    .detalle-nota .estadistica.naranja {
+        border-top-color: #ea580c;
+    }
+
+    .detalle-nota .estadistica.naranja strong {
+        color: #c2410c;
+    }
+
+    .detalle-nota .tabla-contenedor {
+        overflow-x: auto;
+    }
+
+    .detalle-nota .tabla {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 650px;
+    }
+
+    .detalle-nota .tabla th {
+        background: #1e3a8a;
+        color: white;
+        padding: 13px;
+        font-size: 13px;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .detalle-nota .tabla td {
+        border-bottom: 1px solid #e2e8f0;
+        padding: 13px;
+        font-size: 13px;
+        vertical-align: middle;
+    }
+
+    .detalle-nota .tabla tbody tr:hover {
+        background: #f1f5f9;
+    }
+
+    .detalle-nota .fila-actual {
+        background: #dbeafe;
+    }
+
+    .detalle-nota .nota-valor {
+        display: inline-block;
+        background: #dbeafe;
+        color: #1e40af;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 700;
+    }
+
+    .detalle-nota .texto-secundario {
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .detalle-nota .acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .detalle-nota .boton {
+        display: inline-block;
+        border: none;
+        border-radius: 7px;
+        padding: 10px 18px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        text-align: center;
+    }
+
+    .detalle-nota .boton-principal {
+        background: #2563eb;
+        color: white;
+    }
+
+    .detalle-nota .boton-principal:hover {
+        background: #1d4ed8;
+        color: white;
+    }
+
+    .detalle-nota .boton-secundario {
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .detalle-nota .boton-detalle {
+        display: inline-block;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        border-radius: 6px;
+        padding: 7px 12px;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .detalle-nota .mensaje-vacio {
+        text-align: center;
+        padding: 25px;
+        color: #64748b;
+    }
+
+    /* MODIFICACION DE CALIFICACIONES */
+
+    .detalle-nota .boton-modificar {
+        background: #d97706;
+        color: white;
+    }
+
+    .detalle-nota .boton-modificar:hover {
+        background: #b45309;
+        color: white;
+        text-decoration: none;
+    }
+
+    .detalle-nota .boton-editar-tabla {
+        display: inline-block;
+        background: #fffbeb;
+        color: #92400e;
+        border: 1px solid #fcd34d;
+        border-radius: 6px;
+        padding: 7px 12px;
+        text-decoration: none;
+        white-space: nowrap;
+        font-weight: 600;
+    }
+
+    .detalle-nota .boton-editar-tabla:hover {
+        background: #fef3c7;
+        color: #78350f;
+        text-decoration: none;
+    }
+
+    .detalle-nota .acciones-tabla {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .detalle-nota .aviso-modificacion {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-left: 4px solid #2563eb;
+        color: #1e40af;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        font-size: 14px;
+    }
+
+    .detalle-nota .aviso-edicion {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        color: #92400e;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        font-size: 14px;
+    }
+
+    .detalle-nota .fecha-modificacion {
+        margin-top: 12px;
+        font-size: 13px;
+        color: #475569;
+    }
+
+    @@media (max-width: 768px) {
+
+        .detalle-nota .encabezado {
+            padding: 20px;
+        }
+
+        .detalle-nota .panel {
+            padding: 15px;
+        }
+
+        .detalle-nota .nota-grande {
+            font-size: 45px;
+        }
+
+        .detalle-nota .informacion-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .detalle-nota .estadisticas {
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+        }
+
+        .detalle-nota .acciones .boton {
+            flex: 1;
+        }
+    }
+
+    @@media print {
+
+        .detalle-nota .acciones,
+        .detalle-nota .boton-detalle,
+        .detalle-nota .boton-modificar,
+        .detalle-nota .boton-editar-tabla,
+        .detalle-nota .aviso-edicion,
+        .detalle-nota .columna-acciones {
+            display: none !important;
+        }
+
+        .detalle-nota .panel {
+            box-shadow: none;
+            break-inside: avoid;
+        }
+
+        .detalle-nota .encabezado {
+            background: white !important;
+            border: 1px solid #cbd5e1;
+            color: black !important;
+        }
+
+        .detalle-nota .encabezado h2,
+        .detalle-nota .encabezado p {
+            color: black !important;
+        }
+
+        .detalle-nota .tabla {
+            min-width: 0;
+        }
+
+        .detalle-nota .tabla th {
+            background: #e2e8f0 !important;
+            color: black !important;
+        }
+    }
+</style>
+
+<div class="detalle-nota">
+
+    <!-- ===================================== -->
+    <!-- ENCABEZADO -->
+    <!-- ===================================== -->
+
+    <div class="encabezado">
+
+        <h2>Detalle de calificación</h2>
+
+        <p>
+            Información académica de la evaluación
+            seleccionada.
+        </p>
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- BOTONES DE NAVEGACION -->
+    <!-- ===================================== -->
+
+    <div class="acciones">
+
+        <a href="@Url.Action(
+            "Index",
+            "ConsultaNotas",
+            new
+            {
+                id_estudiante = Model.fk_id_estudiante,
+                id_grado = Model.id_grado,
+                id_seccion = Model.fk_id_seccion,
+                id_materia = Model.fk_id_materia,
+                id_calendario = Model.fk_id_calendario,
+                periodo = Model.periodo
+            })"
+           class="boton boton-principal">
+
+            Volver a calificaciones
+
+        </a>
+
+        <button type="button"
+                class="boton boton-secundario"
+                onclick="window.print();">
+
+            Imprimir detalle
+
+        </button>
+
+        @if (puedeModificar)
+        {
+            <a href="@Url.Action(
+                "Editar",
+                "Notas",
+                new
+                {
+                    id = Model.id_nota
+                })"
+               class="boton boton-modificar">
+
+                Modificar nota
+
+            </a>
+        }
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- AVISO PARA EL DOCENTE -->
+    <!-- ===================================== -->
+
+    @if (puedeModificar)
+    {
+        <div class="aviso-edicion">
+
+            <strong>Modificación de calificaciones:</strong>
+
+            Como docente responsable de esta evaluación,
+            puede modificar la nota y las observaciones.
+
+            Deberá indicar el motivo de la modificación.
+            Los cambios quedarán registrados en la bitácora
+            del sistema.
+
+        </div>
+    }
+
+    <!-- ===================================== -->
+    <!-- AVISO DE CALIFICACION MODIFICADA -->
+    <!-- ===================================== -->
+
+    @if (fueModificada)
+    {
+        <div class="aviso-modificacion">
+
+            <strong>Calificación actualizada:</strong>
+
+            Esta calificación ha sido modificada.
+            La información presentada corresponde
+            a los valores actuales del registro.
+
+            @if (Model.fecha_modificacion.HasValue)
+            {
+                <div class="mt-2">
+
+                    <strong>Última modificación:</strong>
+
+                    @Model.fecha_modificacion.Value.ToString(
+                        "dd/MM/yyyy HH:mm")
+
+                </div>
+            }
+
+        </div>
+    }
+
+    <!-- ===================================== -->
+    <!-- CALIFICACION PRINCIPAL -->
+    <!-- ===================================== -->
+
+    <div class="calificacion-principal">
+
+        <h3>
+
+            @Model.nombre_evaluacion
+
+        </h3>
+
+        <div class="nota-grande">
+
+            @(Model.nota.HasValue
+                ? Model.nota.Value.ToString("0.00")
+                : "—")
+
+            <small>/ 100</small>
+
+        </div>
+
+        @if (Model.nota.HasValue)
+        {
+            <div class="barra"
+                 role="progressbar"
+                 aria-label="Calificación obtenida"
+                 aria-valuemin="0"
+                 aria-valuemax="100"
+                 aria-valuenow="@porcentaje">
+
+                <div class="barra-progreso"
+                     style="width: @(porcentaje)%;">
+
+                </div>
+
+            </div>
+        }
+
+        <div class="estado @(fueModificada
+            ? "estado-modificada"
+            : string.Equals(
+                Model.estado,
+                "Registrada",
+                StringComparison.OrdinalIgnoreCase)
+                ? "estado-registrada"
+                : "")">
+
+            @(fueModificada
+                ? "Modificada"
+                : string.IsNullOrWhiteSpace(Model.estado)
+                    ? "Sin estado"
+                    : Model.estado)
+
+        </div>
+
+        @if (Model.fecha_modificacion.HasValue)
+        {
+            <div class="fecha-modificacion">
+
+                Actualizada el
+
+                @Model.fecha_modificacion.Value.ToString(
+                    "dd/MM/yyyy HH:mm")
+
+            </div>
+        }
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- INFORMACION DEL ESTUDIANTE -->
+    <!-- ===================================== -->
+
+    <div class="panel">
+
+        <div class="titulo-panel">
+
+            Información del estudiante
+
+        </div>
+
+        <div class="informacion-grid">
+
+            <div class="campo">
+
+                <label>Nombre completo</label>
+
+                <strong>
+
+                    @Model.nombre_estudiante
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Identificación</label>
+
+                <strong>
+
+                    @Model.identificacion_estudiante
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Grado</label>
+
+                <strong>
+
+                    @Model.nombre_grado
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Sección</label>
+
+                <strong>
+
+                    @Model.nombre_seccion
+
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- INFORMACION ACADEMICA -->
+    <!-- ===================================== -->
+
+    <div class="panel">
+
+        <div class="titulo-panel">
+
+            Información académica
+
+        </div>
+
+        <div class="informacion-grid">
+
+            <div class="campo">
+
+                <label>Materia</label>
+
+                <strong>
+
+                    @Model.nombre_materia
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Docente</label>
+
+                <strong>
+
+                    @Model.nombre_docente
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Calendario académico</label>
+
+                <strong>
+
+                    @Model.nombre_calendario
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Período académico</label>
+
+                <strong>
+
+                    @Model.periodo
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Nombre de la evaluación</label>
+
+                <strong>
+
+                    @Model.nombre_evaluacion
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Tipo de evaluación</label>
+
+                <strong>
+
+                    @Model.tipo_evaluacion
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Fecha de evaluación</label>
+
+                <strong>
+
+                    @(Model.fecha_evaluacion.HasValue
+                        ? Model.fecha_evaluacion.Value
+                            .ToString("dd/MM/yyyy")
+                        : "Sin fecha")
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Calificación obtenida</label>
+
+                <strong>
+
+                    @(Model.nota.HasValue
+                        ? Model.nota.Value.ToString("0.00")
+                            + " / 100"
+                        : "Sin calificación")
+
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- OBSERVACIONES DEL DOCENTE -->
+    <!-- ===================================== -->
+
+    <div class="panel">
+
+        <div class="titulo-panel">
+
+            Observaciones del docente
+
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(
+            Model.observaciones))
+        {
+            <div class="observaciones">@Model.observaciones</div>
+        }
+        else
+        {
+            <div class="mensaje-vacio">
+
+                No se registraron observaciones
+                para esta evaluación.
+
+            </div>
+        }
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- RESUMEN ACADEMICO DE LA MATERIA -->
+    <!-- ===================================== -->
+
+    @if (resumen != null)
+    {
+        <div class="panel">
+
+            <div class="titulo-panel">
+
+                Resumen académico:
+                @resumen.nombre_materia
+
+            </div>
+
+            <p class="texto-secundario">
+
+                @resumen.periodo —
+                @resumen.nombre_calendario
+
+            </p>
+
+            <p class="texto-secundario">
+
+                Resumen de las evaluaciones registradas
+                por el docente de esta calificación.
+
+                Los promedios son aritméticos informativos
+                y no representan una nota final ponderada.
+
+            </p>
+
+            <div class="estadisticas">
+
+                <div class="estadistica">
+
+                    <span>Total de evaluaciones</span>
+
+                    <strong>
+
+                        @resumen.TotalEvaluaciones
+
+                    </strong>
+
+                </div>
+
+                <div class="estadistica">
+
+                    <span>Promedio de la materia</span>
+
+                    <strong>
+
+                        @(resumen.TieneNotas
+                            ? resumen.PromedioMateria
+                                .ToString("0.00")
+                            : "—")
+
+                    </strong>
+
+                </div>
+
+                <div class="estadistica verde">
+
+                    <span>Nota más alta</span>
+
+                    <strong>
+
+                        @(resumen.TieneNotas
+                            ? resumen.NotaMayor
+                                .ToString("0.00")
+                            : "—")
+
+                    </strong>
+
+                </div>
+
+                <div class="estadistica naranja">
+
+                    <span>Nota más baja</span>
+
+                    <strong>
+
+                        @(resumen.TieneNotas
+                            ? resumen.NotaMenor
+                                .ToString("0.00")
+                            : "—")
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+            <!-- ================================= -->
+            <!-- RESUMEN POR TIPO DE EVALUACION -->
+            <!-- ================================= -->
+
+            <div class="titulo-panel">
+
+                Evaluaciones por categoría
+
+            </div>
+
+            <div class="informacion-grid">
+
+                <div class="campo">
+
+                    <label>Exámenes</label>
+
+                    <strong>
+
+                        @resumen.TotalExamenes
+
+                    </strong>
+
+                    <span class="texto-secundario">
+
+                        Promedio:
+
+                        @(resumen.PromedioExamenes.HasValue
+                            ? resumen.PromedioExamenes.Value
+                                .ToString("0.00")
+                            : "—")
+
+                    </span>
+
+                </div>
+
+                <div class="campo">
+
+                    <label>Tareas</label>
+
+                    <strong>
+
+                        @resumen.TotalTareas
+
+                    </strong>
+
+                    <span class="texto-secundario">
+
+                        Promedio:
+
+                        @(resumen.PromedioTareas.HasValue
+                            ? resumen.PromedioTareas.Value
+                                .ToString("0.00")
+                            : "—")
+
+                    </span>
+
+                </div>
+
+                <div class="campo">
+
+                    <label>Proyectos</label>
+
+                    <strong>
+
+                        @resumen.TotalProyectos
+
+                    </strong>
+
+                    <span class="texto-secundario">
+
+                        Promedio:
+
+                        @(resumen.PromedioProyectos.HasValue
+                            ? resumen.PromedioProyectos.Value
+                                .ToString("0.00")
+                            : "—")
+
+                    </span>
+
+                </div>
+
+                <div class="campo">
+
+                    <label>Trabajos cotidianos</label>
+
+                    <strong>
+
+                        @resumen.TotalTrabajosCotidianos
+
+                    </strong>
+
+                    <span class="texto-secundario">
+
+                        Promedio:
+
+                        @(resumen.PromedioTrabajoCotidiano
+                            .HasValue
+                            ? resumen.PromedioTrabajoCotidiano
+                                .Value.ToString("0.00")
+                            : "—")
+
+                    </span>
+
+                </div>
+
+                <div class="campo">
+
+                    <label>Trabajos en clase</label>
+
+                    <strong>
+
+                        @resumen.TotalTrabajosEnClase
+
+                    </strong>
+
+                </div>
+
+                <div class="campo">
+
+                    <label>Exposiciones</label>
+
+                    <strong>
+
+                        @resumen.TotalExposiciones
+
+                    </strong>
+
+                </div>
+
+                <div class="campo">
+
+                    <label>Prácticas</label>
+
+                    <strong>
+
+                        @resumen.TotalPracticas
+
+                    </strong>
+
+                </div>
+
+                <div class="campo">
+
+                    <label>Otras evaluaciones</label>
+
+                    <strong>
+
+                        @resumen.TotalOtrasEvaluaciones
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ===================================== -->
+        <!-- HISTORIAL DE NOTAS DE LA MATERIA -->
+        <!-- ===================================== -->
+
+        <div class="panel">
+
+            <div class="titulo-panel">
+
+                Historial de evaluaciones de la materia
+
+            </div>
+
+            @if (resumen.Notas != null &&
+                resumen.Notas.Any())
+            {
+                <div class="tabla-contenedor">
+
+                    <table class="tabla">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>Evaluación</th>
+
+                                <th>Tipo</th>
+
+                                <th>Fecha</th>
+
+                                <th>Nota</th>
+
+                                <th>Estado</th>
+
+                                <th>Última modificación</th>
+
+                                <th class="columna-acciones">
+
+                                    Acciones
+
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var nota in resumen.Notas)
+                            {
+                                bool puedeEditarFila =
+                                    esDocente &&
+                                    !string.IsNullOrWhiteSpace(
+                                        usuarioSesion.id_usuario) &&
+                                    string.Equals(
+                                        usuarioSesion.id_usuario,
+                                        nota.fk_id_docente,
+                                        StringComparison.Ordinal);
+
+                                bool notaModificada =
+                                    nota.fecha_modificacion.HasValue ||
+                                    string.Equals(
+                                        nota.estado,
+                                        "Modificada",
+                                        StringComparison.OrdinalIgnoreCase);
+
+                                <tr class="@(nota.id_nota ==
+                                    Model.id_nota
+                                    ? "fila-actual"
+                                    : "")">
+
+                                    <td>
+
+                                        <strong>
+
+                                            @nota.nombre_evaluacion
+
+                                        </strong>
+
+                                    </td>
+
+                                    <td>
+
+                                        @nota.tipo_evaluacion
+
+                                    </td>
+
+                                    <td>
+
+                                        @(nota.fecha_evaluacion
+                                            .HasValue
+                                            ? nota.fecha_evaluacion
+                                                .Value.ToString(
+                                                    "dd/MM/yyyy")
+                                            : "Sin fecha")
+
+                                    </td>
+
+                                    <td>
+
+                                        <span class="nota-valor">
+
+                                            @(nota.nota.HasValue
+                                                ? nota.nota.Value
+                                                    .ToString("0.00")
+                                                : "—")
+
+                                        </span>
+
+                                    </td>
+
+                                    <td>
+
+                                        <span class="estado @(notaModificada
+                                            ? "estado-modificada"
+                                            : string.Equals(
+                                                nota.estado,
+                                                "Registrada",
+                                                StringComparison.OrdinalIgnoreCase)
+                                                ? "estado-registrada"
+                                                : "")">
+
+                                            @(notaModificada
+                                                ? "Modificada"
+                                                : string.IsNullOrWhiteSpace(
+                                                    nota.estado)
+                                                    ? "Sin estado"
+                                                    : nota.estado)
+
+                                        </span>
+
+                                    </td>
+
+                                    <td>
+
+                                        @if (nota.fecha_modificacion.HasValue)
+                                        {
+                                            <span>
+
+                                                @nota.fecha_modificacion.Value
+                                                    .ToString("dd/MM/yyyy HH:mm")
+
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="texto-secundario">
+
+                                                Sin modificaciones
+
+                                            </span>
+                                        }
+
+                                    </td>
+
+                                    <td class="columna-acciones">
+
+                                        <div class="acciones-tabla">
+
+                                            @if (nota.id_nota ==
+                                                Model.id_nota)
+                                            {
+                                                <span class="texto-secundario">
+
+                                                    Evaluación actual
+
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <a href="@Url.Action(
+                                                    "Detalle",
+                                                    "ConsultaNotas",
+                                                    new
+                                                    {
+                                                        id = nota.id_nota
+                                                    })"
+                                                   class="boton-detalle">
+
+                                                    Ver detalle
+
+                                                </a>
+                                            }
+
+                                            @if (puedeEditarFila)
+                                            {
+                                                <a href="@Url.Action(
+                                                    "Editar",
+                                                    "Notas",
+                                                    new
+                                                    {
+                                                        id = nota.id_nota
+                                                    })"
+                                                   class="boton-editar-tabla">
+
+                                                    Modificar nota
+
+                                                </a>
+                                            }
+
+                                        </div>
+
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+            else
+            {
+                <div class="mensaje-vacio">
+
+                    No hay evaluaciones disponibles.
+
+                </div>
+            }
+
+        </div>
+    }
+
+    <!-- ===================================== -->
+    <!-- INFORMACION DEL REGISTRO -->
+    <!-- ===================================== -->
+
+    <div class="panel">
+
+        <div class="titulo-panel">
+
+            Información del registro
+
+        </div>
+
+        <div class="informacion-grid">
+
+            <div class="campo">
+
+                <label>Fecha de registro</label>
+
+                <strong>
+
+                    @Model.fecha_registro.ToString(
+                        "dd/MM/yyyy HH:mm")
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Última modificación</label>
+
+                <strong>
+
+                    @(Model.fecha_modificacion.HasValue
+                        ? Model.fecha_modificacion.Value
+                            .ToString("dd/MM/yyyy HH:mm")
+                        : "Sin modificaciones")
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Modificado por</label>
+
+                <strong>
+
+                    @(string.IsNullOrWhiteSpace(
+                        Model.nombre_modificado_por)
+                        ? "No aplica"
+                        : Model.nombre_modificado_por)
+
+                </strong>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Estado de la calificación</label>
+
+                <strong>
+
+                    @(fueModificada
+                        ? "Modificada"
+                        : string.IsNullOrWhiteSpace(
+                            Model.estado)
+                            ? "Sin estado"
+                            : Model.estado)
+
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- NAVEGACION FINAL -->
+    <!-- ===================================== -->
+
+    <div class="acciones">
+
+        <a href="@Url.Action(
+            "Index",
+            "ConsultaNotas")"
+           class="boton boton-principal">
+
+            Volver al listado general
+
+        </a>
+
+        @if (puedeModificar)
+        {
+            <a href="@Url.Action(
+                "Editar",
+                "Notas",
+                new
+                {
+                    id = Model.id_nota
+                })"
+               class="boton boton-modificar">
+
+                Modificar esta calificación
+
+            </a>
+
+            <a href="@Url.Action(
+                "Historial",
+                "Notas",
+                new
+                {
+                    id_grado = Model.id_grado,
+                    id_seccion = Model.fk_id_seccion,
+                    id_materia = Model.fk_id_materia,
+                    periodo = Model.periodo,
+                    id_estudiante = Model.fk_id_estudiante
+                })"
+               class="boton boton-secundario">
+
+                Ir al historial de calificaciones
+
+            </a>
+        }
+
+    </div>
+
+</div>

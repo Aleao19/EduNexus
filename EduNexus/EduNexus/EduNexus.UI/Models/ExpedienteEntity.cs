@@ -1,18 +1,27 @@
+
 namespace EduNexus.UI.Models.Identity
 {
-    // Tabla: expediente_estudiantes
-    // Los datos personales del estudiante (nombre, identificación, género, etc.)
-    // se leen de la prematrícula ligada (fk_id_matricula); no se duplican aquí.
+    // REXP-03-001
+    // Tabla de MySQL: expediente_estudiantes
+
     public class ExpedienteEntity
     {
+        // Identificador principal del expediente
         public int id_expediente { get; set; }
+
+        // Relacion con la tabla prematricula
         public int fk_id_matricula { get; set; }
+
+        // Relacion con la tabla usuarios
         public string fk_id_usuario { get; set; }
+
+        // Nuevos campos del expediente
         public string correo { get; set; }
+
         public string grupo_sanguineo { get; set; }
+
         public string alergias { get; set; }
 
-        // Columna contacto_emergencia
         public string contactoEmergencia { get; set; }
     }
 }
