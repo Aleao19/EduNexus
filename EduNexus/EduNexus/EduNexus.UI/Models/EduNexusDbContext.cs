@@ -57,6 +57,7 @@ namespace EduNexus.UI.Models.Identity
 
         public DbSet<SeccionMateriaEntity>
             SeccionesMaterias { get; set; }
+        public DbSet<MaterialClaseEntity> MaterialesClase { get; set; }
 
         // ========================================
         // ASISTENCIA
@@ -96,6 +97,44 @@ namespace EduNexus.UI.Models.Identity
         // ========================================
 
         public DbSet<NotaEntity> Notas { get; set; }
+
+        // ========================================
+        // ADECUACIONES ESTUDIANTILES
+        // ========================================
+
+        public DbSet<AdecuacionEntity> Adecuaciones { get; set; }
+
+        public DbSet<AdecuacionEstudianteEntity> AdecuacionesEstudiantes { get; set; }
+
+        // ========================================
+        // ASIGNACIONES
+        // ========================================
+
+        public DbSet<AsignacionEntity> Asignaciones { get; set; }
+
+        // ========================================
+        // AYUDAS ESTUDIANTILES
+        // ========================================
+
+        public DbSet<AyudaEstudianteEntity> AyudasEstudiantes { get; set; }
+
+        // ========================================
+        // DOCUMENTOS DE EXPEDIENTE
+        // ========================================
+
+        public DbSet<DocumentoExpedienteEntity> DocumentosExpediente { get; set; }
+
+        // ========================================
+        // HORARIOS
+        // ========================================
+
+        public DbSet<HorarioEntity> Horarios { get; set; }
+
+        // ========================================
+        // TIPOS DE AYUDA
+        // ========================================
+
+        public DbSet<TipoAyudaEntity> TiposAyuda { get; set; }
 
         // ========================================
         // CONFIGURACIÓN DE ENTIDADES
@@ -312,6 +351,16 @@ namespace EduNexus.UI.Models.Identity
                     sm.fk_id_materia
                 });
 
+            // ========================================
+            // MATERIAL DEL AULA VIRTUAL
+            // ========================================
+            modelBuilder.Entity<MaterialClaseEntity>()
+                .ToTable("material_clase")
+                .HasKey(m => m.id_material);
+
+            modelBuilder.Entity<MaterialClaseEntity>()
+                .Property(m => m.id_material)
+                .HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
             // ========================================
             // ASISTENCIA
             // ========================================
@@ -673,6 +722,89 @@ namespace EduNexus.UI.Models.Identity
                 .Property(n => n.estado)
                 .HasMaxLength(30)
                 .IsRequired();
+
+            // ========================================
+            // ADECUACIONES ESTUDIANTILES
+            // ========================================
+
+            modelBuilder.Entity<AdecuacionEntity>()
+                .ToTable("adecuaciones")
+                .HasKey(a => a.id_adecuacion);
+
+            modelBuilder.Entity<AdecuacionEntity>()
+                .Property(a => a.id_adecuacion)
+                .HasDatabaseGeneratedOption(
+                    DatabaseGeneratedOption.Identity);
+
+            modelBuilder.Entity<AdecuacionEstudianteEntity>()
+                .ToTable("adecuaciones_estudiantes")
+                .HasKey(ae => ae.id_adecuacion_estudiante);
+
+            modelBuilder.Entity<AdecuacionEstudianteEntity>()
+                .Property(ae => ae.id_adecuacion_estudiante)
+                .HasDatabaseGeneratedOption(
+                    DatabaseGeneratedOption.Identity);
+
+            // ========================================
+            // ASIGNACIONES
+            // ========================================
+
+            modelBuilder.Entity<AsignacionEntity>()
+                .ToTable("asignaciones")
+                .HasKey(asg => asg.id_asignacion);
+
+            modelBuilder.Entity<AsignacionEntity>()
+                .Property(asg => asg.id_asignacion)
+                .HasDatabaseGeneratedOption(
+                    DatabaseGeneratedOption.Identity);
+
+            // ========================================
+            // AYUDAS ESTUDIANTILES
+            // ========================================
+
+            modelBuilder.Entity<AyudaEstudianteEntity>()
+                .ToTable("ayudas_estudiantes")
+                .HasKey(ay => ay.id_ayuda_estudiante);
+
+            modelBuilder.Entity<AyudaEstudianteEntity>()
+                .Property(ay => ay.id_ayuda_estudiante)
+                .HasDatabaseGeneratedOption(
+                    DatabaseGeneratedOption.Identity);
+
+            modelBuilder.Entity<TipoAyudaEntity>()
+                .ToTable("tipos_ayuda")
+                .HasKey(ta => ta.id_tipo_ayuda);
+
+            modelBuilder.Entity<TipoAyudaEntity>()
+                .Property(ta => ta.id_tipo_ayuda)
+                .HasDatabaseGeneratedOption(
+                    DatabaseGeneratedOption.Identity);
+
+            // ========================================
+            // DOCUMENTOS DE EXPEDIENTE
+            // ========================================
+
+            modelBuilder.Entity<DocumentoExpedienteEntity>()
+                .ToTable("documentos_expediente")
+                .HasKey(de => de.id_documento);
+
+            modelBuilder.Entity<DocumentoExpedienteEntity>()
+                .Property(de => de.id_documento)
+                .HasDatabaseGeneratedOption(
+                    DatabaseGeneratedOption.Identity);
+
+            // ========================================
+            // HORARIOS
+            // ========================================
+
+            modelBuilder.Entity<HorarioEntity>()
+                .ToTable("horarios")
+                .HasKey(h => h.id_horario);
+
+            modelBuilder.Entity<HorarioEntity>()
+                .Property(h => h.id_horario)
+                .HasDatabaseGeneratedOption(
+                    DatabaseGeneratedOption.Identity);
         }
     }
 }
