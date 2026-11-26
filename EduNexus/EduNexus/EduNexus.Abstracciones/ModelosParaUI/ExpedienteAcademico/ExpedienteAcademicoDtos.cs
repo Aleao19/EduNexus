@@ -23,6 +23,19 @@ namespace EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico
         public int adecuaciones_activas { get; set; }
         [DisplayName("Ayudas activas")]
         public int ayudas_activas { get; set; }
+
+        // Expediente estudiantil (expediente_estudiantes) del estudiante, si existe
+        public int? id_expediente { get; set; }
+        public bool tiene_expediente { get { return id_expediente.HasValue; } }
+
+        // Última prematrícula aprobada (permite crear el expediente si aún no existe)
+        public int? id_matricula_aprobada { get; set; }
+
+        [DisplayName("Documentos")]
+        public int total_documentos { get; set; }
+
+        // Iniciales para el avatar
+        public string iniciales { get; set; }
     }
 
     // REXP-02-007: un año lectivo del historial académico
@@ -33,6 +46,8 @@ namespace EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico
         public string grado { get; set; }
         public string seccion { get; set; }
         public decimal? promedio { get; set; }
+        // true si el promedio se calculó ponderado por porcentaje_nota
+        public bool promedio_ponderado { get; set; }
         public List<CalificacionDto> calificaciones { get; set; } = new List<CalificacionDto>();
     }
 

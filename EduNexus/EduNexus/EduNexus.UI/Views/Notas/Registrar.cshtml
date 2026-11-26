@@ -1,0 +1,1690 @@
+@model EduNexus.Abstracciones.ModelosParaUI.Notas.RegistroNotasDto
+
+@using System
+@using System.Linq
+@using System.Web.Mvc
+@using System.Globalization
+
+@{
+    ViewBag.Title = "Registrar notas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    bool sinClases = ViewBag.SinClases == true;
+
+    bool tieneEstudiantes =
+        Model.Estudiantes != null &&
+        Model.Estudiantes.Any();
+
+    string fechaEvaluacion = Model.fecha_evaluacion.HasValue
+        ? Model.fecha_evaluacion.Value.ToString("yyyy-MM-dd")
+        : DateTime.Today.ToString("yyyy-MM-dd");
+}
+
+<style>
+    .notas-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .notas-header {
+        margin-bottom: 25px;
+    }
+
+    .notas-header h2 {
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .notas-header p {
+        color: #64748b;
+        margin-bottom: 0;
+    }
+
+    .notas-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .notas-card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .notas-label {
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 7px;
+    }
+
+    .notas-required {
+        color: #dc2626;
+    }
+
+    .notas-container .form-control,
+    .notas-container .form-select {
+        border-radius: 8px;
+        min-height: 42px;
+        border: 1px solid #cbd5e1;
+    }
+
+    .notas-container .form-control:focus,
+    .notas-container .form-select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+    }
+
+    .notas-stat {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        height: 100%;
+    }
+
+    .notas-stat-label {
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .notas-stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        margin-top: 8px;
+        color: #2563eb;
+    }
+
+    .stat-calificados {
+        color: #16a34a;
+    }
+
+    .stat-pendientes {
+        color: #d97706;
+    }
+
+    .stat-promedio {
+        color: #7c3aed;
+    }
+
+    .notas-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .notas-table thead th {
+        background: #f1f5f9;
+        color: #334155;
+        font-weight: 600;
+        padding: 14px;
+        white-space: nowrap;
+    }
+
+    .notas-table tbody td {
+        padding: 14px;
+        vertical-align: middle;
+    }
+
+    .notas-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .nota-input {
+        min-width: 110px;
+        max-width: 140px;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .observacion-input {
+        min-width: 220px;
+        resize: vertical;
+    }
+
+    .estudiante-nombre {
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .estado-nota {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .estado-pendiente {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .estado-valido {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .estado-invalido {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .nota-invalida {
+        border-color: #dc2626 !important;
+        background: #fef2f2 !important;
+    }
+
+    .notas-confirmacion {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 18px;
+        margin-bottom: 20px;
+    }
+
+    .notas-empty {
+        padding: 45px 20px;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .notas-empty h4 {
+        color: #334155;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .notas-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .notas-actions .btn {
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 600;
+    }
+
+    .field-validation-error {
+        color: #dc2626;
+        font-size: 13px;
+        display: block;
+        margin-top: 5px;
+    }
+
+    .input-validation-error {
+        border-color: #dc2626 !important;
+    }
+
+    .notas-contador {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 4px;
+        text-align: right;
+    }
+</style>
+
+<div class="notas-container">
+
+    <!-- ENCABEZADO -->
+
+    <div class="notas-header">
+
+        <div class="d-flex flex-wrap justify-content-between
+                    align-items-center">
+
+            <div>
+                <h2>Registrar notas</h2>
+
+                <p>
+                    Registre las calificaciones de los estudiantes
+                    correspondientes a sus clases asignadas.
+                </p>
+            </div>
+
+            <div class="mt-2">
+
+                <a href="@Url.Action("Historial", "Notas")"
+                   class="btn btn-outline-primary">
+
+                    Historial de calificaciones
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MENSAJES -->
+
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Mensaje"]
+        </div>
+    }
+
+    @if (TempData["MensajeError"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["MensajeError"]
+        </div>
+    }
+
+    @if (ViewBag.MensajeInformativo != null)
+    {
+        <div class="alert alert-info">
+            @ViewBag.MensajeInformativo
+        </div>
+    }
+
+    @Html.ValidationSummary(
+        false,
+        "",
+        new { @class = "alert alert-danger" }
+    )
+
+    @if (sinClases)
+    {
+        <div class="notas-card">
+
+            <div class="notas-empty">
+
+                <h4>No tiene clases asignadas</h4>
+
+                <p>
+                    Actualmente no dispone de materias y secciones
+                    asignadas dentro de un calendario académico vigente.
+                </p>
+
+                <a href="@Url.Action("Index", "Home")"
+                   class="btn btn-primary">
+
+                    Regresar al inicio
+
+                </a>
+
+            </div>
+
+        </div>
+    }
+    else
+    {
+        using (Html.BeginForm(
+            "Registrar",
+            "Notas",
+            FormMethod.Post,
+            new { id = "formRegistrarNotas" }))
+        {
+            @Html.AntiForgeryToken()
+
+            @Html.HiddenFor(
+                m => m.fk_id_calendario,
+                new { id = "fk_id_calendario" }
+            )
+
+            <!-- INFORMACIÓN ACADÉMICA -->
+
+            <div class="notas-card">
+
+                <div class="notas-card-title">
+                    1. Información académica
+                </div>
+
+                <div class="row">
+
+                    <!-- GRADO -->
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="notas-label">
+                            Grado
+                            <span class="notas-required">*</span>
+                        </label>
+
+                        @Html.DropDownListFor(
+                            m => m.id_grado,
+                            (SelectList)ViewBag.Grados,
+                            "Seleccione un grado",
+                            new
+                            {
+                                @class = "form-select",
+                                id = "id_grado"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.id_grado
+                        )
+
+                    </div>
+
+                    <!-- SECCIÓN -->
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="notas-label">
+                            Sección
+                            <span class="notas-required">*</span>
+                        </label>
+
+                        @Html.DropDownListFor(
+                            m => m.fk_id_seccion,
+                            (SelectList)ViewBag.Secciones,
+                            "Seleccione una sección",
+                            new
+                            {
+                                @class = "form-select",
+                                id = "fk_id_seccion"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.fk_id_seccion
+                        )
+
+                    </div>
+
+                    <!-- MATERIA -->
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="notas-label">
+                            Materia
+                            <span class="notas-required">*</span>
+                        </label>
+
+                        @Html.DropDownListFor(
+                            m => m.fk_id_materia,
+                            (SelectList)ViewBag.Materias,
+                            "Seleccione una materia",
+                            new
+                            {
+                                @class = "form-select",
+                                id = "fk_id_materia"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.fk_id_materia
+                        )
+
+                    </div>
+
+                    <!-- CALENDARIO -->
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="notas-label">
+                            Calendario académico
+                        </label>
+
+                        <input type="text"
+                               id="nombre_calendario"
+                               class="form-control"
+                               value="@Model.nombre_calendario"
+                               placeholder="Asignado automáticamente"
+                               readonly />
+
+                    </div>
+
+                    <!-- PERÍODO -->
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="notas-label">
+                            Período académico
+                            <span class="notas-required">*</span>
+                        </label>
+
+                        @Html.DropDownListFor(
+                            m => m.periodo,
+                            (SelectList)ViewBag.Periodos,
+                            "Seleccione un período",
+                            new
+                            {
+                                @class = "form-select",
+                                id = "periodo"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.periodo
+                        )
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- INFORMACIÓN DE LA EVALUACIÓN -->
+
+            <div class="notas-card">
+
+                <div class="notas-card-title">
+                    2. Información de la evaluación
+                </div>
+
+                <div class="row">
+
+                    <!-- NOMBRE -->
+
+                    <div class="col-md-5 mb-3">
+
+                        <label class="notas-label">
+                            Nombre de la evaluación
+                            <span class="notas-required">*</span>
+                        </label>
+
+                        @Html.TextBoxFor(
+                            m => m.nombre_evaluacion,
+                            new
+                            {
+                                @class = "form-control",
+                                id = "nombre_evaluacion",
+                                maxlength = "150",
+                                placeholder = "Ejemplo: Primer examen"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.nombre_evaluacion
+                        )
+
+                    </div>
+
+                    <!-- TIPO -->
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="notas-label">
+                            Tipo de evaluación
+                            <span class="notas-required">*</span>
+                        </label>
+
+                        @Html.DropDownListFor(
+                            m => m.tipo_evaluacion,
+                            (SelectList)ViewBag.TiposEvaluacion,
+                            "Seleccione un tipo",
+                            new
+                            {
+                                @class = "form-select",
+                                id = "tipo_evaluacion"
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.tipo_evaluacion
+                        )
+
+                    </div>
+
+                    <!-- FECHA -->
+
+                    <div class="col-md-3 mb-3">
+
+                        <label class="notas-label">
+                            Fecha de evaluación
+                            <span class="notas-required">*</span>
+                        </label>
+
+                        @Html.TextBoxFor(
+                            m => m.fecha_evaluacion,
+                            "{0:yyyy-MM-dd}",
+                            new
+                            {
+                                @class = "form-control",
+                                type = "date",
+                                id = "fecha_evaluacion",
+                                max = DateTime.Today.ToString("yyyy-MM-dd")
+                            }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            m => m.fecha_evaluacion
+                        )
+
+                    </div>
+
+                </div>
+
+                <div class="d-flex justify-content-end">
+
+                    <button type="button"
+                            id="btnCargarEstudiantes"
+                            class="btn btn-primary">
+
+                        Cargar estudiantes
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- ESTADÍSTICAS -->
+
+            <div class="row mb-4">
+
+                <div class="col-md-3 col-sm-6 mb-3">
+
+                    <div class="notas-stat">
+
+                        <div class="notas-stat-label">
+                            Total de estudiantes
+                        </div>
+
+                        <div class="notas-stat-value"
+                             id="totalEstudiantes">
+
+                            @Model.TotalEstudiantes
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-3 col-sm-6 mb-3">
+
+                    <div class="notas-stat">
+
+                        <div class="notas-stat-label">
+                            Estudiantes calificados
+                        </div>
+
+                        <div class="notas-stat-value stat-calificados"
+                             id="totalCalificados">
+
+                            @Model.TotalCalificados
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-3 col-sm-6 mb-3">
+
+                    <div class="notas-stat">
+
+                        <div class="notas-stat-label">
+                            Estudiantes pendientes
+                        </div>
+
+                        <div class="notas-stat-value stat-pendientes"
+                             id="totalPendientes">
+
+                            @Model.TotalPendientes
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-3 col-sm-6 mb-3">
+
+                    <div class="notas-stat">
+
+                        <div class="notas-stat-label">
+                            Promedio del grupo
+                        </div>
+
+                        <div class="notas-stat-value stat-promedio"
+                             id="promedioGrupo">
+
+                            @Model.PromedioGrupo.ToString("N2")
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- LISTADO DE ESTUDIANTES -->
+
+            <div class="notas-card">
+
+                <div class="notas-card-title">
+                    3. Calificaciones de los estudiantes
+                </div>
+
+                <div class="alert alert-info">
+
+                    Ingrese calificaciones entre 0 y 100,
+                    con un máximo de dos decimales.
+
+                    Puede dejar vacías las notas de los estudiantes
+                    que todavía no han sido evaluados.
+
+                </div>
+
+                @if (tieneEstudiantes)
+                {
+                    <div class="table-responsive">
+
+                        <table class="table table-bordered notas-table">
+
+                            <thead>
+
+                                <tr>
+                                    <th>N.º</th>
+                                    <th>Identificación</th>
+                                    <th>Estudiante</th>
+                                    <th>Nota / 100</th>
+                                    <th>Observaciones</th>
+                                    <th>Estado</th>
+                                </tr>
+
+                            </thead>
+
+                            <tbody>
+
+                                @for (int i = 0;
+                                      i < Model.Estudiantes.Count;
+                                      i++)
+                                {
+                                    var estudiante = Model.Estudiantes[i];
+
+                                    string valorNota =
+                                        estudiante.nota.HasValue
+                                        ? estudiante.nota.Value.ToString(
+                                            "0.##",
+                                            CultureInfo.InvariantCulture)
+                                        : "";
+
+                                    bool notaValida =
+                                        estudiante.nota.HasValue &&
+                                        estudiante.nota.Value >= 0 &&
+                                        estudiante.nota.Value <= 100 &&
+                                        decimal.Round(
+                                            estudiante.nota.Value, 2)
+                                            == estudiante.nota.Value;
+
+                                    string claseEstado =
+                                        !estudiante.nota.HasValue
+                                        ? "estado-pendiente"
+                                        : notaValida
+                                            ? "estado-valido"
+                                            : "estado-invalido";
+
+                                    string textoEstado =
+                                        !estudiante.nota.HasValue
+                                        ? "Pendiente"
+                                        : notaValida
+                                            ? "Calificado"
+                                            : "Nota inválida";
+
+                                    <tr class="fila-estudiante">
+
+                                        <td>
+                                            @(i + 1)
+
+                                            @Html.HiddenFor(
+                                                m => m.Estudiantes[i]
+                                                    .fk_id_estudiante
+                                            )
+
+                                        </td>
+
+                                        <td>
+
+                                            @estudiante.identificacion_estudiante
+
+                                        </td>
+
+                                        <td>
+
+                                            <span class="estudiante-nombre">
+
+                                                @estudiante.nombre_estudiante
+
+                                            </span>
+
+                                        </td>
+
+                                        <td>
+
+                                            <input type="text"
+                                                   inputmode="decimal"
+                                                   name="Estudiantes[@i].nota"
+                                                   id="nota_@i"
+                                                   class="form-control nota-input"
+                                                   value="@valorNota"
+                                                   maxlength="6"
+                                                   autocomplete="off"
+                                                   placeholder="0 - 100" />
+
+                                            @Html.ValidationMessageFor(
+                                                m => m.Estudiantes[i].nota
+                                            )
+
+                                        </td>
+
+                                        <td>
+
+                                            @Html.TextAreaFor(
+                                                m => m.Estudiantes[i]
+                                                    .observaciones,
+                                                new
+                                                {
+                                                    @class =
+                                                        "form-control observacion-input",
+                                                    rows = "2",
+                                                    maxlength = "500",
+                                                    placeholder =
+                                                        "Observación opcional"
+                                                }
+                                            )
+
+                                            <div class="notas-contador">
+
+                                                <span class="contador-observacion">
+                                                    0
+                                                </span>
+
+                                                / 500
+
+                                            </div>
+
+                                            @Html.ValidationMessageFor(
+                                                m => m.Estudiantes[i]
+                                                    .observaciones
+                                            )
+
+                                        </td>
+
+                                        <td>
+
+                                            <span class="estado-nota @claseEstado">
+
+                                                @textoEstado
+
+                                            </span>
+
+                                        </td>
+
+                                    </tr>
+                                }
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                    <div class="row mt-4">
+
+                        <div class="col-md-6 mb-3">
+
+                            <div class="notas-stat">
+
+                                <div class="notas-stat-label">
+                                    Nota más alta
+                                </div>
+
+                                <div class="notas-stat-value stat-calificados"
+                                     id="notaMayor">
+
+                                    @Model.NotaMayor.ToString("N2")
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <div class="notas-stat">
+
+                                <div class="notas-stat-label">
+                                    Nota más baja
+                                </div>
+
+                                <div class="notas-stat-value stat-pendientes"
+                                     id="notaMenor">
+
+                                    @Model.NotaMenor.ToString("N2")
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                }
+                else
+                {
+                    <div class="notas-empty">
+
+                        <h4>No hay estudiantes cargados</h4>
+
+                        <p>
+                            Seleccione el grado, la sección y la materia.
+                            Luego presione Cargar estudiantes.
+                        </p>
+
+                    </div>
+                }
+
+            </div>
+
+            <!-- CONFIRMACIÓN Y GUARDADO -->
+
+            if (tieneEstudiantes)
+            {
+                <div class="notas-card">
+
+                    <div class="notas-card-title">
+                        4. Confirmación del registro
+                    </div>
+
+                    <div class="notas-confirmacion">
+
+                        <div class="form-check">
+
+                            @Html.CheckBoxFor(
+                                m => m.confirma_registro,
+                                new
+                                {
+                                    @class = "form-check-input",
+                                    id = "confirma_registro"
+                                }
+                            )
+
+                            <label class="form-check-label"
+                                   for="confirma_registro">
+
+                                Confirmo que las calificaciones
+                                ingresadas son correctas.
+
+                            </label>
+
+                        </div>
+
+                        @Html.ValidationMessageFor(
+                            m => m.confirma_registro
+                        )
+
+                    </div>
+
+                    <div class="notas-actions">
+
+                        <a href="@Url.Action("Registrar", "Notas")"
+                           class="btn btn-outline-secondary">
+
+                            Cancelar
+
+                        </a>
+
+                        <button type="button"
+                                id="btnLimpiarNotas"
+                                class="btn btn-outline-danger">
+
+                            Limpiar calificaciones
+
+                        </button>
+
+                        <button type="submit"
+                                id="btnGuardarNotas"
+                                class="btn btn-success">
+
+                            Guardar calificaciones
+
+                        </button>
+
+                    </div>
+
+                </div>
+            }
+        }
+    }
+
+</div>
+
+@section scripts {
+
+    <script>
+
+        $(document).ready(function () {
+
+            var urlSecciones =
+                '@Url.Action("ObtenerSecciones", "Notas")';
+
+            var urlMaterias =
+                '@Url.Action("ObtenerMaterias", "Notas")';
+
+            var urlRegistrar =
+                '@Url.Action("Registrar", "Notas")';
+
+            var separadorDecimal =
+                '@CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator';
+
+            var materiasDisponibles = [];
+
+            var claseModificada = false;
+
+            var solicitudSecciones = null;
+
+            var solicitudMaterias = null;
+
+            // ========================================
+            // VALIDAR CALIFICACIÓN
+            // ========================================
+
+            function obtenerNota(valor) {
+
+                valor = $.trim(valor || "");
+
+                if (valor === "") {
+                    return null;
+                }
+
+                valor = valor.replace(",", ".");
+
+                if (!/^\d+(\.\d{1,2})?$/.test(valor)) {
+                    return NaN;
+                }
+
+                var nota = Number(valor);
+
+                if (!isFinite(nota) ||
+                    nota < 0 ||
+                    nota > 100) {
+
+                    return NaN;
+                }
+
+                return nota;
+            }
+
+            // ========================================
+            // ACTUALIZAR ESTADÍSTICAS
+            // ========================================
+
+            function actualizarEstadisticas() {
+
+                var total = $(".fila-estudiante").length;
+
+                var calificados = 0;
+
+                var suma = 0;
+
+                var notasValidas = [];
+
+                $(".fila-estudiante").each(function () {
+
+                    var fila = $(this);
+
+                    var input = fila.find(".nota-input");
+
+                    var estado = fila.find(".estado-nota");
+
+                    var valor = $.trim(input.val() || "");
+
+                    var nota = obtenerNota(valor);
+
+                    estado.removeClass(
+                        "estado-pendiente " +
+                        "estado-valido " +
+                        "estado-invalido"
+                    );
+
+                    input.removeClass("nota-invalida");
+
+                    if (valor === "") {
+
+                        estado.addClass("estado-pendiente");
+
+                        estado.text("Pendiente");
+
+                    } else if (isNaN(nota)) {
+
+                        estado.addClass("estado-invalido");
+
+                        estado.text("Nota inválida");
+
+                        input.addClass("nota-invalida");
+
+                    } else {
+
+                        estado.addClass("estado-valido");
+
+                        estado.text("Calificado");
+
+                        calificados++;
+
+                        suma += nota;
+
+                        notasValidas.push(nota);
+                    }
+                });
+
+                var promedio = calificados > 0
+                    ? suma / calificados
+                    : 0;
+
+                var mayor = notasValidas.length > 0
+                    ? Math.max.apply(null, notasValidas)
+                    : 0;
+
+                var menor = notasValidas.length > 0
+                    ? Math.min.apply(null, notasValidas)
+                    : 0;
+
+                $("#totalEstudiantes").text(total);
+
+                $("#totalCalificados").text(calificados);
+
+                $("#totalPendientes").text(
+                    total - calificados
+                );
+
+                $("#promedioGrupo").text(
+                    calificados > 0
+                        ? promedio.toFixed(2)
+                        : "—"
+                );
+
+                $("#notaMayor").text(
+                    calificados > 0
+                        ? mayor.toFixed(2)
+                        : "—"
+                );
+
+                $("#notaMenor").text(
+                    calificados > 0
+                        ? menor.toFixed(2)
+                        : "—"
+                );
+            }
+
+            // ========================================
+            // DETECTAR CAMBIOS DE CLASE
+            // ========================================
+
+            function marcarClaseModificada() {
+
+                claseModificada = true;
+
+                $("#btnGuardarNotas").prop(
+                    "disabled", true
+                );
+
+                $("#confirma_registro").prop(
+                    "checked", false
+                );
+            }
+
+            // ========================================
+            // CARGAR SECCIONES POR GRADO
+            // ========================================
+
+            $("#id_grado").on("change", function () {
+
+                marcarClaseModificada();
+
+                var idGrado = $(this).val();
+
+                if (solicitudSecciones) {
+                    solicitudSecciones.abort();
+                }
+
+                if (solicitudMaterias) {
+                    solicitudMaterias.abort();
+                }
+
+                $("#fk_id_seccion")
+                    .empty()
+                    .append(
+                        $("<option>", {
+                            value: "",
+                            text: "Seleccione una sección"
+                        })
+                    );
+
+                $("#fk_id_materia")
+                    .empty()
+                    .append(
+                        $("<option>", {
+                            value: "",
+                            text: "Seleccione una materia"
+                        })
+                    );
+
+                $("#fk_id_calendario").val("");
+
+                $("#nombre_calendario").val("");
+
+                materiasDisponibles = [];
+
+                if (!idGrado) {
+                    return;
+                }
+
+                solicitudSecciones = $.ajax({
+
+                    url: urlSecciones,
+
+                    type: "GET",
+
+                    data: {
+                        id_grado: idGrado
+                    },
+
+                    success: function (respuesta) {
+
+                        if ($("#id_grado").val() !== idGrado) {
+                            return;
+                        }
+
+                        $.each(respuesta, function (i, item) {
+
+                            $("#fk_id_seccion").append(
+                                $("<option>", {
+                                    value: item.id,
+                                    text: item.nombre
+                                })
+                            );
+                        });
+                    },
+
+                    error: function (xhr, estado) {
+
+                        if (estado !== "abort") {
+
+                            alert(
+                                "No se pudieron cargar las secciones."
+                            );
+                        }
+                    }
+                });
+            });
+
+            // ========================================
+            // CARGAR MATERIAS POR SECCIÓN
+            // ========================================
+
+            $("#fk_id_seccion").on("change", function () {
+
+                marcarClaseModificada();
+
+                var idSeccion = $(this).val();
+
+                if (solicitudMaterias) {
+                    solicitudMaterias.abort();
+                }
+
+                $("#fk_id_materia")
+                    .empty()
+                    .append(
+                        $("<option>", {
+                            value: "",
+                            text: "Seleccione una materia"
+                        })
+                    );
+
+                $("#fk_id_calendario").val("");
+
+                $("#nombre_calendario").val("");
+
+                materiasDisponibles = [];
+
+                if (!idSeccion) {
+                    return;
+                }
+
+                solicitudMaterias = $.ajax({
+
+                    url: urlMaterias,
+
+                    type: "GET",
+
+                    data: {
+                        id_seccion: idSeccion
+                    },
+
+                    success: function (respuesta) {
+
+                        if ($("#fk_id_seccion").val() !== idSeccion) {
+                            return;
+                        }
+
+                        materiasDisponibles = respuesta;
+
+                        $.each(respuesta, function (i, item) {
+
+                            $("#fk_id_materia").append(
+                                $("<option>", {
+                                    value: item.id,
+                                    text: item.nombre
+                                })
+                            );
+                        });
+                    },
+
+                    error: function (xhr, estado) {
+
+                        if (estado !== "abort") {
+
+                            alert(
+                                "No se pudieron cargar las materias."
+                            );
+                        }
+                    }
+                });
+            });
+
+            // ========================================
+            // ASIGNAR CALENDARIO AUTOMÁTICAMENTE
+            // ========================================
+
+            $("#fk_id_materia").on("change", function () {
+
+                marcarClaseModificada();
+
+                var idMateria = $(this).val();
+
+                $("#fk_id_calendario").val("");
+
+                $("#nombre_calendario").val("");
+
+                $.each(
+                    materiasDisponibles,
+                    function (i, materia) {
+
+                        if (String(materia.id) ===
+                            String(idMateria)) {
+
+                            $("#fk_id_calendario").val(
+                                materia.id_calendario
+                            );
+
+                            $("#nombre_calendario").val(
+                                materia.nombre_calendario
+                            );
+                        }
+                    }
+                );
+            });
+
+            // ========================================
+            // DETECTAR CALIFICACIONES SIN GUARDAR
+            // ========================================
+
+            function tieneCambios() {
+
+                var cambios = false;
+
+                $(".nota-input, .observacion-input")
+                    .each(function () {
+
+                        if ($.trim($(this).val() || "") !== "") {
+                            cambios = true;
+                        }
+                    });
+
+                return cambios;
+            }
+
+            // ========================================
+            // CARGAR ESTUDIANTES
+            // ========================================
+
+            $("#btnCargarEstudiantes").on("click", function () {
+
+                var grado = $("#id_grado").val();
+
+                var seccion = $("#fk_id_seccion").val();
+
+                var materia = $("#fk_id_materia").val();
+
+                if (!grado || !seccion || !materia) {
+
+                    alert(
+                        "Debe seleccionar el grado, " +
+                        "la sección y la materia."
+                    );
+
+                    return;
+                }
+
+                if (tieneCambios()) {
+
+                    var continuar = confirm(
+                        "Las calificaciones que no se hayan " +
+                        "guardado se perderán. ¿Desea continuar?"
+                    );
+
+                    if (!continuar) {
+                        return;
+                    }
+                }
+
+                var parametros = $.param({
+
+                    id_grado: grado,
+
+                    id_seccion: seccion,
+
+                    id_materia: materia,
+
+                    periodo: $("#periodo").val(),
+
+                    nombre_evaluacion:
+                        $("#nombre_evaluacion").val(),
+
+                    tipo_evaluacion:
+                        $("#tipo_evaluacion").val(),
+
+                    fecha_evaluacion:
+                        $("#fecha_evaluacion").val()
+                });
+
+                window.location.href =
+                    urlRegistrar + "?" + parametros;
+            });
+
+            // ========================================
+            // ACTUALIZAR NOTAS EN TIEMPO REAL
+            // ========================================
+
+            $(document).on(
+                "input",
+                ".nota-input",
+                function () {
+
+                    actualizarEstadisticas();
+
+                    $("#confirma_registro").prop(
+                        "checked", false
+                    );
+                }
+            );
+
+            // ========================================
+            // CONTADOR DE OBSERVACIONES
+            // ========================================
+
+            function actualizarContadores() {
+
+                $(".observacion-input").each(function () {
+
+                    var cantidad =
+                        ($(this).val() || "").length;
+
+                    $(this)
+                        .closest("td")
+                        .find(".contador-observacion")
+                        .text(cantidad);
+                });
+            }
+
+            $(document).on(
+                "input",
+                ".observacion-input",
+                function () {
+
+                    actualizarContadores();
+
+                    $("#confirma_registro").prop(
+                        "checked", false
+                    );
+                }
+            );
+
+            // ========================================
+            // LIMPIAR CALIFICACIONES
+            // ========================================
+
+            $("#btnLimpiarNotas").on("click", function () {
+
+                var confirmar = confirm(
+                    "¿Desea eliminar todas las calificaciones " +
+                    "y observaciones ingresadas en este formulario?"
+                );
+
+                if (!confirmar) {
+                    return;
+                }
+
+                $(".nota-input").val("");
+
+                $(".observacion-input").val("");
+
+                $("#confirma_registro").prop(
+                    "checked", false
+                );
+
+                actualizarEstadisticas();
+
+                actualizarContadores();
+            });
+
+            // ========================================
+            // VALIDAR ANTES DE GUARDAR
+            // ========================================
+
+            $("#formRegistrarNotas").on("submit", function (e) {
+
+                if (claseModificada) {
+
+                    e.preventDefault();
+
+                    alert(
+                        "La clase fue modificada. " +
+                        "Debe cargar nuevamente los estudiantes."
+                    );
+
+                    return;
+                }
+
+                if (!$("#id_grado").val() ||
+                    !$("#fk_id_seccion").val() ||
+                    !$("#fk_id_materia").val()) {
+
+                    e.preventDefault();
+
+                    alert(
+                        "Debe completar la información académica."
+                    );
+
+                    return;
+                }
+
+                if (!$("#periodo").val()) {
+
+                    e.preventDefault();
+
+                    alert(
+                        "Debe seleccionar un período académico."
+                    );
+
+                    return;
+                }
+
+                if ($.trim($("#nombre_evaluacion").val()) === "") {
+
+                    e.preventDefault();
+
+                    alert(
+                        "Debe ingresar el nombre de la evaluación."
+                    );
+
+                    return;
+                }
+
+                if (!$("#tipo_evaluacion").val()) {
+
+                    e.preventDefault();
+
+                    alert(
+                        "Debe seleccionar el tipo de evaluación."
+                    );
+
+                    return;
+                }
+
+                var fecha = $("#fecha_evaluacion").val();
+
+                var fechaMaxima =
+                    $("#fecha_evaluacion").attr("max");
+
+                if (!fecha || fecha > fechaMaxima) {
+
+                    e.preventDefault();
+
+                    alert(
+                        "Debe ingresar una fecha de evaluación válida."
+                    );
+
+                    return;
+                }
+
+                var invalidas = 0;
+
+                var calificados = 0;
+
+                var observacionesSinNota = 0;
+
+                $(".fila-estudiante").each(function () {
+
+                    var fila = $(this);
+
+                    var valor = $.trim(
+                        fila.find(".nota-input").val() || ""
+                    );
+
+                    var observacion = $.trim(
+                        fila.find(".observacion-input").val() || ""
+                    );
+
+                    if (valor === "") {
+
+                        if (observacion !== "") {
+                            observacionesSinNota++;
+                        }
+
+                        return;
+                    }
+
+                    var nota = obtenerNota(valor);
+
+                    if (isNaN(nota)) {
+                        invalidas++;
+                    } else {
+                        calificados++;
+                    }
+                });
+
+                if (invalidas > 0) {
+
+                    e.preventDefault();
+
+                    alert(
+                        "Existen calificaciones inválidas. " +
+                        "Las notas deben estar entre 0 y 100 " +
+                        "y tener un máximo de dos decimales."
+                    );
+
+                    return;
+                }
+
+                if (calificados === 0) {
+
+                    e.preventDefault();
+
+                    alert(
+                        "Debe ingresar al menos una calificación."
+                    );
+
+                    return;
+                }
+
+                if (observacionesSinNota > 0) {
+
+                    e.preventDefault();
+
+                    alert(
+                        "Existen observaciones de estudiantes " +
+                        "que todavía no tienen una nota."
+                    );
+
+                    return;
+                }
+
+                if (!$("#confirma_registro").is(":checked")) {
+
+                    e.preventDefault();
+
+                    alert(
+                        "Debe confirmar que las calificaciones " +
+                        "ingresadas son correctas."
+                    );
+
+                    return;
+                }
+
+                var confirmar = confirm(
+                    "Se guardarán " + calificados +
+                    " calificaciones. ¿Desea continuar?"
+                );
+
+                if (!confirmar) {
+
+                    e.preventDefault();
+
+                    return;
+                }
+
+                // Normalizar los decimales según
+                // la configuración regional del servidor.
+
+                $(".nota-input").each(function () {
+
+                    var nota = obtenerNota($(this).val());
+
+                    if (nota !== null && !isNaN(nota)) {
+
+                        $(this).val(
+                            String(nota).replace(
+                                ".",
+                                separadorDecimal
+                            )
+                        );
+                    }
+                });
+
+                $("#btnGuardarNotas")
+                    .prop("disabled", true)
+                    .text("Guardando calificaciones...");
+            });
+
+            actualizarEstadisticas();
+
+            actualizarContadores();
+
+        });
+
+    </script>
+}

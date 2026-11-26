@@ -1,0 +1,708 @@
+@model IEnumerable<EduNexus.UI.Controllers.JustificacionesController.JustificacionVista>
+
+@using System.Linq
+
+@{
+    ViewBag.Title = "Justificaciones de ausencia";
+
+    string estadoSeleccionado =
+        Convert.ToString(ViewBag.EstadoSeleccionado);
+}
+
+<style>
+    .justificaciones-contenedor {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 20px;
+    }
+
+    .justificaciones-encabezado {
+        margin-bottom: 25px;
+    }
+
+    .justificaciones-encabezado h2 {
+        color: #24364b;
+        font-weight: bold;
+    }
+
+    .justificaciones-encabezado p {
+        color: #64748b;
+    }
+
+    .resumen-justificaciones {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .resumen-tarjeta {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+
+    .resumen-tarjeta span {
+        color: #64748b;
+        font-weight: bold;
+    }
+
+    .resumen-tarjeta h3 {
+        font-size: 30px;
+        font-weight: bold;
+        margin: 10px 0 0;
+    }
+
+    .total-color {
+        color: #2563eb;
+    }
+
+    .pendiente-color {
+        color: #d97706;
+    }
+
+    .aprobada-color {
+        color: #16a34a;
+    }
+
+    .rechazada-color {
+        color: #dc2626;
+    }
+
+    .filtros-justificaciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+
+    .solicitud-tarjeta {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+
+    .solicitud-encabezado {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .solicitud-encabezado h3 {
+        color: #24364b;
+        font-size: 20px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .estado-solicitud {
+        display: inline-block;
+        padding: 7px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: bold;
+    }
+
+    .estado-pendiente {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .estado-aprobada {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .estado-rechazada {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .estado-neutral {
+        background: #e2e8f0;
+        color: #475569;
+    }
+
+    .solicitud-datos {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .solicitud-campo {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 15px;
+        overflow-wrap: break-word;
+    }
+
+    .solicitud-campo label {
+        display: block;
+        color: #64748b;
+        font-size: 13px;
+        margin-bottom: 7px;
+    }
+
+    .solicitud-campo span {
+        color: #24364b;
+        font-weight: 500;
+    }
+
+    .motivo-solicitud {
+        background: #eff6ff;
+        border-left: 5px solid #2563eb;
+        border-radius: 8px;
+        padding: 18px;
+        margin-bottom: 20px;
+        overflow-wrap: break-word;
+    }
+
+    .texto-solicitud {
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+    }
+
+    .revision-formulario {
+        border-top: 1px solid #e2e8f0;
+        padding-top: 20px;
+    }
+
+    .revision-formulario textarea {
+        width: 100%;
+        max-width: 100%;
+        min-height: 100px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 12px;
+        resize: vertical;
+        box-sizing: border-box;
+    }
+
+    .revision-formulario label {
+        color: #24364b;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .revision-acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .contador-observaciones {
+        color: #64748b;
+        font-size: 13px;
+        text-align: right;
+        margin-top: 5px;
+    }
+
+    .revision-realizada {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 18px;
+    }
+
+    .sin-solicitudes {
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+        color: #64748b;
+    }
+</style>
+
+<div class="justificaciones-contenedor">
+
+    <div class="justificaciones-encabezado">
+
+        <h2>Justificaciones de ausencia</h2>
+
+        <p>
+            Consulte y revise las solicitudes enviadas
+            por los padres de familia o encargados
+            de sus estudiantes.
+        </p>
+
+    </div>
+
+    <!-- MENSAJES -->
+
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Mensaje"]
+        </div>
+    }
+
+    @if (TempData["MensajeError"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["MensajeError"]
+        </div>
+    }
+
+    <!-- RESUMEN DE SOLICITUDES -->
+
+    <div class="resumen-justificaciones">
+
+        <div class="resumen-tarjeta">
+            <span>Total de solicitudes</span>
+            <h3 class="total-color">
+                @ViewBag.Total
+            </h3>
+        </div>
+
+        <div class="resumen-tarjeta">
+            <span>Pendientes</span>
+            <h3 class="pendiente-color">
+                @ViewBag.Pendientes
+            </h3>
+        </div>
+
+        <div class="resumen-tarjeta">
+            <span>Aprobadas</span>
+            <h3 class="aprobada-color">
+                @ViewBag.Aprobadas
+            </h3>
+        </div>
+
+        <div class="resumen-tarjeta">
+            <span>Rechazadas</span>
+            <h3 class="rechazada-color">
+                @ViewBag.Rechazadas
+            </h3>
+        </div>
+
+    </div>
+
+    <!-- FILTROS -->
+
+    <div class="filtros-justificaciones">
+
+        <a href="@Url.Action(
+            "Index",
+            "Justificaciones")"
+           class="btn @(estadoSeleccionado == "Todas"
+               ? "btn-primary"
+               : "btn-default")">
+
+            Todas
+
+        </a>
+
+        <a href="@Url.Action(
+            "Index",
+            "Justificaciones",
+            new { estado = "Pendiente" })"
+           class="btn @(estadoSeleccionado == "Pendiente"
+               ? "btn-warning"
+               : "btn-default")">
+
+            Pendientes
+
+        </a>
+
+        <a href="@Url.Action(
+            "Index",
+            "Justificaciones",
+            new { estado = "Aprobada" })"
+           class="btn @(estadoSeleccionado == "Aprobada"
+               ? "btn-success"
+               : "btn-default")">
+
+            Aprobadas
+
+        </a>
+
+        <a href="@Url.Action(
+            "Index",
+            "Justificaciones",
+            new { estado = "Rechazada" })"
+           class="btn @(estadoSeleccionado == "Rechazada"
+               ? "btn-danger"
+               : "btn-default")">
+
+            Rechazadas
+
+        </a>
+
+    </div>
+
+    <!-- LISTADO DE SOLICITUDES -->
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="sin-solicitudes">
+
+            <h3>No hay solicitudes disponibles</h3>
+
+            <p>
+                No se encontraron justificaciones
+                para el filtro seleccionado.
+            </p>
+
+        </div>
+    }
+    else
+    {
+        foreach (var solicitud in Model)
+        {
+            string claseEstado = "estado-neutral";
+
+            if (solicitud.estado == "Pendiente")
+            {
+                claseEstado = "estado-pendiente";
+            }
+            else if (solicitud.estado == "Aprobada")
+            {
+                claseEstado = "estado-aprobada";
+            }
+            else if (solicitud.estado == "Rechazada")
+            {
+                claseEstado = "estado-rechazada";
+            }
+
+            <div class="solicitud-tarjeta">
+
+                <div class="solicitud-encabezado">
+
+                    <h3>
+                        @solicitud.estudiante
+                    </h3>
+
+                    <span class="estado-solicitud @claseEstado">
+                        @solicitud.estado
+                    </span>
+
+                </div>
+
+                <!-- INFORMACIÓN DE LA SOLICITUD -->
+
+                <div class="solicitud-datos">
+
+                    <div class="solicitud-campo">
+                        <label>Padre o encargado</label>
+                        <span>@solicitud.encargado</span>
+                    </div>
+
+                    <div class="solicitud-campo">
+                        <label>Materia</label>
+                        <span>@solicitud.materia</span>
+                    </div>
+
+                    <div class="solicitud-campo">
+                        <label>Sección</label>
+                        <span>@solicitud.seccion</span>
+                    </div>
+
+                    <div class="solicitud-campo">
+                        <label>Fecha de ausencia</label>
+                        <span>
+                            @solicitud.fecha_ausencia
+                                .ToString("dd/MM/yyyy")
+                        </span>
+                    </div>
+
+                    <div class="solicitud-campo">
+                        <label>Fecha de envío</label>
+                        <span>
+                            @solicitud.fecha_envio
+                                .ToString("dd/MM/yyyy HH:mm")
+                        </span>
+                    </div>
+
+                    <div class="solicitud-campo">
+                        <label>Estado actual de asistencia</label>
+                        <span>
+                            @solicitud.estado_asistencia
+                        </span>
+                    </div>
+
+                </div>
+
+                <!-- MOTIVO DE AUSENCIA -->
+
+                <div class="motivo-solicitud">
+
+                    <strong>
+                        Motivo enviado por el encargado:
+                    </strong>
+
+                    <p class="texto-solicitud">
+                        @solicitud.motivo
+                    </p>
+
+                </div>
+
+                <!-- FORMULARIO DE REVISIÓN -->
+
+                @if (solicitud.estado == "Pendiente")
+                {
+                    using (Html.BeginForm(
+                        "Aprobar",
+                        "Justificaciones",
+                        FormMethod.Post,
+                        new
+                        {
+                            @class = "revision-formulario"
+                        }))
+                    {
+                        @Html.AntiForgeryToken()
+
+                        @Html.Hidden(
+                            "id",
+                            solicitud.id_justificacion)
+
+                        <label for="observaciones-@solicitud.id_justificacion">
+                            Observaciones del docente
+                        </label>
+
+                        <textarea
+                            id="observaciones-@solicitud.id_justificacion"
+                            name="observaciones"
+                            class="form-control observaciones-texto"
+                            maxlength="500"
+                            placeholder="Ingrese las observaciones correspondientes a la solicitud."></textarea>
+
+                        <div class="contador-observaciones">
+
+                            <span class="contador">0</span>
+                            / 500 caracteres
+
+                        </div>
+
+                        <p class="text-muted">
+
+                            Las observaciones son opcionales
+                            para aprobar y obligatorias
+                            para rechazar una solicitud.
+
+                        </p>
+
+                        if (solicitud.estado_asistencia !=
+                            "Ausencia no justificada")
+                        {
+                            <div class="alert alert-warning">
+
+                                El estado actual de asistencia
+                                no permite aprobar esta solicitud.
+
+                            </div>
+                        }
+
+                        <div class="revision-acciones">
+
+                            @if (solicitud.estado_asistencia ==
+                                "Ausencia no justificada")
+                            {
+                                <button
+                                    type="submit"
+                                    class="btn btn-success"
+                                    data-accion="aprobar"
+                                    formaction="@Url.Action(
+                                        "Aprobar",
+                                        "Justificaciones")">
+
+                                    Aprobar justificación
+
+                                </button>
+                            }
+
+                            <button
+                                type="submit"
+                                class="btn btn-danger"
+                                data-accion="rechazar"
+                                formaction="@Url.Action(
+                                    "Rechazar",
+                                    "Justificaciones")">
+
+                                Rechazar justificación
+
+                            </button>
+
+                        </div>
+                    }
+                }
+                else
+                {
+                    <!-- SOLICITUD REVISADA -->
+
+                    <div class="revision-realizada">
+
+                        <strong>
+                            Solicitud revisada
+                        </strong>
+
+                        @if (solicitud.fecha_revision.HasValue)
+                        {
+                            <p>
+                                Fecha de revisión:
+
+                                @solicitud.fecha_revision.Value
+                                    .ToString("dd/MM/yyyy HH:mm")
+                            </p>
+                        }
+
+                        <strong>
+                            Observaciones del docente:
+                        </strong>
+
+                        <p class="texto-solicitud">
+
+                            @(string.IsNullOrWhiteSpace(
+                                solicitud.observaciones)
+                                ? "Sin observaciones."
+                                : solicitud.observaciones)
+
+                        </p>
+
+                    </div>
+                }
+
+            </div>
+        }
+    }
+
+    <!-- VOLVER A ASISTENCIA -->
+
+    <a href="@Url.Action(
+        "Registrar",
+        "Asistencia")"
+       class="btn btn-default">
+
+        Volver a asistencia
+
+    </a>
+
+</div>
+
+<script>
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            var formularios =
+                document.querySelectorAll(
+                    ".revision-formulario");
+
+            formularios.forEach(function (formulario) {
+
+                var observaciones =
+                    formulario.querySelector(
+                        ".observaciones-texto");
+
+                var contador =
+                    formulario.querySelector(".contador");
+
+                var botones =
+                    formulario.querySelectorAll(
+                        "button[data-accion]");
+
+                var accionSeleccionada = null;
+
+                observaciones.addEventListener(
+                    "input",
+                    function () {
+
+                        contador.textContent =
+                            observaciones.value.length;
+                    });
+
+                botones.forEach(function (boton) {
+
+                    boton.addEventListener(
+                        "click",
+                        function () {
+
+                            accionSeleccionada = boton;
+                        });
+                });
+
+                formulario.addEventListener(
+                    "submit",
+                    function (event) {
+
+                        var boton =
+                            event.submitter ||
+                            accionSeleccionada;
+
+                        if (!boton) {
+
+                            event.preventDefault();
+
+                            return;
+                        }
+
+                        var accion =
+                            boton.getAttribute("data-accion");
+
+                        var texto =
+                            observaciones.value.trim();
+
+                        if (texto.length > 500) {
+
+                            event.preventDefault();
+
+                            alert(
+                                "Las observaciones no pueden " +
+                                "superar los 500 caracteres.");
+
+                            return;
+                        }
+
+                        if (accion === "rechazar" &&
+                            texto.length === 0) {
+
+                            event.preventDefault();
+
+                            alert(
+                                "Debe indicar el motivo " +
+                                "del rechazo.");
+
+                            observaciones.focus();
+
+                            return;
+                        }
+
+                        var mensaje =
+                            accion === "aprobar"
+                            ? "¿Desea aprobar esta justificación? " +
+                              "Se actualizará el estado de asistencia."
+                            : "¿Desea rechazar esta justificación?";
+
+                        if (!confirm(mensaje)) {
+
+                            event.preventDefault();
+
+                            return;
+                        }
+
+                        formulario.action =
+                            boton.getAttribute("formaction");
+
+                        botones.forEach(function (b) {
+
+                            b.disabled = true;
+                        });
+
+                        boton.textContent = "Procesando...";
+                    });
+            });
+        });
+</script>

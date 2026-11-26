@@ -3,36 +3,35 @@
     ViewBag.Title = "Tipos de adecuación";
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Tipos de adecuación</h1>
-        <p class="text-secondary mb-0">Categorías disponibles para clasificar los casos de adecuación.</p>
-    </div>
-    <div class="col-auto">
-        @Html.ActionLink("Regresar", "ListadoDeEstudiantes", null, new { @class = "btn btn-outline-secondary me-1" })
-        @Html.ActionLink("+ Nuevo tipo", "CrearTipoAdecuacion", null, new { @class = "btn btn-primary" })
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Estudiantes</div>
+            <h2 class="page-title">Tipos de adecuación</h2>
+            <div class="page-subtitle">Categorías disponibles para clasificar los casos de adecuación.</div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink("Regresar", "Index", "Expedientes", null, new { @class = "btn btn-outline-secondary" })
+                @Html.ActionLink("Nuevo tipo", "CrearTipoAdecuacion", null, new { @class = "btn btn-primary" })
+            </div>
+        </div>
     </div>
 </div>
 
-@if (TempData["Mensaje"] != null)
-{
-    <div class="alert alert-success alert-dismissible" role="alert">
-        @TempData["Mensaje"]
-        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Listado de tipos</h3>
     </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible" role="alert">
-        @TempData["Error"]
-        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-    </div>
-}
-
-<div class="card shadow-sm">
     @if (!Model.Any())
     {
-        <div class="card-body text-secondary">No hay tipos de adecuación registrados.</div>
+        <div class="empty">
+            <p class="empty-title">No hay tipos de adecuación registrados</p>
+            <p class="empty-subtitle text-secondary">Cree una categoría para poder clasificar los casos.</p>
+            <div class="empty-action">
+                @Html.ActionLink("Nuevo tipo", "CrearTipoAdecuacion", null, new { @class = "btn btn-primary" })
+            </div>
+        </div>
     }
     else
     {

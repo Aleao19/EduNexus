@@ -1,0 +1,109 @@
+@model EduNexus.UI.Controllers.EntregarVm
+@{
+    ViewBag.Title = "Entrega de asignación";
+
+    string badge;
+    switch ((Model.estado ?? "").ToLower())
+    {
+        case "entregada":
+        case "entregado": badge = "bg-success-lt text-success"; break;
+        case "pendiente": badge = "bg-warning-lt text-warning"; break;
+        case "atrasada":
+        case "atrasado": badge = "bg-danger-lt text-danger"; break;
+        case "calificada":
+        case "calificado": badge = "bg-info-lt text-info"; break;
+        default: badge = "bg-secondary-lt text-secondary"; break;
+    }
+}
+
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <div class="text-secondary small mb-1">
+            @Html.ActionLink("Aula Virtual", "AulaVirtual", "AulaVirtual") /
+            <a href="@Url.Action("Materia", "AulaVirtual", new { id = Model.idMateria, seccion = Model.idSeccion })">@Model.nombreMateria</a> / Entrega
+        </div>
+        <h1 class="mb-0">@Model.nombre <span class="badge @badge fs-4 align-middle">@Model.estado</span></h1>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <h3 class="card-title">Detalle de la asignación</h3>
+                <p class="text-secondary">
+                    @(string.IsNullOrWhiteSpace(Model.descripcion) ? "Sin descripción disponible para esta asignación." : Model.descripcion)
+                </p>
+                <div class="row g-3">
+                    <div class="col-sm-4">
+                        <div class="text-muted text-uppercase small fw-bold">Apertura</div>
+                        <div>@(Model.apertura.HasValue ? Model.apertura.Value.ToString("dd MMM yyyy, HH:mm") : "—")</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted text-uppercase small fw-bold">Cierre</div>
+                        <div>@(Model.cierre.HasValue ? Model.cierre.Value.ToString("dd MMM yyyy, HH:mm") : "—")</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted text-uppercase small fw-bold">Porcentaje</div>
+                        <div>@Model.porcentaje.ToString("0.##")%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h3 class="card-title">Mi entrega</h3>
+
+                @if ((Model.estado ?? "").ToLower().StartsWith("calificad"))
+                {
+                    <div class="alert alert-info">
+                        Calificación: <strong>@Model.calificacion.ToString("0.##") / 100</strong>
+                    </div>
+                }
+
+                @if (Model.yaEntrego)
+                {
+                    <div class="mb-3">
+                        <div class="text-muted small">Archivo entregado</div>
+                        <a href="@Url.Action("DescargarEntrega", "Asignaciones", new { id = Model.id_asignacion })">@Model.archivoNombre</a>
+                        <div class="text-secondary small">
+                            Entregado el @(Model.fechaEntrega.HasValue ? Model.fechaEntrega.Value.ToString("dd MMM yyyy, HH:mm") : "—")
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-secondary">Aún no has entregado esta asignación.</p>
+                }
+
+                @if (Model.puedeEntregar)
+                {
+                    using (Html.BeginForm("Entregar", "Asignaciones", new { id = Model.id_asignacion },
+                        FormMethod.Post, new { enctype = "multipart/form-data" }))
+                    {
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label class="form-label" for="archivo">
+                                @(Model.yaEntrego ? "Reemplazar archivo" : "Adjuntar archivo")
+                            </label>
+                            <input type="file" class="form-control" id="archivo" name="archivo" />
+                            <div class="form-text">
+                                Formatos: @Model.formatos. Tamaño máximo: @Model.tamanoMaxMb MB.
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            @(Model.yaEntrego ? "Actualizar entrega" : "Entregar tarea")
+                        </button>
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-warning mb-0">@Model.motivoBloqueo</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

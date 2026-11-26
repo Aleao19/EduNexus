@@ -1,0 +1,960 @@
+@model EduNexus.Abstracciones.ModelosParaUI.Notas.ModificarNotaDto
+@using System.Globalization
+
+@{
+    ViewBag.Title = "Modificar calificación";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .editar-nota {
+        max-width: 1100px;
+        margin: 25px auto;
+        color: #334155;
+    }
+
+    .editar-nota .encabezado {
+        background: linear-gradient(135deg, #1e3a8a, #2563eb);
+        color: white;
+        padding: 28px;
+        border-radius: 14px;
+        margin-bottom: 24px;
+    }
+
+    .editar-nota .encabezado h2 {
+        color: white;
+        margin: 0 0 8px;
+        font-size: 26px;
+        font-weight: 700;
+    }
+
+    .editar-nota .encabezado p {
+        margin: 0;
+        opacity: .9;
+    }
+
+    .editar-nota .panel-nota {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 22px;
+        box-shadow: 0 3px 12px rgba(0,0,0,.05);
+    }
+
+    .editar-nota .titulo-panel {
+        font-size: 19px;
+        font-weight: 700;
+        color: #1e3a8a;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+    }
+
+    .editar-nota .datos-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .editar-nota .dato {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 14px;
+        overflow-wrap: break-word;
+    }
+
+    .editar-nota .dato-label {
+        display: block;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .editar-nota .dato-valor {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .editar-nota .comparacion {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .editar-nota .tarjeta-nota {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .editar-nota .tarjeta-nota span {
+        display: block;
+        font-size: 13px;
+        color: #475569;
+        margin-bottom: 8px;
+    }
+
+    .editar-nota .tarjeta-nota strong {
+        font-size: 32px;
+        color: #1d4ed8;
+    }
+
+    .editar-nota .campo {
+        margin-bottom: 20px;
+    }
+
+    .editar-nota .campo label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .editar-nota .form-control {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 15px;
+        box-sizing: border-box;
+    }
+
+    .editar-nota input.form-control {
+        height: 46px;
+    }
+
+    .editar-nota textarea.form-control {
+        min-height: 110px;
+        resize: vertical;
+    }
+
+    .editar-nota .ayuda {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 6px;
+    }
+
+    .editar-nota .observacion-original {
+        background: #f8fafc;
+        border-left: 4px solid #94a3b8;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+    }
+
+    .editar-nota .aviso {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        color: #92400e;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 22px;
+    }
+
+    .editar-nota .confirmacion {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+
+    .editar-nota .confirmacion label {
+        display: inline;
+        font-weight: 600;
+        margin-left: 6px;
+    }
+
+    .editar-nota .acciones {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .editar-nota .boton {
+        display: inline-block;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 22px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .editar-nota .boton-guardar {
+        background: #2563eb;
+        color: white;
+    }
+
+    .editar-nota .boton-guardar:hover {
+        background: #1d4ed8;
+    }
+
+    .editar-nota .boton-cancelar {
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .editar-nota .boton-restablecer {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .editar-nota .text-danger,
+    .editar-nota .field-validation-error {
+        color: #dc2626;
+        font-size: 13px;
+    }
+
+    .editar-nota .validation-summary-errors {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+
+    .editar-nota .contador {
+        text-align: right;
+        color: #64748b;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    @@media (max-width: 768px) {
+        .editar-nota .datos-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .editar-nota .comparacion {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .editar-nota .datos-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .editar-nota .acciones {
+            flex-direction: column;
+        }
+
+        .editar-nota .boton {
+            text-align: center;
+        }
+    }
+</style>
+
+<div class="editar-nota">
+
+    <div class="encabezado">
+        <h2>Modificar calificación</h2>
+        <p>
+            Actualice la calificación del estudiante y registre
+            el motivo de la modificación.
+        </p>
+    </div>
+
+    @using (Html.BeginForm(
+        "Editar",
+        "Notas",
+        FormMethod.Post,
+        new { id = "formEditarNota" }))
+    {
+        @Html.AntiForgeryToken()
+
+        @Html.HiddenFor(m => m.id_nota)
+        @Html.HiddenFor(m => m.version_registro)
+
+        @Html.ValidationSummary(
+            false,
+            "",
+            new { @class = "text-danger" })
+
+        <!-- INFORMACION DEL ESTUDIANTE -->
+
+        <div class="panel-nota">
+
+            <div class="titulo-panel">
+                Información del estudiante
+            </div>
+
+            <div class="datos-grid">
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Identificación
+                    </span>
+
+                    <span class="dato-valor">
+                        @Model.identificacion_estudiante
+                    </span>
+                </div>
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Nombre completo
+                    </span>
+
+                    <span class="dato-valor">
+                        @Model.nombre_estudiante
+                    </span>
+                </div>
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Grado
+                    </span>
+
+                    <span class="dato-valor">
+                        @Model.nombre_grado
+                    </span>
+                </div>
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Sección
+                    </span>
+
+                    <span class="dato-valor">
+                        @Model.nombre_seccion
+                    </span>
+                </div>
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Materia
+                    </span>
+
+                    <span class="dato-valor">
+                        @Model.nombre_materia
+                    </span>
+                </div>
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Docente
+                    </span>
+
+                    <span class="dato-valor">
+                        @Model.nombre_docente
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- INFORMACION DE LA EVALUACION -->
+
+        <div class="panel-nota">
+
+            <div class="titulo-panel">
+                Información de la evaluación
+            </div>
+
+            <div class="datos-grid">
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Nombre de la evaluación
+                    </span>
+
+                    <span class="dato-valor">
+                        @Model.nombre_evaluacion
+                    </span>
+                </div>
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Tipo de evaluación
+                    </span>
+
+                    <span class="dato-valor">
+                        @Model.tipo_evaluacion
+                    </span>
+                </div>
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Período académico
+                    </span>
+
+                    <span class="dato-valor">
+                        @Model.periodo
+                    </span>
+                </div>
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Fecha de evaluación
+                    </span>
+
+                    <span class="dato-valor">
+                        @(Model.fecha_evaluacion.HasValue
+                            ? Model.fecha_evaluacion.Value
+                                .ToString("dd/MM/yyyy")
+                            : "No disponible")
+                    </span>
+                </div>
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Calendario académico
+                    </span>
+
+                    <span class="dato-valor">
+                        @Model.nombre_calendario
+                    </span>
+                </div>
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Estado actual
+                    </span>
+
+                    <span class="dato-valor">
+                        @Model.estado
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- MODIFICACION DE LA NOTA -->
+
+        <div class="panel-nota">
+
+            <div class="titulo-panel">
+                Modificación de la calificación
+            </div>
+
+            <div class="comparacion">
+
+                <div class="tarjeta-nota">
+                    <span>Calificación original</span>
+
+                    <strong id="notaOriginal">
+                        @Model.nota_original.ToString("0.00")
+                    </strong>
+                </div>
+
+                <div class="tarjeta-nota">
+                    <span>Nueva calificación</span>
+
+                    <strong id="notaNuevaVisual">
+                        @(Model.nota.HasValue
+                            ? Model.nota.Value.ToString("0.00")
+                            : "--")
+                    </strong>
+                </div>
+
+                <div class="tarjeta-nota">
+                    <span>Diferencia</span>
+
+                    <strong id="diferenciaNota">
+                        0.00
+                    </strong>
+                </div>
+
+            </div>
+
+            <div class="campo">
+
+                @Html.LabelFor(m => m.nota)
+
+                @Html.TextBoxFor(
+                    m => m.nota,
+                    new
+                    {
+                        @class = "form-control",
+                        id = "nota",
+                        type = "text",
+                        inputmode = "decimal",
+                        maxlength = "6",
+                        autocomplete = "off",
+                        placeholder = "Ingrese una nota de 0 a 100"
+                    })
+
+                @Html.ValidationMessageFor(
+                    m => m.nota,
+                    "",
+                    new { @class = "text-danger" })
+
+                <div class="ayuda">
+                    La calificación debe estar entre 0 y 100
+                    y admite un máximo de dos decimales.
+                </div>
+
+            </div>
+
+            <div class="campo">
+
+                <label>Observaciones originales</label>
+
+                <div class="observacion-original">@(string.IsNullOrWhiteSpace(Model.observaciones_originales) ? "No se registraron observaciones." : Model.observaciones_originales)</div>
+
+            </div>
+
+            <div class="campo">
+
+                @Html.LabelFor(m => m.observaciones)
+
+                @Html.TextAreaFor(
+                    m => m.observaciones,
+                    new
+                    {
+                        @class = "form-control",
+                        id = "observaciones",
+                        maxlength = "500",
+                        rows = "4",
+                        placeholder = "Ingrese las observaciones actualizadas"
+                    })
+
+                @Html.ValidationMessageFor(
+                    m => m.observaciones,
+                    "",
+                    new { @class = "text-danger" })
+
+                <div class="contador">
+                    <span id="contadorObservaciones">0</span>
+                    / 500 caracteres
+                </div>
+
+            </div>
+
+            <div class="campo">
+
+                @Html.LabelFor(m => m.motivo_modificacion)
+
+                @Html.TextAreaFor(
+                    m => m.motivo_modificacion,
+                    new
+                    {
+                        @class = "form-control",
+                        id = "motivo_modificacion",
+                        maxlength = "500",
+                        rows = "4",
+                        placeholder = "Explique el motivo de la modificación"
+                    })
+
+                @Html.ValidationMessageFor(
+                    m => m.motivo_modificacion,
+                    "",
+                    new { @class = "text-danger" })
+
+                <div class="contador">
+                    <span id="contadorMotivo">0</span>
+                    / 500 caracteres
+                </div>
+
+                <div class="ayuda">
+                    Campo obligatorio. Debe contener entre
+                    5 y 500 caracteres.
+                </div>
+
+            </div>
+
+            <div class="aviso">
+                <strong>Importante:</strong>
+                La modificación quedará registrada en la
+                bitácora del sistema, incluyendo los valores
+                anteriores, los nuevos valores, el motivo,
+                la fecha y el docente responsable.
+            </div>
+
+        </div>
+
+        <!-- HISTORIAL DEL REGISTRO -->
+
+        <div class="panel-nota">
+
+            <div class="titulo-panel">
+                Información del registro
+            </div>
+
+            <div class="datos-grid">
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Fecha de registro
+                    </span>
+
+                    <span class="dato-valor">
+                        @Model.fecha_registro.ToString(
+                            "dd/MM/yyyy HH:mm")
+                    </span>
+                </div>
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Última modificación
+                    </span>
+
+                    <span class="dato-valor">
+                        @(Model.fecha_modificacion.HasValue
+                            ? Model.fecha_modificacion.Value
+                                .ToString("dd/MM/yyyy HH:mm")
+                            : "Sin modificaciones")
+                    </span>
+                </div>
+
+                <div class="dato">
+                    <span class="dato-label">
+                        Modificado por
+                    </span>
+
+                    <span class="dato-valor">
+                        @(string.IsNullOrWhiteSpace(
+                            Model.nombre_modificado_por)
+                            ? "No aplica"
+                            : Model.nombre_modificado_por)
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- CONFIRMACION Y BOTONES -->
+
+        <div class="panel-nota">
+
+            <div class="confirmacion">
+
+                @Html.CheckBoxFor(
+                    m => m.confirma_modificacion,
+                    new { id = "confirma_modificacion" })
+
+                @Html.LabelFor(
+                    m => m.confirma_modificacion)
+
+                <div>
+                    @Html.ValidationMessageFor(
+                        m => m.confirma_modificacion,
+                        "",
+                        new { @class = "text-danger" })
+                </div>
+
+            </div>
+
+            <div class="acciones">
+
+                <a href="@Url.Action(
+                    "Historial",
+                    "Notas",
+                    new
+                    {
+                        id_grado = Model.id_grado,
+                        id_seccion = Model.fk_id_seccion,
+                        id_materia = Model.fk_id_materia,
+                        periodo = Model.periodo,
+                        id_estudiante = Model.fk_id_estudiante
+                    })"
+                   class="boton boton-cancelar">
+                    Cancelar
+                </a>
+
+                <button type="button"
+                        id="btnRestablecer"
+                        class="boton boton-restablecer">
+                    Restablecer valores
+                </button>
+
+                <button type="submit"
+                        id="btnGuardar"
+                        class="boton boton-guardar">
+                    Guardar modificación
+                </button>
+
+            </div>
+
+        </div>
+    }
+
+</div>
+
+@section scripts {
+
+    <script>
+        (function () {
+
+            var notaOriginal =
+                @Model.nota_original.ToString(
+                    CultureInfo.InvariantCulture);
+
+            var observacionesOriginales =
+                @Html.Raw(System.Web.Helpers.Json.Encode(
+                    Model.observaciones_originales ?? ""));
+
+            var separadorDecimal =
+                @Html.Raw(System.Web.Helpers.Json.Encode(
+                    CultureInfo.CurrentCulture
+                        .NumberFormat.NumberDecimalSeparator));
+
+            var formulario =
+                document.getElementById("formEditarNota");
+
+            var campoNota =
+                document.getElementById("nota");
+
+            var campoObservaciones =
+                document.getElementById("observaciones");
+
+            var campoMotivo =
+                document.getElementById("motivo_modificacion");
+
+            var campoConfirmacion =
+                document.getElementById("confirma_modificacion");
+
+            var notaNuevaVisual =
+                document.getElementById("notaNuevaVisual");
+
+            var diferenciaNota =
+                document.getElementById("diferenciaNota");
+
+            var contadorObservaciones =
+                document.getElementById("contadorObservaciones");
+
+            var contadorMotivo =
+                document.getElementById("contadorMotivo");
+
+            var btnGuardar =
+                document.getElementById("btnGuardar");
+
+            var btnRestablecer =
+                document.getElementById("btnRestablecer");
+
+            function convertirNota(valor) {
+
+                valor = valor.trim().replace(",", ".");
+
+                if (!/^\d{1,3}(\.\d{1,2})?$/.test(valor)) {
+                    return null;
+                }
+
+                var numero = Number(valor);
+
+                if (!isFinite(numero) ||
+                    numero < 0 ||
+                    numero > 100) {
+
+                    return null;
+                }
+
+                return numero;
+            }
+
+            function actualizarComparacion() {
+
+                var nuevaNota =
+                    convertirNota(campoNota.value);
+
+                if (nuevaNota === null) {
+
+                    notaNuevaVisual.textContent = "--";
+                    diferenciaNota.textContent = "--";
+                    diferenciaNota.style.color = "#64748b";
+
+                    return;
+                }
+
+                notaNuevaVisual.textContent =
+                    nuevaNota.toFixed(2);
+
+                var diferencia =
+                    nuevaNota - notaOriginal;
+
+                diferenciaNota.textContent =
+                    (diferencia > 0 ? "+" : "") +
+                    diferencia.toFixed(2);
+
+                if (diferencia > 0) {
+
+                    diferenciaNota.style.color = "#16a34a";
+
+                } else if (diferencia < 0) {
+
+                    diferenciaNota.style.color = "#dc2626";
+
+                } else {
+
+                    diferenciaNota.style.color = "#1d4ed8";
+                }
+            }
+
+            function actualizarContadores() {
+
+                contadorObservaciones.textContent =
+                    campoObservaciones.value.length;
+
+                contadorMotivo.textContent =
+                    campoMotivo.value.length;
+            }
+
+            campoNota.addEventListener(
+                "input",
+                actualizarComparacion);
+
+            campoObservaciones.addEventListener(
+                "input",
+                actualizarContadores);
+
+            campoMotivo.addEventListener(
+                "input",
+                actualizarContadores);
+
+            btnRestablecer.addEventListener(
+                "click",
+                function () {
+
+                    if (!confirm(
+                        "¿Desea restablecer los valores originales?")) {
+
+                        return;
+                    }
+
+                    campoNota.value =
+                        notaOriginal.toFixed(2)
+                            .replace(".", separadorDecimal);
+
+                    campoObservaciones.value =
+                        observacionesOriginales;
+
+                    campoMotivo.value = "";
+
+                    campoConfirmacion.checked = false;
+
+                    actualizarComparacion();
+
+                    actualizarContadores();
+                });
+
+            formulario.addEventListener(
+                "submit",
+                function (evento) {
+
+                    var nuevaNota =
+                        convertirNota(campoNota.value);
+
+                    if (nuevaNota === null) {
+
+                        evento.preventDefault();
+
+                        alert(
+                            "Ingrese una calificación válida " +
+                            "entre 0 y 100, con un máximo " +
+                            "de dos decimales.");
+
+                        campoNota.focus();
+
+                        return;
+                    }
+
+                    if (campoObservaciones.value.length > 500) {
+
+                        evento.preventDefault();
+
+                        alert(
+                            "Las observaciones no pueden superar " +
+                            "los 500 caracteres.");
+
+                        campoObservaciones.focus();
+
+                        return;
+                    }
+
+                    var motivo =
+                        campoMotivo.value.trim();
+
+                    if (motivo.length < 5 ||
+                        motivo.length > 500) {
+
+                        evento.preventDefault();
+
+                        alert(
+                            "Debe indicar un motivo de modificación " +
+                            "entre 5 y 500 caracteres.");
+
+                        campoMotivo.focus();
+
+                        return;
+                    }
+
+                    if (nuevaNota === notaOriginal &&
+                        campoObservaciones.value.trim() ===
+                        observacionesOriginales.trim()) {
+
+                        evento.preventDefault();
+
+                        alert(
+                            "No se realizaron cambios en la " +
+                            "calificación ni en las observaciones.");
+
+                        return;
+                    }
+
+                    if (!campoConfirmacion.checked) {
+
+                        evento.preventDefault();
+
+                        alert(
+                            "Debe confirmar que los cambios " +
+                            "realizados son correctos.");
+
+                        campoConfirmacion.focus();
+
+                        return;
+                    }
+
+                    if (!confirm(
+                        "¿Está seguro de guardar la modificación " +
+                        "de esta calificación?")) {
+
+                        evento.preventDefault();
+
+                        return;
+                    }
+
+                    campoNota.value =
+                        nuevaNota.toFixed(2)
+                            .replace(".", separadorDecimal);
+
+                    campoMotivo.value = motivo;
+
+                    if (typeof window.jQuery !== "undefined" &&
+                        typeof window.jQuery.fn.valid === "function") {
+
+                        if (!window.jQuery(formulario).valid()) {
+
+                            evento.preventDefault();
+
+                            return;
+                        }
+                    }
+
+                    btnGuardar.disabled = true;
+
+                    btnGuardar.textContent =
+                        "Guardando modificación...";
+                });
+
+            actualizarComparacion();
+
+            actualizarContadores();
+
+        })();
+    </script>
+}

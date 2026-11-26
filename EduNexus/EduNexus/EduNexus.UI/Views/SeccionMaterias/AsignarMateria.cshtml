@@ -4,56 +4,65 @@
     ViewBag.Title = "Asignar materia a sección";
 }
 
-<h2>Asignar materia a una sección</h2>
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Asignar materia y docente a una sección</h2>
+            <div class="page-subtitle">
+                Es la misma asignación que se hace desde la ficha del docente (Académico → Docentes → Ver ficha → «Asignar materia y sección»),
+                con las mismas reglas: el docente debe estar activo y no puede tener choque de horario.
+            </div>
+        </div>
+    </div>
+</div>
 
 @using (Html.BeginForm())
 {
     @Html.AntiForgeryToken()
 
-    <div class="form-horizontal">
-        <hr />
-        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        <div class="container">
-            <div class="row">
-                <div class="col-md-8 offset-md-1">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Datos de la asignación</h3>
+        </div>
+        <div class="card-body">
 
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.id_materia, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.DropDownListFor(model => model.id_materia, (IEnumerable<SelectListItem>)ViewBag.Materias, "-- Seleccione una materia --", new { @class = "form-select" })
-                            @Html.ValidationMessageFor(model => model.id_materia, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
+            @Html.ValidationSummary(true, "", new { @class = "text-danger mb-3" })
 
-                    <div class="form-group mt-3">
-                        @Html.LabelFor(model => model.seccion, htmlAttributes: new { @class = "control-label col-md-2" })
-                        <div class="col-md-10">
-                            @Html.EditorFor(model => model.seccion, new { htmlAttributes = new { @class = "form-control", list = "listaSecciones", autocomplete = "off", placeholder = "Ej: Tercer Grado - 3-A (2026)" } })
-                            <datalist id="listaSecciones">
-                                @foreach (string etiqueta in (List<string>)ViewBag.EtiquetasSecciones)
-                                {
-                                    <option value="@etiqueta"></option>
-                                }
-                            </datalist>
-                            @Html.ValidationMessageFor(model => model.seccion, "", new { @class = "text-danger" })
-                        </div>
-                    </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.id_materia, htmlAttributes: new { @class = "form-label required" })
+                    @Html.DropDownListFor(model => model.id_materia, (IEnumerable<SelectListItem>)ViewBag.Materias, "-- Seleccione una materia --", new { @class = "form-select" })
+                    @Html.ValidationMessageFor(model => model.id_materia, "", new { @class = "text-danger" })
+                </div>
 
-                    <div class="form-group">
-                        <div class="col-md-offset-2 col-md-10 my-3">
-                            <input type="submit" value="Asignar" class="btn btn-cyan" />
-                        </div>
-                    </div>
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.id_docente, htmlAttributes: new { @class = "form-label required" })
+                    @Html.DropDownListFor(model => model.id_docente, (SelectList)ViewBag.Docentes, "-- Seleccione un docente --", new { @class = "form-select" })
+                    <small class="form-hint">Solo se muestran docentes activos.</small>
+                    @Html.ValidationMessageFor(model => model.id_docente, "", new { @class = "text-danger" })
+                </div>
 
+                <div class="col-md-6">
+                    @Html.LabelFor(model => model.seccion, htmlAttributes: new { @class = "form-label required" })
+                    @Html.EditorFor(model => model.seccion, new { htmlAttributes = new { @class = "form-control", list = "listaSecciones", autocomplete = "off", placeholder = "Ej: Tercer Grado - 3-A (2026)" } })
+                    <datalist id="listaSecciones">
+                        @foreach (string etiqueta in (List<string>)ViewBag.EtiquetasSecciones)
+                        {
+                            <option value="@etiqueta"></option>
+                        }
+                    </datalist>
+                    <small class="form-hint">Escriba o elija una de las secciones registradas.</small>
+                    @Html.ValidationMessageFor(model => model.seccion, "", new { @class = "text-danger" })
                 </div>
             </div>
         </div>
+        <div class="card-footer en-form-acciones">
+            @Html.ActionLink("Cancelar", "ListadoDeAsignaciones", new { seccion = Request.QueryString["seccion"] }, new { @class = "btn btn-outline-secondary" })
+            <input type="submit" value="Guardar" class="btn btn-primary" />
+        </div>
     </div>
 }
-
-<div>
-    @Html.ActionLink("Regresar", "ListadoDeAsignaciones")
-</div>
 
 @section Scripts {
     @Scripts.Render("~/bundles/jqueryval")

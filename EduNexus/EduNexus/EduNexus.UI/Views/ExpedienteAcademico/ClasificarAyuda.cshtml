@@ -3,64 +3,74 @@
     ViewBag.Title = "Clasificar o reclasificar ayuda";
 }
 
-<div class="row justify-content-center">
-    <div class="col-12 col-md-8">
-        <h1 class="mb-1">Clasificar o reclasificar ayuda</h1>
-        <p class="text-secondary mb-4">Estudiante: <strong>@Model.estudiante</strong></p>
-        <div class="card shadow-sm mb-3">
-            <div class="card-body">
-                @using (Html.BeginForm())
-                {
-                    @Html.AntiForgeryToken()
-                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-                    <div class="mb-3">
-                        <div class="text-secondary small">Descripción del caso</div>
-                        <div>@Model.descripcion</div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="text-secondary small">Clasificación actual</div>
-                        <div><span class="badge bg-@(Model.id_tipo.HasValue ? "blue" : "yellow")-lt">@Model.tipo</span></div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="id_tipo">Tipo de ayuda</label>
-                        @Html.DropDownListFor(m => m.id_tipo, (SelectList)ViewBag.Tipos, "Seleccione una categoría", new { @class = "form-select" })
-                        @Html.ValidationMessageFor(m => m.id_tipo, "", new { @class = "text-danger" })
-                    </div>
-                    <div class="form-footer d-flex justify-content-between">
-                        @Html.ActionLink("Cancelar", "Expediente", new { id = Model.id_usuario }, new { @class = "btn btn-outline-secondary" })
-                        <button type="submit" class="btn btn-primary">Guardar clasificación</button>
-                    </div>
-                }
-            </div>
-        </div>
-        @{ var cambios = ViewBag.Cambios as List<EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico.CambioClasificacionDto>; }
-        <div class="card shadow-sm">
-            <div class="card-header"><h3 class="card-title mb-0">Registro de cambios de clasificación</h3></div>
-            @if (cambios == null || !cambios.Any())
-            {
-                <div class="card-body text-secondary">Este caso todavía no tiene cambios de clasificación.</div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-vcenter card-table">
-                        <thead><tr><th>Fecha</th><th>Tipo anterior</th><th>Tipo nuevo</th><th>Realizado por</th></tr></thead>
-                        <tbody>
-                            @foreach (var c in cambios)
-                            {
-                                <tr>
-                                    <td>@c.fecha.ToString("dd/MM/yyyy hh:mm tt")</td>
-                                    <td>@c.tipo_anterior</td>
-                                    <td>@c.tipo_nuevo</td>
-                                    <td>@c.usuario</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Estudiantes</div>
+            <h2 class="page-title">Clasificar o reclasificar ayuda</h2>
+            <div class="page-subtitle">Estudiante: <strong>@Model.estudiante</strong></div>
         </div>
     </div>
+</div>
+
+<div class="card mb-3">
+    @using (Html.BeginForm())
+    {
+        @Html.AntiForgeryToken()
+        <div class="card-header">
+            <h3 class="card-title">Clasificación del caso</h3>
+        </div>
+        <div class="card-body">
+            @Html.ValidationSummary(true, "", new { @class = "text-danger mb-3" })
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="en-dato-label">Descripción del caso</div>
+                    <div class="en-dato-valor">@Model.descripcion</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="en-dato-label">Clasificación actual</div>
+                    <div><span class="badge bg-@(Model.id_tipo.HasValue ? "blue" : "yellow")-lt">@Model.tipo</span></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required" for="id_tipo">Tipo de ayuda</label>
+                    @Html.DropDownListFor(m => m.id_tipo, (SelectList)ViewBag.Tipos, "Seleccione una categoría", new { @class = "form-select" })
+                    @Html.ValidationMessageFor(m => m.id_tipo, "", new { @class = "text-danger" })
+                </div>
+            </div>
+        </div>
+        <div class="card-footer en-form-acciones">
+            @Html.ActionLink("Cancelar", "Expediente", "Expedientes", new { id = Model.id_usuario, tab = "apoyos" }, new { @class = "btn btn-outline-secondary" })
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+    }
+</div>
+
+@{ var cambios = ViewBag.Cambios as List<EduNexus.Abstracciones.ModelosParaUI.ExpedienteAcademico.CambioClasificacionDto>; }
+<div class="card">
+    <div class="card-header"><h3 class="card-title">Registro de cambios de clasificación</h3></div>
+    @if (cambios == null || !cambios.Any())
+    {
+        <div class="card-body text-secondary text-center py-4">Este caso todavía no tiene cambios de clasificación.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead><tr><th>Fecha</th><th>Tipo anterior</th><th>Tipo nuevo</th><th>Realizado por</th></tr></thead>
+                <tbody>
+                    @foreach (var c in cambios)
+                    {
+                        <tr>
+                            <td class="text-nowrap">@c.fecha.ToString("dd/MM/yyyy hh:mm tt")</td>
+                            <td>@c.tipo_anterior</td>
+                            <td>@c.tipo_nuevo</td>
+                            <td>@c.usuario</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
 @section Scripts {

@@ -1,23 +1,27 @@
 
-using System;
-
 namespace EduNexus.UI.Models.Identity
 {
+    // REXP-03-001
+    // Tabla de MySQL: expediente_estudiantes
+
     public class ExpedienteEntity
     {
+        // Identificador principal del expediente
         public int id_expediente { get; set; }
-        public int fk_id_prematricula { get; set; }
-        public string identificacion { get; set; }
-        public string nombre { get; set; }
-        public string apellido1 { get; set; }
-        public string apellido2 { get; set; }
-        public string genero { get; set; }
-        public int fk_id_grado { get; set; }
-        public string telefono { get; set; }
-        public DateTime fecha_nacimiento { get; set; }
-        public bool tiene_adecuacion { get; set; }
-        public bool tiene_discapacidad { get; set; }
+
+        // Relacion con la tabla prematricula
+        public int fk_id_matricula { get; set; }
+
+        // Relacion con la tabla usuarios
+        public string fk_id_usuario { get; set; }
+
+        // Nuevos campos del expediente
+        public string correo { get; set; }
+
+        public string grupo_sanguineo { get; set; }
+
+        public string alergias { get; set; }
+
         public string contactoEmergencia { get; set; }
-        public string direccion { get; set; }
     }
 }

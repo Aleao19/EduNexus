@@ -1,0 +1,890 @@
+@model IEnumerable<EduNexus.UI.Models.Identity.JustificacionAusenciaEntity>
+
+@using System
+@using System.Linq
+@using System.Collections.Generic
+@using System.Web.Mvc
+@using EduNexus.UI.Models.Identity
+
+@{
+    ViewBag.Title = "Historial de justificaciones";
+
+    var nombresEstudiantes =
+        ViewBag.NombresEstudiantes
+        as Dictionary<string, string>
+        ?? new Dictionary<string, string>();
+
+    var nombresMaterias =
+        ViewBag.NombresMaterias
+        as Dictionary<int, string>
+        ?? new Dictionary<int, string>();
+
+    var asistencias =
+        ViewBag.Asistencias
+        as Dictionary<int, AsistenciaEntity>
+        ?? new Dictionary<int, AsistenciaEntity>();
+
+    int totalJustificaciones =
+        Convert.ToInt32(ViewBag.TotalJustificaciones ?? 0);
+
+    int totalPendientes =
+        Convert.ToInt32(ViewBag.TotalPendientes ?? 0);
+
+    int totalAprobadas =
+        Convert.ToInt32(ViewBag.TotalAprobadas ?? 0);
+
+    int totalRechazadas =
+        Convert.ToInt32(ViewBag.TotalRechazadas ?? 0);
+
+    int totalResultados =
+        Model != null ? Model.Count() : 0;
+}
+
+<style>
+
+    .historial-contenedor {
+        max-width: 1400px;
+        margin: 30px auto;
+        padding: 20px;
+    }
+
+    .historial-encabezado {
+        margin-bottom: 25px;
+    }
+
+    .historial-encabezado h2 {
+        color: #24364b;
+        font-weight: bold;
+    }
+
+    .historial-encabezado p {
+        color: #64748b;
+    }
+
+    .historial-acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .historial-resumen {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    .historial-tarjeta {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+
+    .historial-tarjeta span {
+        display: block;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .historial-tarjeta h3 {
+        font-size: 32px;
+        font-weight: bold;
+        margin: 12px 0 0;
+    }
+
+    .tarjeta-total {
+        border-left: 5px solid #2563eb;
+    }
+
+    .tarjeta-pendiente {
+        border-left: 5px solid #d97706;
+    }
+
+    .tarjeta-aprobada {
+        border-left: 5px solid #16a34a;
+    }
+
+    .tarjeta-rechazada {
+        border-left: 5px solid #dc2626;
+    }
+
+    .color-azul {
+        color: #2563eb;
+    }
+
+    .color-amarillo {
+        color: #d97706;
+    }
+
+    .color-verde {
+        color: #16a34a;
+    }
+
+    .color-rojo {
+        color: #dc2626;
+    }
+
+    .historial-panel {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+
+    .historial-filtros {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 15px;
+    }
+
+    .historial-filtro {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .historial-filtro label {
+        display: block;
+        color: #334155;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    .historial-filtro select {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .historial-tabla {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    .historial-tabla thead th {
+        background: #24364b;
+        color: #ffffff;
+        padding: 14px;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .historial-tabla tbody td {
+        padding: 14px;
+        border-bottom: 1px solid #e2e8f0;
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .historial-tabla tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    .historial-tabla tbody tr:hover {
+        background: #eff6ff;
+    }
+
+    .historial-tabla .texto-izquierda {
+        text-align: left;
+    }
+
+    .historial-motivo {
+        min-width: 200px;
+        max-width: 350px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        text-align: left !important;
+    }
+
+    .historial-observaciones {
+        min-width: 180px;
+        max-width: 300px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        text-align: left !important;
+    }
+
+    .estado-justificacion {
+        display: inline-block;
+        border-radius: 20px;
+        padding: 7px 12px;
+        font-weight: bold;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .estado-pendiente {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .estado-aprobada {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .estado-rechazada {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .estado-desconocido {
+        background: #e2e8f0;
+        color: #475569;
+    }
+
+    .historial-vacio {
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .historial-informacion {
+        background: #eff6ff;
+        border-left: 5px solid #2563eb;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 25px;
+        color: #334155;
+    }
+
+    .historial-informacion h5 {
+        font-weight: bold;
+        color: #1e40af;
+    }
+
+    .historial-resultados {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+
+    .texto-secundario {
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    @@media (max-width: 600px) {
+
+        .historial-contenedor {
+            padding: 10px;
+            margin: 15px auto;
+        }
+
+        .historial-panel {
+            padding: 15px;
+        }
+
+        .historial-acciones .btn {
+            width: 100%;
+        }
+    }
+
+</style>
+
+<div class="historial-contenedor">
+
+    <!-- ======================================== -->
+    <!-- ENCABEZADO -->
+    <!-- ======================================== -->
+
+    <div class="historial-encabezado">
+
+        <h2>Historial de justificaciones</h2>
+
+        <p>
+            Consulte las justificaciones de ausencia
+            enviadas y el resultado de su revisión
+            por parte del docente.
+        </p>
+
+        <div class="historial-acciones">
+
+            <a href="@Url.Action("EnviarJustificacion", "Notificaciones")"
+               class="btn btn-primary">
+
+                Enviar nueva justificación
+
+            </a>
+
+            <a href="@Url.Action("Index", "Notificaciones")"
+               class="btn btn-secondary">
+
+                Ver notificaciones
+
+            </a>
+
+        </div>
+
+    </div>
+
+    <!-- ======================================== -->
+    <!-- RESUMEN ESTADÍSTICO -->
+    <!-- ======================================== -->
+
+    <div class="historial-resumen">
+
+        <div class="historial-tarjeta tarjeta-total">
+
+            <span>Total de justificaciones</span>
+
+            <h3 class="color-azul">
+                @totalJustificaciones
+            </h3>
+
+        </div>
+
+        <div class="historial-tarjeta tarjeta-pendiente">
+
+            <span>Pendientes de revisión</span>
+
+            <h3 class="color-amarillo">
+                @totalPendientes
+            </h3>
+
+        </div>
+
+        <div class="historial-tarjeta tarjeta-aprobada">
+
+            <span>Justificaciones aprobadas</span>
+
+            <h3 class="color-verde">
+                @totalAprobadas
+            </h3>
+
+        </div>
+
+        <div class="historial-tarjeta tarjeta-rechazada">
+
+            <span>Justificaciones rechazadas</span>
+
+            <h3 class="color-rojo">
+                @totalRechazadas
+            </h3>
+
+        </div>
+
+    </div>
+
+    <!-- ======================================== -->
+    <!-- FILTROS DE BÚSQUEDA -->
+    <!-- ======================================== -->
+
+    <div class="historial-panel">
+
+        <h4>Filtros de búsqueda</h4>
+
+        <hr />
+
+        @using (Html.BeginForm(
+            "HistorialJustificaciones",
+            "Notificaciones",
+            FormMethod.Get))
+        {
+            <div class="historial-filtros">
+
+                <div class="historial-filtro">
+
+                    <label for="id_estudiante">
+                        Estudiante
+                    </label>
+
+                    @Html.DropDownList(
+                        "id_estudiante",
+                        (SelectList)ViewBag.Estudiantes,
+                        "Todos los estudiantes",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "id_estudiante"
+                        })
+
+                </div>
+
+                <div class="historial-filtro">
+
+                    <label for="estado">
+                        Estado de justificación
+                    </label>
+
+                    @Html.DropDownList(
+                        "estado",
+                        (SelectList)ViewBag.Estados,
+                        "Todos los estados",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "estado"
+                        })
+
+                </div>
+
+                <div>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+
+                        Buscar
+
+                    </button>
+
+                </div>
+
+                <div>
+
+                    <a href="@Url.Action("HistorialJustificaciones", "Notificaciones")"
+                       class="btn btn-secondary">
+
+                        Limpiar filtros
+
+                    </a>
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+
+    <!-- ======================================== -->
+    <!-- INFORMACIÓN SOBRE LOS ESTADOS -->
+    <!-- ======================================== -->
+
+    <div class="historial-informacion">
+
+        <h5>Estados de las justificaciones</h5>
+
+        <p>
+
+            <span class="estado-justificacion estado-pendiente">
+                Pendiente
+            </span>
+
+            La solicitud fue enviada y está
+            esperando revisión por parte del docente.
+
+        </p>
+
+        <p>
+
+            <span class="estado-justificacion estado-aprobada">
+                Aprobada
+            </span>
+
+            El docente aceptó la justificación
+            de la ausencia.
+
+        </p>
+
+        <p>
+
+            <span class="estado-justificacion estado-rechazada">
+                Rechazada
+            </span>
+
+            El docente no aceptó la justificación.
+            Puede consultar las observaciones
+            correspondientes.
+
+        </p>
+
+    </div>
+
+    <!-- ======================================== -->
+    <!-- LISTADO DE JUSTIFICACIONES -->
+    <!-- ======================================== -->
+
+    <div class="historial-panel">
+
+        <h4>Justificaciones enviadas</h4>
+
+        <hr />
+
+        <div class="historial-resultados">
+
+            Resultados encontrados: @totalResultados
+
+        </div>
+
+        @if (Model == null || !Model.Any())
+        {
+            <div class="historial-vacio">
+
+                <h3>No se encontraron justificaciones</h3>
+
+                <p>
+                    No existen solicitudes que coincidan
+                    con los filtros seleccionados.
+                </p>
+
+                <a href="@Url.Action("EnviarJustificacion", "Notificaciones")"
+                   class="btn btn-primary">
+
+                    Enviar justificación
+
+                </a>
+
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+
+                <table class="historial-tabla">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Estudiante</th>
+
+                            <th>Materia</th>
+
+                            <th>Fecha de ausencia</th>
+
+                            <th>Fecha de envío</th>
+
+                            <th>Motivo</th>
+
+                            <th>Estado</th>
+
+                            <th>Fecha de revisión</th>
+
+                            <th>Observaciones del docente</th>
+
+                            <th>Acciones</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var justificacion in Model)
+                        {
+                            // ========================================
+                            // VARIABLES DEL REGISTRO
+                            // ========================================
+
+                            string nombreEstudiante =
+                                "Estudiante no disponible";
+
+                            string nombreMateria =
+                                "Materia no disponible";
+
+                            string fechaAusencia =
+                                "No disponible";
+
+                            string claseEstado =
+                                "estado-desconocido";
+
+                            string fechaEnvio =
+                                justificacion.fecha_envio
+                                    .ToString("dd/MM/yyyy");
+
+                            string horaEnvio =
+                                justificacion.fecha_envio
+                                    .ToString("HH:mm");
+
+                            string fechaRevision =
+                                "Sin revisar";
+
+                            string horaRevision =
+                                string.Empty;
+
+                            AsistenciaEntity asistencia = null;
+
+                            // ========================================
+                            // OBTENER NOMBRE DEL ESTUDIANTE
+                            // ========================================
+
+                            if (!string.IsNullOrEmpty(
+                                    justificacion.fk_id_estudiante) &&
+                                nombresEstudiantes.ContainsKey(
+                                    justificacion.fk_id_estudiante))
+                            {
+                                nombreEstudiante =
+                                    nombresEstudiantes[
+                                        justificacion.fk_id_estudiante];
+                            }
+
+                            // ========================================
+                            // OBTENER REGISTRO DE ASISTENCIA
+                            // ========================================
+
+                            if (asistencias.ContainsKey(
+                                justificacion.fk_id_asistencia))
+                            {
+                                asistencia =
+                                    asistencias[
+                                        justificacion.fk_id_asistencia];
+
+                                if (asistencia != null &&
+                                    asistencia.fk_id_usuario ==
+                                        justificacion.fk_id_estudiante)
+                                {
+                                    fechaAusencia =
+                                        asistencia.fecha
+                                            .ToString("dd/MM/yyyy");
+
+                                    if (nombresMaterias.ContainsKey(
+                                        asistencia.fk_id_materia))
+                                    {
+                                        nombreMateria =
+                                            nombresMaterias[
+                                                asistencia.fk_id_materia];
+                                    }
+                                }
+                                else
+                                {
+                                    asistencia = null;
+                                }
+                            }
+
+                            // ========================================
+                            // OBTENER FECHA Y HORA DE REVISIÓN
+                            // ========================================
+
+                            if (justificacion.fecha_revision.HasValue)
+                            {
+                                fechaRevision =
+                                    justificacion.fecha_revision.Value
+                                        .ToString("dd/MM/yyyy");
+
+                                horaRevision =
+                                    justificacion.fecha_revision.Value
+                                        .ToString("HH:mm");
+                            }
+
+                            // ========================================
+                            // ASIGNAR COLOR SEGÚN ESTADO
+                            // ========================================
+
+                            if (justificacion.estado == "Pendiente")
+                            {
+                                claseEstado = "estado-pendiente";
+                            }
+                            else if (justificacion.estado == "Aprobada")
+                            {
+                                claseEstado = "estado-aprobada";
+                            }
+                            else if (justificacion.estado == "Rechazada")
+                            {
+                                claseEstado = "estado-rechazada";
+                            }
+
+                            // ========================================
+                            // VALIDAR POSIBILIDAD DE REENVÍO
+                            // ========================================
+
+                            bool puedeReenviar =
+                                justificacion.estado == "Rechazada" &&
+                                asistencia != null &&
+                                asistencia.estado ==
+                                    "Ausencia no justificada" &&
+                                asistencia.fecha.Date <= DateTime.Today;
+
+                            <tr>
+
+                                <!-- ESTUDIANTE -->
+
+                                <td class="texto-izquierda">
+
+                                    <strong>
+                                        @nombreEstudiante
+                                    </strong>
+
+                                </td>
+
+                                <!-- MATERIA -->
+
+                                <td>
+
+                                    @nombreMateria
+
+                                </td>
+
+                                <!-- FECHA DE AUSENCIA -->
+
+                                <td>
+
+                                    @fechaAusencia
+
+                                </td>
+
+                                <!-- FECHA DE ENVÍO -->
+
+                                <td>
+
+                                    <span>
+                                        @fechaEnvio
+                                    </span>
+
+                                    <div class="texto-secundario">
+
+                                        @horaEnvio
+
+                                    </div>
+
+                                </td>
+
+                                <!-- MOTIVO -->
+
+                                <td class="historial-motivo">@justificacion.motivo</td>
+
+                                <!-- ESTADO -->
+
+                                <td>
+
+                                    <span class="estado-justificacion @claseEstado">
+
+                                        @justificacion.estado
+
+                                    </span>
+
+                                </td>
+
+                                <!-- FECHA DE REVISIÓN -->
+
+                                <td>
+
+                                    @if (justificacion.fecha_revision.HasValue)
+                                    {
+                                        <span>
+
+                                            @fechaRevision
+
+                                        </span>
+
+                                        <div class="texto-secundario">
+
+                                            @horaRevision
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="texto-secundario">
+
+                                            Sin revisar
+
+                                        </span>
+                                    }
+
+                                </td>
+
+                                <!-- OBSERVACIONES DEL DOCENTE -->
+
+                                <td class="historial-observaciones">
+
+                                    @if (!string.IsNullOrWhiteSpace(
+                                        justificacion.observaciones))
+                                    {
+                                        <span>
+
+                                            @justificacion.observaciones
+
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="texto-secundario">
+
+                                            Sin observaciones
+
+                                        </span>
+                                    }
+
+                                </td>
+
+                                <!-- ACCIONES -->
+
+                                <td>
+
+                                    @if (puedeReenviar)
+                                    {
+                                        <a href="@Url.Action("EnviarJustificacion", "Notificaciones", new { id_estudiante = justificacion.fk_id_estudiante })"
+                                           class="btn btn-sm btn-outline-primary">
+
+                                            Consultar ausencias
+
+                                        </a>
+                                    }
+                                    else if (justificacion.estado == "Pendiente")
+                                    {
+                                        <span class="texto-secundario">
+
+                                            En revisión
+
+                                        </span>
+                                    }
+                                    else if (justificacion.estado == "Aprobada")
+                                    {
+                                        <span class="color-verde">
+
+                                            Aprobada
+
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="texto-secundario">
+
+                                            No disponible
+
+                                        </span>
+                                    }
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        }
+
+    </div>
+
+    <!-- ======================================== -->
+    <!-- BOTONES INFERIORES -->
+    <!-- ======================================== -->
+
+    <div class="historial-acciones">
+
+        <a href="@Url.Action("EnviarJustificacion", "Notificaciones")"
+           class="btn btn-primary">
+
+            Enviar nueva justificación
+
+        </a>
+
+        <a href="@Url.Action("Index", "Notificaciones")"
+           class="btn btn-outline-secondary">
+
+            Ver notificaciones
+
+        </a>
+
+        <a href="@Url.Action("Index", "Home")"
+           class="btn btn-secondary">
+
+            Volver al inicio
+
+        </a>
+
+    </div>
+
+</div>

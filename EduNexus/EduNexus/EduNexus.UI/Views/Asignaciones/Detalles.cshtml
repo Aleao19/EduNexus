@@ -1,0 +1,178 @@
+@model EduNexus.UI.Controllers.DetalleAsignacionVm
+@{
+    ViewBag.Title = "Entregas - " + Model.nombre;
+
+    Func<string, string> badge = est =>
+    {
+        switch ((est ?? "").ToLower())
+        {
+            case "entregada":
+            case "entregado": return "bg-success-lt text-success";
+            case "pendiente": return "bg-warning-lt text-warning";
+            case "atrasada":
+            case "atrasado": return "bg-danger-lt text-danger";
+            case "calificada":
+            case "calificado": return "bg-info-lt text-info";
+            default: return "bg-secondary-lt text-secondary";
+        }
+    };
+
+    Func<DateTime?, string> fmt = d => d.HasValue ? d.Value.ToString("dd MMM yyyy, HH:mm") : "—";
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+
+<div class="page-header d-print-none mb-3">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">
+                @Html.ActionLink("Aula Virtual", "AulaVirtual", "AulaVirtual") /
+                <a href="@Url.Action("Materia", "AulaVirtual", new { id = Model.idMateria, seccion = Model.idSeccion })">@Model.nombreMateria</a> / Entregas
+            </div>
+            <h2 class="page-title">@Model.nombre</h2>
+            <div class="page-subtitle">
+                @Model.etiquetaSeccion · Apertura: @fmt(Model.apertura) · Cierre: @fmt(Model.cierre) · @Model.porcentaje.ToString("0.##")%
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row row-cards g-3 mb-3">
+    <div class="col-6 col-lg-3">
+        <div class="card card-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Estudiantes</div>
+                <div class="h2 mb-0">@Model.total</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Entregaron</div>
+                <div class="h2 mb-0 text-success">@Model.entregaron / @Model.total</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-sm">
+            <div class="card-body">
+                <div class="text-secondary small">No entregaron</div>
+                <div class="h2 mb-0 @((Model.total - Model.entregaron) > 0 ? "text-warning" : "")">@(Model.total - Model.entregaron)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-sm">
+            <div class="card-body">
+                <div class="text-secondary small">Calificadas</div>
+                <div class="h2 mb-0">@Model.calificadas / @Model.total</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body border-bottom">
+        @using (Html.BeginForm("Detalles", "Asignaciones", new { id = Model.id }, FormMethod.Get, new { @class = "row g-2 align-items-end" }))
+        {
+            <div class="col-md-5">
+                <label class="form-label" for="q">Buscar estudiante</label>
+                <input type="search" class="form-control" id="q" name="q" value="@Model.q" placeholder="Nombre o identificación" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="estado">Estado</label>
+                <select class="form-select" id="estado" name="estado">
+                    <option value="todos" @(Model.estado == "todos" ? "selected" : "")>Todos</option>
+                    <option value="entregaron" @(Model.estado == "entregaron" ? "selected" : "")>Entregaron</option>
+                    <option value="noentregaron" @(Model.estado == "noentregaron" ? "selected" : "")>No entregaron</option>
+                    <option value="porcalificar" @(Model.estado == "porcalificar" ? "selected" : "")>Por calificar</option>
+                    <option value="calificadas" @(Model.estado == "calificadas" ? "selected" : "")>Calificadas</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Buscar</button>
+                <a href="@Url.Action("Detalles", new { id = Model.id })" class="btn btn-outline-secondary">Limpiar</a>
+            </div>
+        }
+    </div>
+
+    @if (Model.items.Count == 0)
+    {
+        <div class="card-body">
+            <div class="empty">
+                <p class="empty-title">No hay estudiantes que coincidan con la búsqueda</p>
+                <p class="empty-subtitle text-secondary">Pruebe con otro nombre o cambie el filtro de estado.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Estudiante</th>
+                        <th>Estado</th>
+                        <th>Fecha de entrega</th>
+                        <th>Archivo</th>
+                        <th style="min-width:230px">Calificación (0-100)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in Model.items)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-medium">@e.nombre</div>
+                                <div class="text-secondary small">@e.identificacion</div>
+                            </td>
+                            <td><span class="badge @badge(e.estado)">@e.estado</span></td>
+                            <td>@fmt(e.fechaEntrega)</td>
+                            <td>
+                                @if (e.tieneArchivo)
+                                {
+                                    <a href="@Url.Action("DescargarEntrega", "Asignaciones", new { id = e.id_asignacion })">@e.archivoNombre</a>
+                                }
+                                else
+                                {
+                                    <span class="text-secondary">Sin archivo</span>
+                                }
+                            </td>
+                            <td>
+                                @if (Model.puedeCalificar)
+                                {
+                                    using (Html.BeginForm("Calificar", "Asignaciones", FormMethod.Post, new { @class = "d-flex gap-2" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@e.id_asignacion" />
+                                        <input type="hidden" name="idDetalle" value="@Model.id" />
+                                        <input type="hidden" name="q" value="@Model.q" />
+                                        <input type="hidden" name="estado" value="@Model.estado" />
+                                        <input type="hidden" name="pagina" value="@Model.paginacion.pagina" />
+                                        <input type="text" inputmode="decimal" name="calificacion"
+                                               class="form-control form-control-sm" style="width:90px"
+                                               placeholder="0-100"
+                                               value="@(e.calificada ? e.calificacion.ToString("0.##", inv) : "")"
+                                               @(e.entrego ? "" : "disabled title=\"Aún no hay entrega para calificar\"") />
+                                        <button type="submit" class="btn btn-sm btn-primary"
+                                                @(e.entrego ? "" : "disabled title=\"Aún no hay entrega para calificar\"")>
+                                            @(e.calificada ? "Modificar" : "Calificar")
+                                        </button>
+                                    }
+                                }
+                                else
+                                {
+                                    @(e.calificada ? e.calificacion.ToString("0.##", inv) + " / 100" : "—")
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card-footer">
+            @Html.Partial("_Paginacion", Model.paginacion)
+        </div>
+    }
+</div>

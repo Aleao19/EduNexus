@@ -1,0 +1,34 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Horarios.HorarioConsultaDto
+
+@{
+    ViewBag.Title = "Mi horario";
+    bool esDocente = ViewBag.EsDocente == true;
+}
+
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Mi horario</div>
+            <h2 class="page-title">@Model.titulo</h2>
+            <div class="page-subtitle">@(esDocente ? "Clases que imparte durante la semana." : "Clases de su sección durante la semana.")</div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.mensaje))
+{
+    <div class="alert alert-info">@Model.mensaje</div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Horario semanal</h3>
+        </div>
+        @Html.Partial("_HorarioSemanal", Model.items, new ViewDataDictionary
+        {
+            { "mostrarProfesor", !esDocente },
+            { "mostrarSeccion", esDocente }
+        })
+    </div>
+}

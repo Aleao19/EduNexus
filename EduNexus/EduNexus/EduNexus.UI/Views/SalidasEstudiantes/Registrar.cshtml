@@ -1,0 +1,1090 @@
+@model EduNexus.Abstracciones.ModelosParaUI.SalidasEstudiantes.SalidaEstudianteDto
+
+@using System
+@using System.Web.Mvc
+@using System.Collections.Generic
+
+@{
+    ViewBag.Title = "Registrar salida de estudiante";
+
+    var secciones = ViewBag.Secciones as SelectList
+        ?? new SelectList(new List<SelectListItem>(),
+            "Value", "Text");
+
+    var estudiantes = ViewBag.Estudiantes as SelectList
+        ?? new SelectList(new List<SelectListItem>(),
+            "Value", "Text");
+
+    string fechaActual = DateTime.Today.ToString("yyyy-MM-dd");
+}
+
+<style>
+
+    .salida-contenedor {
+        max-width: 1100px;
+        margin: 30px auto;
+        padding: 20px;
+    }
+
+    .salida-encabezado {
+        margin-bottom: 25px;
+    }
+
+    .salida-encabezado h2 {
+        color: #24364b;
+        font-weight: bold;
+    }
+
+    .salida-encabezado p {
+        color: #64748b;
+    }
+
+    .salida-panel {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+
+    .salida-panel h4 {
+        color: #24364b;
+        font-weight: bold;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .salida-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .salida-campo {
+        margin-bottom: 15px;
+    }
+
+    .salida-campo-completo {
+        grid-column: 1 / -1;
+    }
+
+    .salida-campo label {
+        display: block;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+
+    .salida-campo input,
+    .salida-campo select,
+    .salida-campo textarea {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .salida-campo textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .campo-obligatorio {
+        color: #dc2626;
+        font-weight: bold;
+    }
+
+    .salida-ayuda {
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 6px;
+    }
+
+    .salida-contador {
+        text-align: right;
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 5px;
+    }
+
+    .salida-informacion {
+        background: #eff6ff;
+        border-left: 5px solid #2563eb;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 25px;
+        color: #334155;
+    }
+
+    .salida-informacion h5 {
+        color: #1e40af;
+        font-weight: bold;
+    }
+
+    .salida-advertencia {
+        background: #fffbeb;
+        border-left: 5px solid #d97706;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        color: #92400e;
+    }
+
+    .salida-confirmacion {
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .salida-confirmacion label {
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .salida-botones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 25px;
+    }
+
+    .salida-botones .btn {
+        padding: 10px 20px;
+    }
+
+    .field-validation-error {
+        color: #dc2626;
+        font-size: 13px;
+        display: block;
+        margin-top: 5px;
+    }
+
+    .input-validation-error {
+        border-color: #dc2626 !important;
+    }
+
+    .validation-summary-valid {
+        display: none;
+    }
+
+    .validation-summary-errors {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .salida-estado-carga {
+        color: #2563eb;
+        font-size: 13px;
+        margin-top: 8px;
+        display: none;
+    }
+
+    .salida-error-carga {
+        color: #dc2626;
+        font-size: 13px;
+        margin-top: 8px;
+        display: none;
+    }
+
+    @@media (max-width: 768px) {
+
+        .salida-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .salida-contenedor {
+            padding: 10px;
+            margin: 15px auto;
+        }
+
+        .salida-panel {
+            padding: 15px;
+        }
+
+        .salida-botones .btn {
+            width: 100%;
+        }
+    }
+
+</style>
+
+<div class="salida-contenedor">
+
+    <!-- ======================================== -->
+    <!-- ENCABEZADO -->
+    <!-- ======================================== -->
+
+    <div class="salida-encabezado">
+
+        <h2>Registrar salida de estudiante</h2>
+
+        <p>
+            Complete la información correspondiente
+            a la salida anticipada del estudiante
+            durante la jornada escolar.
+        </p>
+
+        <div class="salida-botones">
+
+            <a href="@Url.Action("Historial", "SalidasEstudiantes")"
+               class="btn btn-outline-primary">
+
+                Historial de salidas
+
+            </a>
+
+        </div>
+
+    </div>
+
+    <!-- ======================================== -->
+    <!-- INFORMACIÓN GENERAL -->
+    <!-- ======================================== -->
+
+    <div class="salida-informacion">
+
+        <h5>Registro de salida anticipada</h5>
+
+        <p>
+            Esta funcionalidad permite mantener un control
+            de los estudiantes que se retiran de la
+            institución antes de finalizar la jornada escolar.
+        </p>
+
+        <p class="mb-0">
+
+            Los campos marcados con
+
+            <span class="campo-obligatorio">*</span>
+
+            son obligatorios.
+
+        </p>
+
+    </div>
+
+    @using (Html.BeginForm(
+        "Registrar",
+        "SalidasEstudiantes",
+        FormMethod.Post,
+        new { id = "formRegistrarSalida" }))
+    {
+        @Html.AntiForgeryToken()
+
+        @Html.ValidationSummary(
+            false,
+            "Revise la información ingresada.",
+            new { @class = "validation-summary" })
+
+        <!-- ======================================== -->
+        <!-- INFORMACIÓN DEL ESTUDIANTE -->
+        <!-- ======================================== -->
+
+        <div class="salida-panel">
+
+            <h4>1. Información del estudiante</h4>
+
+            <div class="salida-grid">
+
+                <div class="salida-campo">
+
+                    <label for="fk_id_seccion">
+
+                        Grado y sección
+
+                        <span class="campo-obligatorio">*</span>
+
+                    </label>
+
+                    @Html.DropDownListFor(
+                        m => m.fk_id_seccion,
+                        secciones,
+                        "Seleccione una sección",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "fk_id_seccion",
+                            required = "required"
+                        })
+
+                    @Html.ValidationMessageFor(
+                        m => m.fk_id_seccion)
+
+                    <div class="salida-ayuda">
+
+                        Seleccione el grado y sección
+                        a la que pertenece el estudiante.
+
+                    </div>
+
+                </div>
+
+                <div class="salida-campo">
+
+                    <label for="fk_id_estudiante">
+
+                        Estudiante
+
+                        <span class="campo-obligatorio">*</span>
+
+                    </label>
+
+                    @Html.DropDownListFor(
+                        m => m.fk_id_estudiante,
+                        estudiantes,
+                        "Seleccione un estudiante",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "fk_id_estudiante",
+                            required = "required"
+                        })
+
+                    @Html.ValidationMessageFor(
+                        m => m.fk_id_estudiante)
+
+                    <div id="cargandoEstudiantes"
+                         class="salida-estado-carga">
+
+                        Cargando estudiantes...
+
+                    </div>
+
+                    <div id="errorEstudiantes"
+                         class="salida-error-carga"
+                         role="alert">
+
+                        No fue posible cargar los estudiantes.
+                        Intente seleccionar nuevamente la sección.
+
+                    </div>
+
+                    <div class="salida-ayuda">
+
+                        Se mostrarán los estudiantes activos
+                        de la sección seleccionada.
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ======================================== -->
+        <!-- INFORMACIÓN DE LA SALIDA -->
+        <!-- ======================================== -->
+
+        <div class="salida-panel">
+
+            <h4>2. Información de la salida</h4>
+
+            <div class="salida-grid">
+
+                <div class="salida-campo">
+
+                    <label for="fecha_salida">
+
+                        Fecha de salida
+
+                        <span class="campo-obligatorio">*</span>
+
+                    </label>
+
+                    @Html.TextBoxFor(
+                        m => m.fecha_salida,
+                        "{0:yyyy-MM-dd}",
+                        new
+                        {
+                            @class = "form-control",
+                            type = "date",
+                            id = "fecha_salida",
+                            max = fechaActual,
+                            required = "required"
+                        })
+
+                    @Html.ValidationMessageFor(
+                        m => m.fecha_salida)
+
+                </div>
+
+                <div class="salida-campo">
+
+                    <label for="hora_salida">
+
+                        Hora de salida
+
+                        <span class="campo-obligatorio">*</span>
+
+                    </label>
+
+                    @Html.TextBoxFor(
+                        m => m.hora_salida,
+                        @"{0:hh\:mm}",
+                        new
+                        {
+                            @class = "form-control",
+                            type = "time",
+                            id = "hora_salida",
+                            required = "required"
+                        })
+
+                    @Html.ValidationMessageFor(
+                        m => m.hora_salida)
+
+                </div>
+
+                <div class="salida-campo salida-campo-completo">
+
+                    <label for="motivo">
+
+                        Motivo de salida
+
+                        <span class="campo-obligatorio">*</span>
+
+                    </label>
+
+                    @Html.TextAreaFor(
+                        m => m.motivo,
+                        new
+                        {
+                            @class = "form-control",
+                            id = "motivo",
+                            rows = "4",
+                            maxlength = "500",
+                            placeholder = "Describa el motivo de la salida anticipada...",
+                            required = "required"
+                        })
+
+                    @Html.ValidationMessageFor(
+                        m => m.motivo)
+
+                    <div class="salida-contador">
+
+                        <span id="contadorMotivo">0</span>
+
+                        / 500 caracteres
+
+                    </div>
+
+                    <div class="salida-ayuda">
+
+                        Ejemplos: cita médica, situación familiar,
+                        enfermedad o permiso especial.
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ======================================== -->
+        <!-- PERSONA QUE RETIRA AL ESTUDIANTE -->
+        <!-- ======================================== -->
+
+        <div class="salida-panel">
+
+            <h4>3. Información de la persona que retira</h4>
+
+            <div class="salida-grid">
+
+                <div class="salida-campo">
+
+                    <label for="nombre_persona_retira">
+
+                        Nombre completo
+
+                        <span class="campo-obligatorio">*</span>
+
+                    </label>
+
+                    @Html.TextBoxFor(
+                        m => m.nombre_persona_retira,
+                        new
+                        {
+                            @class = "form-control",
+                            id = "nombre_persona_retira",
+                            maxlength = "256",
+                            placeholder = "Nombre y apellidos",
+                            required = "required"
+                        })
+
+                    @Html.ValidationMessageFor(
+                        m => m.nombre_persona_retira)
+
+                </div>
+
+                <div class="salida-campo">
+
+                    <label for="identificacion_persona_retira">
+
+                        Número de identificación
+
+                        <span class="campo-obligatorio">*</span>
+
+                    </label>
+
+                    @Html.TextBoxFor(
+                        m => m.identificacion_persona_retira,
+                        new
+                        {
+                            @class = "form-control",
+                            id = "identificacion_persona_retira",
+                            maxlength = "50",
+                            placeholder = "Cédula, DIMEX o pasaporte",
+                            required = "required"
+                        })
+
+                    @Html.ValidationMessageFor(
+                        m => m.identificacion_persona_retira)
+
+                </div>
+
+                <div class="salida-campo">
+
+                    <label for="parentesco">
+
+                        Parentesco o relación
+
+                        <span class="campo-obligatorio">*</span>
+
+                    </label>
+
+                    @Html.DropDownListFor(
+                        m => m.parentesco,
+                        new SelectList(new[]
+                        {
+                            "Madre",
+                            "Padre",
+                            "Abuela",
+                            "Abuelo",
+                            "Hermana",
+                            "Hermano",
+                            "Tía",
+                            "Tío",
+                            "Encargado legal",
+                            "Persona autorizada",
+                            "Otro"
+                        }),
+                        "Seleccione el parentesco",
+                        new
+                        {
+                            @class = "form-select",
+                            id = "parentesco",
+                            required = "required"
+                        })
+
+                    @Html.ValidationMessageFor(
+                        m => m.parentesco)
+
+                </div>
+
+                <div class="salida-campo">
+
+                    <label for="telefono_persona_retira">
+
+                        Teléfono de contacto
+
+                    </label>
+
+                    @Html.TextBoxFor(
+                        m => m.telefono_persona_retira,
+                        new
+                        {
+                            @class = "form-control",
+                            id = "telefono_persona_retira",
+                            type = "tel",
+                            maxlength = "30",
+                            placeholder = "Ejemplo: 8888-8888"
+                        })
+
+                    @Html.ValidationMessageFor(
+                        m => m.telefono_persona_retira)
+
+                    <div class="salida-ayuda">
+
+                        Campo opcional.
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ======================================== -->
+        <!-- OBSERVACIONES ADICIONALES -->
+        <!-- ======================================== -->
+
+        <div class="salida-panel">
+
+            <h4>4. Observaciones adicionales</h4>
+
+            <div class="salida-campo">
+
+                <label for="observaciones">
+
+                    Observaciones
+
+                </label>
+
+                @Html.TextAreaFor(
+                    m => m.observaciones,
+                    new
+                    {
+                        @class = "form-control",
+                        id = "observaciones",
+                        rows = "4",
+                        maxlength = "500",
+                        placeholder = "Ingrese cualquier información adicional relacionada con la salida..."
+                    })
+
+                @Html.ValidationMessageFor(
+                    m => m.observaciones)
+
+                <div class="salida-contador">
+
+                    <span id="contadorObservaciones">0</span>
+
+                    / 500 caracteres
+
+                </div>
+
+                <div class="salida-ayuda">
+
+                    Campo opcional.
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ======================================== -->
+        <!-- CONFIRMACIÓN DEL RETIRO -->
+        <!-- ======================================== -->
+
+        <div class="salida-panel">
+
+            <h4>5. Confirmación y seguridad institucional</h4>
+
+            <div class="salida-advertencia">
+
+                <strong>Importante:</strong>
+
+                Antes de registrar la salida, debe verificar
+                la identidad de la persona que retira al estudiante
+                y confirmar que cuenta con la autorización
+                correspondiente de acuerdo con los procedimientos
+                de la institución.
+
+            </div>
+
+            <div class="salida-confirmacion">
+
+                <div class="form-check">
+
+                    @Html.CheckBoxFor(
+                        m => m.confirma_retiro,
+                        new
+                        {
+                            @class = "form-check-input",
+                            id = "confirma_retiro"
+                        })
+
+                    <label class="form-check-label"
+                           for="confirma_retiro">
+
+                        Confirmo que he verificado la identidad
+                        y autorización de la persona que retira
+                        al estudiante.
+
+                        <span class="campo-obligatorio">*</span>
+
+                    </label>
+
+                </div>
+
+                @Html.ValidationMessageFor(
+                    m => m.confirma_retiro)
+
+            </div>
+
+            <div class="salida-ayuda">
+
+                El sistema registrará automáticamente
+                el usuario responsable, la fecha y la hora
+                en que se realizó el registro.
+
+            </div>
+
+        </div>
+
+        <!-- ======================================== -->
+        <!-- BOTONES DEL FORMULARIO -->
+        <!-- ======================================== -->
+
+        <div class="salida-botones">
+
+            <button type="submit"
+                    id="btnRegistrarSalida"
+                    class="btn btn-success">
+
+                Registrar salida
+
+            </button>
+
+            <a href="@Url.Action("Registrar", "SalidasEstudiantes")"
+               class="btn btn-outline-secondary">
+
+                Limpiar formulario
+
+            </a>
+
+            <a href="@Url.Action("Historial", "SalidasEstudiantes")"
+               class="btn btn-primary">
+
+                Ver historial
+
+            </a>
+
+            <a href="@Url.Action("Index", "Home")"
+               class="btn btn-secondary">
+
+                Cancelar
+
+            </a>
+
+        </div>
+    }
+
+</div>
+
+@section scripts {
+
+    @Scripts.Render("~/bundles/jqueryval")
+
+    <script>
+
+        $(document).ready(function () {
+
+            var solicitudEstudiantes = null;
+
+            // ========================================
+            // CONTADOR DE CARACTERES DEL MOTIVO
+            // ========================================
+
+            function actualizarContadorMotivo() {
+
+                var cantidad = $("#motivo").val().length;
+
+                $("#contadorMotivo").text(cantidad);
+            }
+
+            $("#motivo").on(
+                "input",
+                actualizarContadorMotivo
+            );
+
+            actualizarContadorMotivo();
+
+            // ========================================
+            // CONTADOR DE OBSERVACIONES
+            // ========================================
+
+            function actualizarContadorObservaciones() {
+
+                var cantidad =
+                    $("#observaciones").val().length;
+
+                $("#contadorObservaciones").text(cantidad);
+            }
+
+            $("#observaciones").on(
+                "input",
+                actualizarContadorObservaciones
+            );
+
+            actualizarContadorObservaciones();
+
+            // ========================================
+            // CARGAR ESTUDIANTES SEGÚN LA SECCIÓN
+            // ========================================
+
+            $("#fk_id_seccion").on("change", function () {
+
+                var idSeccion = $(this).val();
+
+                var comboEstudiantes =
+                    $("#fk_id_estudiante");
+
+                if (solicitudEstudiantes) {
+
+                    solicitudEstudiantes.abort();
+
+                    solicitudEstudiantes = null;
+                }
+
+                comboEstudiantes.empty();
+
+                comboEstudiantes.append(
+                    $("<option>", {
+                        value: "",
+                        text: "Seleccione un estudiante"
+                    })
+                );
+
+                $("#errorEstudiantes").hide();
+
+                $("#cargandoEstudiantes").hide();
+
+                if (!idSeccion || idSeccion === "0") {
+
+                    comboEstudiantes.prop("disabled", true);
+
+                    return;
+                }
+
+                comboEstudiantes.prop("disabled", true);
+
+                $("#cargandoEstudiantes").show();
+
+                solicitudEstudiantes = $.ajax({
+
+                    url: '@Url.Action("ObtenerEstudiantes", "SalidasEstudiantes")',
+
+                    type: "GET",
+
+                    dataType: "json",
+
+                    cache: false,
+
+                    data: {
+                        id_seccion: idSeccion
+                    },
+
+                    success: function (respuesta) {
+
+                        comboEstudiantes.empty();
+
+                        if (respuesta && respuesta.length > 0) {
+
+                            comboEstudiantes.append(
+                                $("<option>", {
+                                    value: "",
+                                    text: "Seleccione un estudiante"
+                                })
+                            );
+
+                            $.each(
+                                respuesta,
+                                function (indice, estudiante) {
+
+                                    var texto =
+                                        estudiante.nombre +
+                                        " - " +
+                                        (estudiante.identificacion || "");
+
+                                    comboEstudiantes.append(
+                                        $("<option>", {
+                                            value: estudiante.id,
+                                            text: texto
+                                        })
+                                    );
+                                }
+                            );
+
+                            comboEstudiantes.prop(
+                                "disabled",
+                                false
+                            );
+                        }
+                        else {
+
+                            comboEstudiantes.append(
+                                $("<option>", {
+                                    value: "",
+                                    text: "No hay estudiantes activos"
+                                })
+                            );
+
+                            comboEstudiantes.prop(
+                                "disabled",
+                                true
+                            );
+                        }
+                    },
+
+                    error: function (xhr, estado) {
+
+                        if (estado === "abort") {
+                            return;
+                        }
+
+                        $("#errorEstudiantes").show();
+
+                        comboEstudiantes.prop(
+                            "disabled",
+                            true
+                        );
+                    },
+
+                    complete: function () {
+
+                        $("#cargandoEstudiantes").hide();
+
+                        solicitudEstudiantes = null;
+                    }
+
+                });
+
+            });
+
+            // ========================================
+            // ESTADO INICIAL DEL SELECTOR
+            // ========================================
+
+            if (!$("#fk_id_seccion").val() ||
+                $("#fk_id_seccion").val() === "0") {
+
+                $("#fk_id_estudiante").prop(
+                    "disabled",
+                    true
+                );
+            }
+
+            // ========================================
+            // VALIDAR FECHA Y HORA DE SALIDA
+            // ========================================
+
+            function validarFechaHora() {
+
+                var fecha = $("#fecha_salida").val();
+
+                var hora = $("#hora_salida").val();
+
+                if (!fecha || !hora) {
+
+                    return false;
+                }
+
+                var fechaHoraSalida =
+                    new Date(fecha + "T" + hora);
+
+                var fechaHoraActual = new Date();
+
+                if (isNaN(fechaHoraSalida.getTime())) {
+
+                    alert("Debe indicar una fecha y hora válidas.");
+
+                    return false;
+                }
+
+                if (fechaHoraSalida > fechaHoraActual) {
+
+                    alert(
+                        "No puede registrar una salida con fecha u hora futura."
+                    );
+
+                    return false;
+                }
+
+                return true;
+            }
+
+            // ========================================
+            // VALIDACIÓN ANTES DE GUARDAR
+            // ========================================
+
+            $("#formRegistrarSalida").on(
+                "submit",
+                function (evento) {
+
+                    var formulario = $(this);
+
+                    if (typeof formulario.valid === "function" &&
+                        !formulario.valid()) {
+
+                        evento.preventDefault();
+
+                        return;
+                    }
+
+                    if (!$("#fk_id_seccion").val() ||
+                        $("#fk_id_seccion").val() === "0") {
+
+                        evento.preventDefault();
+
+                        alert("Debe seleccionar una sección.");
+
+                        return;
+                    }
+
+                    if (!$("#fk_id_estudiante").val()) {
+
+                        evento.preventDefault();
+
+                        alert("Debe seleccionar un estudiante.");
+
+                        return;
+                    }
+
+                    if (!validarFechaHora()) {
+
+                        evento.preventDefault();
+
+                        return;
+                    }
+
+                    if (!$("#motivo").val().trim()) {
+
+                        evento.preventDefault();
+
+                        alert("Debe indicar el motivo de salida.");
+
+                        return;
+                    }
+
+                    if (!$("#confirma_retiro").is(":checked")) {
+
+                        evento.preventDefault();
+
+                        alert(
+                            "Debe confirmar que verificó la identidad y autorización de la persona que retira al estudiante."
+                        );
+
+                        return;
+                    }
+
+                    var confirmar = window.confirm(
+                        "¿Está seguro de que desea registrar la salida del estudiante?"
+                    );
+
+                    if (!confirmar) {
+
+                        evento.preventDefault();
+
+                        return;
+                    }
+
+                    $("#btnRegistrarSalida")
+                        .prop("disabled", true)
+                        .text("Registrando salida...");
+
+                }
+            );
+
+        });
+
+    </script>
+
+}

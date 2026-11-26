@@ -69,17 +69,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // Mostrar la tabla si hay horarios, sino mostrar alerta de vacío
-        if (hayHorarios) {
-            if (hdTabla) hdTabla.style.display = 'block';
-            if (hdVacio) hdVacio.style.display = 'none';
-            if (alertaConfirmacion) alertaConfirmacion.style.display = 'block';
-        } else {
-            if (hdTabla) hdTabla.style.display = 'none';
-            if (hdVacio) hdVacio.style.display = 'block';
-            if (alertaConfirmacion) alertaConfirmacion.style.display = 'none';
-        }
+        // Mostrar la tabla si la clase ya tiene horario; si no, el aviso (la asignación igual se permite)
+        if (hdTabla) hdTabla.style.display = hayHorarios ? 'block' : 'none';
+        if (hdVacio) hdVacio.style.display = hayHorarios ? 'none' : 'block';
 
+        // Con materia y sección seleccionadas ya se puede confirmar
+        if (alertaConfirmacion) alertaConfirmacion.style.display = 'block';
         if (hdAsignar) hdAsignar.disabled = false;
     }
 

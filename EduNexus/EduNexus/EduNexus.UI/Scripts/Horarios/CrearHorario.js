@@ -34,6 +34,15 @@
         return inicioMin + i * paso;
     }
 
+    function aMin(t) {
+        var p = t.split(":");
+        return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+    }
+
+    function norm(s) {
+        return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
+
     // Encabezados
     grid.appendChild(document.createElement("div"));
     dias.forEach(function (d) {
@@ -100,12 +109,20 @@
         return (l && l.textContent) ? l.textContent : "";
     }
 
+    function hayOriginales() {
+        return inp("dia_semana").value !== "" && inp("hora_inicio").value !== "" && inp("hora_fin").value !== "";
+    }
+
     function actualizarResumen() {
         txt("resMateria", materiaSeleccionada() || "—");
-        txt("resDia", st.dia || "—");
         if (st.a >= 0) {
+            txt("resDia", st.dia || "—");
             txt("resHora", fmt(slotMin(st.a)) + " – " + fmt(slotMin(st.b) + paso));
+        } else if (hayOriginales()) {
+            txt("resDia", inp("dia_semana").value);
+            txt("resHora", inp("hora_inicio").value + " – " + inp("hora_fin").value);
         } else {
+            txt("resDia", "—");
             txt("resHora", "—");
         }
     }
@@ -116,10 +133,12 @@
     }
 
     form.addEventListener("submit", function (e) {
+        var sinTocar = st.a < 0 && hayOriginales();
         var msg = "";
+
         if (materiaSeleccionada() === "") {
             msg = "Seleccione una materia.";
-        } else if (st.a < 0 || st.dia === "") {
+        } else if (!sinTocar && (st.a < 0 || st.dia === "")) {
             msg = "Marque el bloque de horario en la cuadrícula.";
         } else if (st.paso === 1) {
             msg = "Haga un segundo clic en el mismo día para definir la hora de fin.";
@@ -132,10 +151,36 @@
             return;
         }
 
-        inp("dia_semana").value = st.dia;
-        inp("hora_inicio").value = fmt(slotMin(st.a));
-        inp("hora_fin").value = fmt(slotMin(st.b) + paso);
+        if (!sinTocar) {
+            inp("dia_semana").value = st.dia;
+            inp("hora_inicio").value = fmt(slotMin(st.a));
+            inp("hora_fin").value = fmt(slotMin(st.b) + paso);
+        }
     });
+
+    // Modo edición: precarga el bloque actual en la cuadrícula
+    (function precargar() {
+        var diaIni = grid.getAttribute("data-dia");
+        var ini = grid.getAttribute("data-inicio");
+        var fin = grid.getAttribute("data-fin");
+        if (!diaIni || !ini || !fin) { return; }
+
+        var dia = dias.filter(function (d) { return norm(d) === norm(diaIni); })[0];
+        var minIni = aMin(ini) - inicioMin;
+        var minFin = aMin(fin) - inicioMin;
+
+        if (!dia || minIni % paso !== 0 || minFin % paso !== 0) { return; }
+
+        var a = minIni / paso;
+        var b = minFin / paso - 1;
+        if (a < 0 || b >= total || a > b) { return; }
+
+        st.dia = dia;
+        st.a = a;
+        st.b = b;
+        st.paso = 2;
+        pintar();
+    })();
 
     actualizarResumen();
 })();

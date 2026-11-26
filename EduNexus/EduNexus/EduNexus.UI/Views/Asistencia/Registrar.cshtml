@@ -1,0 +1,56 @@
+﻿@model EduNexus.Abstracciones.ModelosParaUI.Asistencia.AsistenciaFormDto
+
+@{
+    ViewBag.Title = Model.esEdicion ? "Editar asistencia" : "Registrar asistencia";
+    string fechaTexto = Model.fecha.HasValue ? Model.fecha.Value.ToString("yyyy-MM-dd") : "";
+}
+
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Asistencia</div>
+            <h2 class="page-title">@ViewBag.Title</h2>
+            <div class="page-subtitle">Seleccione la sección y la fecha para marcar la asistencia de cada estudiante.</div>
+        </div>
+        @if (!Model.sinClases)
+        {
+            <div class="col-12 col-md-auto ms-auto">
+                <div class="btn-list">
+                    <a href="@Url.Action("Historial", "Asistencia", new { clase = Model.clase })" class="btn btn-outline-secondary">Historial de asistencia</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@if (Model.sinClases)
+{
+    <div class="alert alert-info">No tiene secciones asignadas para el período lectivo actual.</div>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            @using (Html.BeginForm("Registrar", "Asistencia", FormMethod.Get, new { @class = "row g-3 align-items-end" }))
+            {
+                <div class="col-md-6">
+                    <label class="form-label" for="clase">Sección y materia</label>
+                    @Html.DropDownList("clase", (SelectList)ViewBag.Clases, "-- Seleccione --", new { @class = "form-select" })
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="fecha">Fecha</label>
+                    <input type="date" id="fecha" name="fecha" value="@fechaTexto" max="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">Cargar lista</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@Html.Partial("_ListaAsistencia", Model)
+
+@section Scripts {
+    <script src="@Url.Content("~/Scripts/Asistencia/ListaAsistencia.js")"></script>
+}

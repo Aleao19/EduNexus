@@ -2,55 +2,57 @@
 
 @{
     ViewBag.Title = "Materias por sección";
+    var docentePorFila = (ViewBag.DocentePorFila as System.Collections.Generic.Dictionary<int, string>)
+                         ?? new System.Collections.Generic.Dictionary<int, string>();
 }
 
-<div class="row align-items-center mb-3">
-    <div class="col">
-        <h1 class="mb-0">Materias por sección</h1>
-        <p class="text-secondary mb-0">Materias que se imparten en cada sección.</p>
-    </div>
-    <div class="col-auto">
-        @Html.ActionLink("+ Asignar materia", "AsignarMateria", null, new { @class = "btn btn-primary" })
+<div class="page-header d-print-none">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Académico</div>
+            <h2 class="page-title">Materias por sección</h2>
+            <div class="page-subtitle">
+                Materias que se imparten en cada sección y su docente. Es la misma asignación que se gestiona en la
+                ficha de cada docente (@Html.ActionLink("Académico → Docentes", "ListadoDeDocentes", "Docentes")), vista aquí por sección.
+            </div>
+        </div>
+        <div class="col-12 col-md-auto ms-auto">
+            <div class="btn-list">
+                @Html.ActionLink("Asignar materia y docente", "AsignarMateria", new { seccion = Request.QueryString["seccion"] }, new { @class = "btn btn-primary" })
+            </div>
+        </div>
     </div>
 </div>
 
-@if (TempData["Mensaje"] != null)
-{
-    <div class="alert alert-success alert-dismissible" role="alert">
-        @TempData["Mensaje"]
-        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+<div class="card mb-3">
+    <div class="card-body">
+        @using (Html.BeginForm("ListadoDeAsignaciones", "SeccionMaterias", FormMethod.Get, new { @class = "row g-3 align-items-end" }))
+        {
+            <div class="col-md-6">
+                <label class="form-label" for="seccion">Sección</label>
+                @Html.DropDownList("seccion", (SelectList)ViewBag.Secciones, "Todas las secciones", new { @class = "form-select" })
+            </div>
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+            </div>
+        }
     </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible" role="alert">
-        @TempData["Error"]
-        <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-    </div>
-}
+</div>
 
-@using (Html.BeginForm("ListadoDeAsignaciones", "SeccionMaterias", FormMethod.Get, new { @class = "row g-2 align-items-center mb-3" }))
-{
-    <div class="col-auto">
-        <label class="col-form-label" for="seccion">Sección</label>
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Asignaciones</h3>
     </div>
-    <div class="col-auto">
-        @Html.DropDownList("seccion", (SelectList)ViewBag.Secciones, "Todas las secciones", new { @class = "form-select" })
-    </div>
-    <div class="col-auto">
-        <button type="submit" class="btn btn-cyan">Filtrar</button>
-    </div>
-}
-
-<div class="card shadow-sm">
     @if (!Model.Any())
     {
-        <div class="card-body">
-            <div class="empty">
-                <p class="empty-title">No hay materias asignadas</p>
-                <div class="empty-action">
-                    @Html.ActionLink("+ Asignar materia", "AsignarMateria", null, new { @class = "btn btn-primary" })
-                </div>
+        <div class="empty">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6v13" /><path d="M12 6v13" /><path d="M21 6v13" /></svg>
+            </div>
+            <p class="empty-title">No hay materias asignadas</p>
+            <p class="empty-subtitle text-secondary">Asigne una materia y su docente a una sección para verla aquí.</p>
+            <div class="empty-action">
+                @Html.ActionLink("Asignar materia y docente", "AsignarMateria", null, new { @class = "btn btn-primary" })
             </div>
         </div>
     }
@@ -63,19 +65,28 @@
                         <th>Sección</th>
                         <th>Código</th>
                         <th>Materia</th>
-                        <th>Profesor</th>
-                        <th class="w-1">Acciones</th>
+                        <th>Docente</th>
+                        <th class="en-acciones">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var item in Model)
                     {
                         <tr>
-                            <td>@item.seccion</td>
+                            <td><span class="badge bg-blue-lt">@item.seccion</span></td>
                             <td><span class="text-secondary">@item.id_materia</span></td>
                             <td>@item.materia</td>
-                            <td>@item.profesor</td>
-                            <td class="text-nowrap">
+                            <td>
+                                @if (docentePorFila.ContainsKey(item.id_seccion_materia))
+                                {
+                                    @Html.ActionLink(string.IsNullOrWhiteSpace(item.profesor) ? "Ver docente" : item.profesor, "CargaAcademicaDocente", "Docentes", new { id = docentePorFila[item.id_seccion_materia] }, new { title = "Abrir la ficha del docente" })
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-lt">Sin docente registrado</span>
+                                }
+                            </td>
+                            <td class="en-acciones">
                                 @using (Html.BeginForm("RemoverMateria", "SeccionMaterias", FormMethod.Post, new { onsubmit = "return confirm('¿Desea remover esta materia de la sección?');" }))
                                 {
                                     @Html.AntiForgeryToken()
