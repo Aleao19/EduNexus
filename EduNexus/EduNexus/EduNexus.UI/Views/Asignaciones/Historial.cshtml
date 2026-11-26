@@ -1,0 +1,158 @@
+@model EduNexus.UI.Controllers.HistorialVm
+@{
+    ViewBag.Title = "Historial - " + Model.nombreMateria;
+
+    Func<string, string> badge = est =>
+    {
+        switch ((est ?? "").ToLower())
+        {
+            case "entregada":
+            case "entregado": return "bg-success-lt text-success";
+            case "pendiente": return "bg-warning-lt text-warning";
+            case "atrasada":
+            case "atrasado": return "bg-danger-lt text-danger";
+            case "calificada":
+            case "calificado": return "bg-info-lt text-info";
+            default: return "bg-secondary-lt text-secondary";
+        }
+    };
+
+    Func<DateTime?, string> fmt = d => d.HasValue ? d.Value.ToString("dd MMM yyyy, HH:mm") : "—";
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+
+<div class="page-header d-print-none mb-3">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle">
+                @Html.ActionLink("Aula Virtual", "AulaVirtual", "AulaVirtual") /
+                <a href="@Url.Action("Materia", "AulaVirtual", new { id = Model.idMateria, seccion = Model.idSeccion })">@Model.nombreMateria</a> / Historial
+            </div>
+            <h2 class="page-title">Historial de asignaciones</h2>
+            <div class="page-subtitle">@Model.nombreMateria · @Model.etiquetaSeccion</div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.hayRegistros)
+{
+    @* Escenario 4: sin registros *@
+    <div class="card">
+        <div class="empty">
+            <p class="empty-title">No hay asignaciones registradas</p>
+            @if (Model.esDocente)
+            {
+                <p class="empty-subtitle text-secondary">Cree la primera asignación para esta clase.</p>
+                <div class="empty-action">
+                    <a href="@Url.Action("CrearAsignacion", "Asignaciones", new { idMateria = Model.idMateria, idSeccion = Model.idSeccion })"
+                       class="btn btn-primary">+ Nueva asignación</a>
+                </div>
+            }
+            else
+            {
+                <p class="empty-subtitle text-secondary">Todavía no hay asignaciones registradas para esta clase.</p>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body border-bottom">
+            @using (Html.BeginForm("Historial", "Asignaciones", FormMethod.Get, new { @class = "row g-2 align-items-end" }))
+            {
+                <input type="hidden" name="idMateria" value="@Model.idMateria" />
+                <input type="hidden" name="idSeccion" value="@Model.idSeccion" />
+
+                if (Model.esDocente)
+                {
+                    <div class="col-md-4">
+                        <label class="form-label" for="idEstudiante">Estudiante</label>
+                        @Html.DropDownList("idEstudiante", Model.estudiantes, "Todos los estudiantes", new { @class = "form-select" })
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="idAsignacion">Asignación</label>
+                        @Html.DropDownList("idAsignacion", Model.asignaciones, "Todas las asignaciones", new { @class = "form-select" })
+                    </div>
+                }
+
+                <div class="col-md-2">
+                    <label class="form-label" for="estado">Estado</label>
+                    <select class="form-select" id="estado" name="estado">
+                        <option value="todas" @(Model.estado == "todas" ? "selected" : "")>Todas</option>
+                        <option value="pendientes" @(Model.estado == "pendientes" ? "selected" : "")>Pendientes</option>
+                        <option value="entregadas" @(Model.estado == "entregadas" ? "selected" : "")>Entregadas</option>
+                        <option value="calificadas" @(Model.estado == "calificadas" ? "selected" : "")>Calificadas</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                    <a href="@Url.Action("Historial", new { idMateria = Model.idMateria, idSeccion = Model.idSeccion })" class="btn btn-outline-secondary">Limpiar</a>
+                </div>
+            }
+        </div>
+
+        @if (Model.items.Count == 0)
+        {
+            @* Escenario 3: el filtro no devuelve resultados *@
+            <div class="card-body">
+                <div class="alert alert-info mb-0">No hay asignaciones que coincidan con este filtro.</div>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            @if (Model.esDocente)
+                            {
+                                <th>Estudiante</th>
+}
+                            <th>Asignación</th>
+                            <th>Apertura / Cierre</th>
+                            <th>Estado</th>
+                            <th>Fecha de entrega</th>
+                            <th>Porcentaje</th>
+                            <th>Calificación</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var h in Model.items)
+                        {
+                            <tr>
+                                @if (Model.esDocente)
+                                {
+                                    <td class="fw-medium">@h.estudiante</td>
+}
+                                <td>@h.asignacion</td>
+                                <td class="small">
+                                    @fmt(h.apertura)<br />
+                                    <span class="text-secondary">@fmt(h.cierre)</span>
+                                </td>
+                                <td><span class="badge @badge(h.estado)">@h.estado</span></td>
+                                <td>@fmt(h.fechaEntrega)</td>
+                                <td>@h.porcentaje.ToString("0.##")%</td>
+                                <td>@(h.calificada ? h.calificacion.ToString("0.##", inv) + " / 100" : "—")</td>
+                                <td class="text-end">
+                                    @if (Model.esEstudiante)
+                                    {
+                                        <a href="@Url.Action("Entregar", "Asignaciones", new { id = h.id_asignacion })" class="btn btn-sm btn-outline-secondary">Ver</a>
+                                    }
+                                    else
+                                    {
+                                        <a href="@Url.Action("Detalles", "Asignaciones", new { id = h.id_asignacion })" class="btn btn-sm btn-outline-secondary">Ver entregas</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+                @Html.Partial("_Paginacion", Model.paginacion)
+            </div>
+        }
+    </div>
+}
