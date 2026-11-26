@@ -1,0 +1,53 @@
+@model EduNexus.UI.Controllers.PaginacionVm
+@{
+    Func<int, string> url = p =>
+    {
+        var partes = Model.parametros
+            .Where(kv => !string.IsNullOrEmpty(kv.Value))
+            .Select(kv => kv.Key + "=" + System.Web.HttpUtility.UrlEncode(kv.Value))
+            .ToList();
+        partes.Add("pagina=" + p);
+        return Model.rutaBase + "?" + string.Join("&", partes);
+    };
+    int desde = Math.Max(1, Model.pagina - 2);
+    int hasta = Math.Min(Model.totalPaginas, Model.pagina + 2);
+}
+
+@if (Model.totalPaginas > 1)
+{
+    <div class="d-flex align-items-center justify-content-between mt-3 flex-wrap gap-2">
+        <div class="text-secondary small">
+            Página @Model.pagina de @Model.totalPaginas · @Model.totalRegistros registros
+        </div>
+        <ul class="pagination m-0">
+            <li class="page-item @(Model.pagina == 1 ? "disabled" : "")">
+                <a class="page-link" href="@url(Model.pagina - 1)">Anterior</a>
+            </li>
+            @if (desde > 1)
+            {
+                <li class="page-item"><a class="page-link" href="@url(1)">1</a></li>
+                if (desde > 2)
+                {
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                }
+            }
+            @for (int p = desde; p <= hasta; p++)
+            {
+                <li class="page-item @(p == Model.pagina ? "active" : "")">
+                    <a class="page-link" href="@url(p)">@p</a>
+                </li>
+            }
+            @if (hasta < Model.totalPaginas)
+            {
+                if (hasta < Model.totalPaginas - 1)
+                {
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                }
+                <li class="page-item"><a class="page-link" href="@url(Model.totalPaginas)">@Model.totalPaginas</a></li>
+            }
+            <li class="page-item @(Model.pagina == Model.totalPaginas ? "disabled" : "")">
+                <a class="page-link" href="@url(Model.pagina + 1)">Siguiente</a>
+            </li>
+        </ul>
+    </div>
+}
