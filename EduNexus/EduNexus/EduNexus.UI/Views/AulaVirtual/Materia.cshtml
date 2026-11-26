@@ -7,14 +7,24 @@
 
     bool esDocente = ViewBag.EsDocente == true;
     bool esEstudiante = ViewBag.EsEstudiante == true;
+    int idMateriaClase = (int)ViewBag.IdMateria;
+    int idSeccionClase = (int)ViewBag.IdSeccion;
+
     var estudiantes = (ViewBag.Estudiantes as List<string>) ?? new List<string>();
-    var estudiantePorAsignacion = (ViewBag.EstudiantePorAsignacion as Dictionary<int, string>) ?? new Dictionary<int, string>();
+    var resumenes = (ViewBag.ResumenPorAsignacion as Dictionary<int, EduNexus.UI.Controllers.ResumenAsignacionVm>)
+        ?? new Dictionary<int, EduNexus.UI.Controllers.ResumenAsignacionVm>();
     var asignaciones = (Model ?? new List<EduNexus.Abstracciones.ModelosParaUI.Asignaciones.AsignacionesDto>()).ToList();
+    double? promedioClase = ViewBag.PromedioClase as double?;
 
     int totalAsignaciones = asignaciones.Count;
     int pendientes = asignaciones.Count(a => (a.estado ?? "").ToLower() == "pendiente");
     int entregadas = asignaciones.Count(a => (a.estado ?? "").ToLower().StartsWith("entreg"));
-    double promedio = asignaciones.Any(a => a.calificacion > 0) ? asignaciones.Where(a => a.calificacion > 0).Average(a => a.calificacion) : 0;
+    double porcentajeAsignado = asignaciones.Sum(a => (double)a.porcentaje_nota);
+
+    Func<DateTime, string> fmtFecha = d => d == DateTime.MinValue ? "—" : d.ToString("dd MMM yyyy, HH:mm");
+
+    var materiales = (ViewBag.Materiales as List<EduNexus.Abstracciones.ModelosParaUI.Materiales.MaterialDto>)
+        ?? new List<EduNexus.Abstracciones.ModelosParaUI.Materiales.MaterialDto>();
 }
 
 <div class="page-header d-print-none">
@@ -35,26 +45,50 @@
         <div class="card card-sm">
             <div class="card-body">
                 <div class="text-secondary small">@(esEstudiante ? "Mi promedio" : "Promedio de la clase")</div>
-                <div class="h2 mb-0">@(asignaciones.Any(a => a.calificacion > 0) ? promedio.ToString("0.0") : "—")</div>
+                <div class="h2 mb-0">@(promedioClase.HasValue ? promedioClase.Value.ToString("0.0") : "—")</div>
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-3">
-        <div class="card card-sm">
-            <div class="card-body">
-                <div class="text-secondary small">Asignaciones pendientes</div>
-                <div class="h2 mb-0 @(pendientes > 0 ? "text-warning" : "")">@pendientes</div>
+
+    @if (esEstudiante)
+    {
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-secondary small">Asignaciones pendientes</div>
+                    <div class="h2 mb-0 @(pendientes > 0 ? "text-warning" : "")">@pendientes</div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-sm-6 col-lg-3">
-        <div class="card card-sm">
-            <div class="card-body">
-                <div class="text-secondary small">Entregadas</div>
-                <div class="h2 mb-0 text-success">@entregadas / @totalAsignaciones</div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-secondary small">Entregadas</div>
+                    <div class="h2 mb-0 text-success">@entregadas / @totalAsignaciones</div>
+                </div>
             </div>
         </div>
-    </div>
+    }
+    else
+    {
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-secondary small">Asignaciones publicadas</div>
+                    <div class="h2 mb-0">@totalAsignaciones</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="text-secondary small">Porcentaje asignado</div>
+                    <div class="h2 mb-0 @(porcentajeAsignado >= 100 ? "text-success" : "")">@porcentajeAsignado.ToString("0.##") / 100 %</div>
+                </div>
+            </div>
+        </div>
+    }
+
     <div class="col-sm-6 col-lg-3">
         <div class="card card-sm">
             <div class="card-body">
@@ -70,7 +104,7 @@
     <li class="nav-item" role="presentation">
         <button class="nav-link active" id="tab-asignaciones-btn" data-bs-toggle="tab" data-bs-target="#tab-asignaciones" type="button" role="tab">
             Asignaciones
-            @if (pendientes > 0)
+            @if (esEstudiante && pendientes > 0)
             {
                 <span class="badge bg-warning-lt ms-1">@pendientes</span>
             }
@@ -99,18 +133,40 @@
 
 <div class="tab-content">
 
-    @* ===================== TAB: ASIGNACIONES (solo lectura) ===================== *@
+    @* ===================== TAB: ASIGNACIONES ===================== *@
     <div class="tab-pane fade show active" id="tab-asignaciones" role="tabpanel">
 
-        @if (asignaciones.Any())
-        {
-            <div class="btn-group flex-wrap mb-3" role="group" aria-label="Filtrar asignaciones" id="filtrosAsignaciones">
-                <button type="button" class="btn btn-sm btn-outline-secondary active" data-filtro="todas">Todas</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-filtro="pendiente">Pendientes</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-filtro="entreg">Entregadas</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-filtro="calificad">Calificadas</button>
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                @if (asignaciones.Any())
+                {
+                    <input type="search" id="buscarAsignacion" class="form-control form-control-sm" style="width:220px"
+                           placeholder="Buscar asignación..." />
+                }
+                @if (esEstudiante && asignaciones.Any())
+                {
+                    <div class="btn-group flex-wrap" role="group" aria-label="Filtrar asignaciones" id="filtrosAsignaciones">
+                        <button type="button" class="btn btn-sm btn-outline-secondary active" data-filtro="todas">Todas</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-filtro="pendiente">Pendientes</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-filtro="entreg">Entregadas</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-filtro="calificad">Calificadas</button>
+                    </div>
+                }
             </div>
-        }
+
+            <div class="d-flex gap-2">
+                @* RAV-12-005: historial de la clase *@
+                <a href="@Url.Action("Historial", "Asignaciones", new { idMateria = idMateriaClase, idSeccion = idSeccionClase })"
+                   class="btn btn-outline-secondary btn-sm">Ver historial</a>
+
+                @* RAV-12-002: solo el docente de la clase crea asignaciones *@
+                @if (esDocente)
+                {
+                    <a href="@Url.Action("CrearAsignacion", "Asignaciones", new { idMateria = idMateriaClase, idSeccion = idSeccionClase })"
+                       class="btn btn-primary btn-sm">+ Nueva asignación</a>
+                }
+            </div>
+        </div>
 
         <div class="row row-cards" id="listaAsignaciones">
             @if (asignaciones.Any())
@@ -120,8 +176,9 @@
                     string badgeClass;
                     string estadoTexto;
                     string estadoFiltro = (asignacion.estado ?? "").Trim().ToLower();
-                    string estudiante;
-                    estudiantePorAsignacion.TryGetValue(asignacion.id_asignacion, out estudiante);
+
+                    EduNexus.UI.Controllers.ResumenAsignacionVm resumen;
+                    resumenes.TryGetValue(asignacion.id_asignacion, out resumen);
 
                     switch (estadoFiltro)
                     {
@@ -144,39 +201,106 @@
                             badgeClass = "bg-info-lt text-info";
                             estadoTexto = "Calificada";
                             break;
+                        case "publicada":
+                            badgeClass = "bg-blue-lt text-blue";
+                            estadoTexto = "Publicada";
+                            break;
                         default:
                             badgeClass = "bg-secondary-lt text-secondary";
                             estadoTexto = string.IsNullOrEmpty(asignacion.estado) ? "Sin estado" : asignacion.estado;
                             break;
                     }
 
-                    <div class="col-12 tarjeta-asignacion" data-estado="@estadoFiltro">
+                    string textoBoton = (estadoFiltro.StartsWith("entreg") || estadoFiltro.StartsWith("calificad"))
+                        ? "Ver entrega"
+                        : (estadoFiltro.StartsWith("atrasad") ? "Ver detalle" : "Entregar");
+
+                    <div class="col-12 tarjeta-asignacion" data-estado="@estadoFiltro" data-nombre="@((asignacion.nombre ?? "").ToLower())">
                         <div class="card mb-3">
                             <div class="card-body">
                                 <div class="row align-items-center g-3">
-                                    <div class="col-md-8 col-12">
+
+                                    @* Información principal *@
+                                    <div class="col-md-5 col-12">
                                         <div class="d-flex align-items-center mb-2 gap-2 flex-wrap">
-                                            <h3 class="card-title mb-0 fs-3">@asignacion.nombre</h3>
+                                            <h3 class="card-title mb-0 fs-3">
+                                                @if (esEstudiante)
+                                                {
+                                                    <a href="@Url.Action("Entregar", "Asignaciones", new { id = asignacion.id_asignacion })" class="text-reset text-decoration-none">@asignacion.nombre</a>
+                                                }
+                                                else
+                                                {
+                                                    <a href="@Url.Action("Detalles", "Asignaciones", new { id = asignacion.id_asignacion })" class="text-reset text-decoration-none">@asignacion.nombre</a>
+                                                }
+                                            </h3>
                                             <span class="badge @badgeClass fw-semibold">@estadoTexto</span>
                                         </div>
-                                        @if (!esEstudiante && !string.IsNullOrEmpty(estudiante))
-                                        {
-                                            <div class="text-secondary small mb-1">Estudiante: <span class="text-body fw-medium">@estudiante</span></div>
-                                        }
                                         <p class="text-secondary mb-0 small">
                                             @(string.IsNullOrWhiteSpace(asignacion.descripcion) ? "Sin descripción." : asignacion.descripcion)
                                         </p>
                                     </div>
-                                    <div class="col-md-4 col-12 text-md-end">
+
+                                    @* Fechas *@
+                                    <div class="col-md-4 col-12">
+                                        <div class="row g-2 text-secondary small">
+                                            <div class="col-6">
+                                                <span class="d-block text-muted text-uppercase fw-bold">Apertura</span>
+                                                <span class="fw-medium text-body">@fmtFecha(asignacion.fechaDeApertura)</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <span class="d-block text-muted text-uppercase fw-bold">Cierre</span>
+                                                <span class="fw-medium text-body">@fmtFecha(asignacion.fechaDeCierre)</span>
+                                            </div>
+                                            @if (esEstudiante)
+                                            {
+                                                <div class="col-12 mt-2 pt-1 border-top">
+                                                    <span class="text-muted">Fecha de entrega: </span>
+                                                    <span class="fw-medium text-body">
+                                                        @(asignacion.fechaDeEntrega == DateTime.MinValue ? "Aún no entregado" : asignacion.fechaDeEntrega.ToString("dd MMM yyyy, HH:mm"))
+                                                    </span>
+                                                </div>
+                                            }
+                                            else if (resumen != null)
+                                            {
+                                                @* RAV-12-003 escenario 5: indicadores de entregas por asignación *@
+                                                <div class="col-12 mt-2 pt-1 border-top">
+                                                    <div>Entregadas: <span class="fw-medium text-body">@resumen.entregadas / @resumen.total</span></div>
+                                                    <div>Calificadas: <span class="fw-medium text-body">@resumen.calificadas / @resumen.total</span></div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    @* Porcentaje, calificación y acción *@
+                                    <div class="col-md-3 col-12 text-md-end">
                                         <div class="mb-1">
                                             <span class="text-secondary small me-1">Porcentaje:</span>
                                             <span class="badge bg-blue-lt fw-bold">@asignacion.porcentaje_nota.ToString("0.##")%</span>
                                         </div>
-                                        <div class="h2 mb-0 fw-bold text-primary">
-                                            @asignacion.calificacion.ToString("0.0")
-                                            <span class="fs-6 text-secondary fw-normal">/ 100</span>
-                                        </div>
+
+                                        @if (esEstudiante)
+                                        {
+                                            <div class="h2 mb-2 fw-bold text-primary">
+                                                @asignacion.calificacion.ToString("0.0")
+                                                <span class="fs-6 text-secondary fw-normal">/ 100</span>
+                                            </div>
+                                            <a href="@Url.Action("Entregar", "Asignaciones", new { id = asignacion.id_asignacion })" class="btn btn-cyan btn-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1">
+                                                    <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"></path>
+                                                    <path d="M7 9l5 -5l5 5"></path>
+                                                    <path d="M12 4l0 12"></path>
+                                                </svg>
+                                                @textoBoton
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a href="@Url.Action("Detalles", "Asignaciones", new { id = asignacion.id_asignacion })" class="btn btn-cyan btn-sm">
+                                                @(esDocente ? "Ver entregas y calificar" : "Ver entregas")
+                                            </a>
+                                        }
                                     </div>
+
                                 </div>
                             </div>
                         </div>
@@ -192,13 +316,24 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" /><path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" /></svg>
                             </div>
                             <p class="empty-title">No hay asignaciones registradas</p>
-                            <p class="empty-subtitle text-secondary">Todavía no hay asignaciones registradas para esta clase.</p>
+                            @if (esDocente)
+                            {
+                                <p class="empty-subtitle text-secondary">Cree la primera asignación para esta clase.</p>
+                                <div class="empty-action">
+                                    <a href="@Url.Action("CrearAsignacion", "Asignaciones", new { idMateria = idMateriaClase, idSeccion = idSeccionClase })"
+                                       class="btn btn-primary">+ Nueva asignación</a>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="empty-subtitle text-secondary">Todavía no hay asignaciones registradas para esta clase.</p>
+                            }
                         </div>
                     </div>
                 </div>
             }
         </div>
-        <div id="sinResultadosAsignaciones" class="alert alert-info" style="display:none">
+        <div id="sinResultadosAsignaciones" class="alert alert-info d-none">
             No hay asignaciones que coincidan con este filtro.
         </div>
     </div>
@@ -264,13 +399,119 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Material publicado</h3>
+                        @if (esDocente)
+                        {
+                            <div class="card-actions">
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#panelPublicarMaterial">
+                                    + Publicar material
+                                </button>
+                            </div>
+                        }
                     </div>
-                    <div class="card-body">
-                        <div class="empty">
-                            <p class="empty-title">Todavía no hay materiales publicados</p>
-                            <p class="empty-subtitle text-secondary">La publicación de material aún no está disponible en el sistema.</p>
+
+                    @if (esDocente)
+                    {
+                        <div class="collapse" id="panelPublicarMaterial">
+                            <div class="card-body border-bottom">
+                                <div id="alertaMaterial" class="alert alert-danger d-none"></div>
+
+                                <form id="formMaterial" enctype="multipart/form-data" novalidate
+                                      data-url="@Url.Action("PublicarMaterial", "AulaVirtual")"
+                                      data-max-bytes="@EduNexus.UI.Models.AlmacenamientoMaterial.TamanoMaximo"
+                                      data-msg-tamano="El archivo supera el tamaño máximo permitido. Formatos permitidos: @EduNexus.UI.Models.AlmacenamientoMaterial.FormatosTexto. Tamaño máximo: @EduNexus.UI.Models.AlmacenamientoMaterial.TamanoMaximoTexto.">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="idSeccion" value="@ViewBag.IdSeccion" />
+                                    <input type="hidden" name="idMateria" value="@ViewBag.IdMateria" />
+
+                                    <div class="mb-3">
+                                        <label class="form-label" for="nombreMaterial">Nombre</label>
+                                        <input type="text" id="nombreMaterial" name="nombre" class="form-control" maxlength="150" />
+                                        <div class="invalid-feedback" data-error="nombre"></div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label" for="tipoMaterial">Tipo</label>
+                                        <select id="tipoMaterial" name="tipo" class="form-select">
+                                            <option value="Archivo">Archivo</option>
+                                            <option value="Enlace">Enlace externo</option>
+                                        </select>
+                                        <div class="invalid-feedback" data-error="tipo"></div>
+                                    </div>
+
+                                    <div class="mb-3" id="grupoArchivo">
+                                        <label class="form-label" for="archivoMaterial">Archivo</label>
+                                        <input type="file" id="archivoMaterial" name="archivo" class="form-control" />
+                                        <div class="form-hint">
+                                            Formatos: @EduNexus.UI.Models.AlmacenamientoMaterial.FormatosTexto.
+                                            Máximo @EduNexus.UI.Models.AlmacenamientoMaterial.TamanoMaximoTexto.
+                                        </div>
+                                        <div class="invalid-feedback" data-error="archivo"></div>
+                                    </div>
+
+                                    <div class="mb-3 d-none" id="grupoUrl">
+                                        <label class="form-label" for="urlMaterial">URL</label>
+                                        <input type="url" id="urlMaterial" name="url" class="form-control" placeholder="https://..." />
+                                        <div class="invalid-feedback" data-error="url"></div>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-cyan">Publicar</button>
+                                </form>
+                            </div>
                         </div>
-                    </div>
+                    }
+
+                    @if (!materiales.Any())
+                    {
+                        <div class="card-body">
+                            <div class="empty">
+                                <p class="empty-title">Todavía no hay materiales publicados</p>
+                                @if (esDocente)
+                                {
+                                    <p class="empty-subtitle text-secondary">Use "+ Publicar material" para compartir archivos o enlaces con sus estudiantes.</p>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-vcenter card-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Tipo</th>
+                                        <th>Fecha de publicación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var material in materiales)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (material.tipo == "Archivo")
+                                                {
+                                                    <a href="@Url.Action("DescargarMaterial", "AulaVirtual", new { id = material.id_material })">@material.nombre</a>
+                                                    <div class="text-secondary small">@material.nombre_archivo</div>
+                                                }
+                                                else
+                                                {
+                                                    @* RAV-12-006 escenario 2: el enlace se abre en una pestaña nueva *@
+                                                    <a href="@material.url" target="_blank" rel="noopener noreferrer">@material.nombre</a>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="@("badge " + (material.tipo == "Archivo" ? "bg-blue-lt" : "bg-green-lt"))">@material.tipo</span>
+                                            </td>
+                                            <td>
+                                                @material.fecha_publicacion.ToString("dd/MM/yyyy HH:mm")
+                                                <div class="text-secondary small">@material.publicado_por</div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
                 </div>
             </div>
             <div class="col-lg-5">
@@ -292,29 +533,10 @@
 </div>
 
 @section scripts {
-    @if (esDocente)
-    {
-        <script src="@Url.Content("~/Scripts/Asistencia/ListaAsistencia.js")"></script>
+        <script src="@Url.Content("~/Scripts/AulaVirtual/FiltroAsignaciones.js")"></script>
+        @if (esDocente)
+        {
+            <script src="@Url.Content("~/Scripts/Asistencia/ListaAsistencia.js")"></script>
+            <script src="@Url.Content("~/Scripts/AulaVirtual/Material.js")"></script>
+        }
     }
-    <script>
-        (function () {
-            var grupo = document.getElementById('filtrosAsignaciones');
-            if (!grupo) { return; }
-            grupo.querySelectorAll('button[data-filtro]').forEach(function (boton) {
-                boton.addEventListener('click', function () {
-                    var filtro = boton.getAttribute('data-filtro');
-                    grupo.querySelectorAll('button').forEach(function (b) { b.classList.remove('active'); });
-                    boton.classList.add('active');
-                    var visibles = 0;
-                    document.querySelectorAll('.tarjeta-asignacion').forEach(function (t) {
-                        var estado = t.getAttribute('data-estado') || '';
-                        var mostrar = filtro === 'todas' || estado.indexOf(filtro) === 0;
-                        t.style.display = mostrar ? '' : 'none';
-                        if (mostrar) { visibles++; }
-                    });
-                    document.getElementById('sinResultadosAsignaciones').style.display = visibles === 0 ? '' : 'none';
-                });
-            });
-        })();
-    </script>
-}
